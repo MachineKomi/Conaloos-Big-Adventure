@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+
+# Generated at build time from /assets/ scan
+src/content/manifest.json
+
+# Per-user / per-machine permissions allowlist
+.claude/settings.local.json

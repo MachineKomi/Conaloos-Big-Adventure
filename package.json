@@ -1,0 +1,20 @@
+{
+  "name": "conaloos-big-adventure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A whimsical, rhyming, hand-drawn point-and-click software toy for a 4-year-old.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "manifest": "node scripts/build-manifest.js",
+    "check-coverage": "node scripts/check-coverage.js"
+  },
+  "dependencies": {
+    "phaser": "^3.85.2"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}
