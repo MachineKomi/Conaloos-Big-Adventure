@@ -31,19 +31,37 @@ export function parseAssetFilename(filename) {
   if (stem.startsWith('peep_')) {
     if (!IMAGE_EXTS.has(ext)) return null;
     const parts = stem.split('_');
-    // peep_{name}_{gender}_{age}  →  4 parts
-    if (parts.length < 4) return null;
-    const [, name, gender, ageRaw] = parts;
-    const age = Number.parseInt(ageRaw, 10);
-    if (!name || !gender) return null;
-    return {
-      type: 'peep',
-      key: stem,
-      name,
-      gender: gender.toUpperCase(),
-      age: Number.isFinite(age) ? age : null,
-      ext
-    };
+    if (parts.length === 4) {
+      // Canonical: peep_{name}_{gender}_{age}
+      const [, name, gender, ageRaw] = parts;
+      const age = Number.parseInt(ageRaw, 10);
+      if (!name || !gender) return null;
+      return {
+        type: 'peep',
+        key: stem,
+        name,
+        gender: gender.toUpperCase(),
+        age: Number.isFinite(age) ? age : null,
+        descriptor: null,
+        ext
+      };
+    }
+    if (parts.length === 3) {
+      // Permitted variant: peep_{name}_{descriptor}, e.g. peep_Loosa_cactus.
+      // Treat as a "person-shaped" character whose age/gender don't apply.
+      const [, name, descriptor] = parts;
+      if (!name || !descriptor) return null;
+      return {
+        type: 'peep',
+        key: stem,
+        name,
+        gender: null,
+        age: null,
+        descriptor,
+        ext
+      };
+    }
+    return null;
   }
 
   if (stem.startsWith('animal_')) {

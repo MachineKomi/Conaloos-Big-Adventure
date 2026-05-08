@@ -92,6 +92,90 @@ export const characters = {
     ]
   },
 
+  'peep_Konessa_has-flower': {
+    voice: "Soft, focused. Each line carries one image, like a held flower.",
+    catchphrase: "...have you noticed it, too?",
+    obsession: "The flower in her hand.",
+    themes: ['animals', 'emotions', 'art-history', 'language'],
+    lines: [
+      "I'm Konessa. I carry a flower with care --\nIt knows me, I know it. It's everywhere.",
+      "A flower is small but it carries the sun --\nIn yellow, in scent, in the way it has spun.",
+      "Have you noticed the way that the petals *unfold*?\nThe flower is patient. The petals are bold.",
+      "My flower is mine, but it's also the world's --\nI carry it lightly. I share, when it's curled.",
+      "To love a small thing is to keep a small light --\nIt warms when it's daytime, it glows in the night."
+    ]
+  },
+
+  'peep_Poona_F_4': {
+    voice: "Four years old, fast, full of plans, half of them abandoned.",
+    catchphrase: "...and then we will.",
+    obsession: "Plans (which she invents on the spot).",
+    themes: ['language', 'emotions', 'philosophy'],
+    lines: [
+      "I'm Poona. And me and Amelia are *friends* --\nThe kind of the friends with no proper of ends.",
+      "And then we will swing! And then we will run!\nAnd then we will tell every flower a pun!",
+      "My favourite of plans is to plan a new plan --\nThe planning is fun, even more than the *ran*.",
+      "A friend is the person who wants what you want --\n(But also has *better* of wants. Just a smount.)",
+      "I'm four, and I'm planning a whole afternoon --\nWe'll start with a song, and we'll end with a moon."
+    ]
+  },
+
+  'peep_Keefa_M_25': {
+    voice: "Half-echo, half-song. Treats children as fellow musicians.",
+    catchphrase: "...did you hear that?",
+    obsession: "Sound. Every sound.",
+    themes: ['language', 'science', 'culture-history', 'emotions'],
+    lines: [
+      "I'm Keefa, I travel, I sing what I find --\nThe sea, and the gulls, and the soft of the wind.",
+      "Did you hear that just now? It was somebody's bell.\nA bell is a song that decided to dwell.",
+      "There's no music more old than the music of waves --\nIt's been on the same chorus since back in the caves.",
+      "A song doesn't ask if it's good or it's right.\nIt just goes, and it carries, and stays through the night.",
+      "You're humming! Don't stop! That's a song, that one there.\nThe trick is to follow it, just up the air."
+    ]
+  },
+
+  'peep_Loosa_cactus': {
+    voice: "Slow, considered, long pauses (rendered as ' -- ').",
+    catchphrase: "-- give me a moment.",
+    obsession: "Sunshine.",
+    themes: ['animals', 'emotions', 'philosophy'],
+    lines: [
+      "I'm Loosa. -- The cactus. -- I stand. -- It's enough. --\nThe sun is my dinner. The wind is my bluff.",
+      "-- Give me a moment. -- A thought is just here. --\nThe thought is the colour -- of yellow, my dear.",
+      "A cactus, -- you see, -- holds her water inside. --\nA pickle, -- with spines, -- and -- a great deal of pride.",
+      "-- The young ones run quickly. -- That's fine. -- It's a phase. --\nI used to. -- I think. -- It was -- one of those days.",
+      "My friend Tootsie says she is friendlier yet. --\nI tell her: -- 'Loosa is friendly.' -- Don't fret."
+    ]
+  },
+
+  'peep_Tootsie_friendly-cactus': {
+    voice: "Bright, eager, emphatic. Wants you to know she is friendly.",
+    catchphrase: "And I'm so glad you came!",
+    obsession: "Friendliness as a calling.",
+    themes: ['emotions', 'animals', 'language'],
+    lines: [
+      "I'm Tootsie! And friendly's the kind of cactus I am --\nI wave with my prickles, I greet every clam!",
+      "And I'm so glad you came! And the sky is a peach!\nAnd Loosa is patient, and Loosa's a teach!",
+      "A friend, did you know it, can be a small plant?\nIt's true! I've been friended! By a turtle! And ant!",
+      "My prickles look sharp but they're really for show.\nI hug like a hedgehog -- but slower, you know.",
+      "There's room in this garden for plenty of you.\nThere's room in this cactus for plenty of two."
+    ]
+  },
+
+  'peep_Wawoo_robo-snowman': {
+    voice: "Mechanical, with one 'wawoo' per response — wind through a pipe.",
+    catchphrase: "Wawoo.",
+    obsession: "Cold. (He worries it's not cold enough here.)",
+    themes: ['science', 'culture-history', 'emotions', 'language'],
+    lines: [
+      "I'm Wawoo. (Wawoo.) -- I'm snow and machine. --\nI run on the cold. I dream blue. (And green.)",
+      "In summer I worry. -- Wawoo. -- I get small. --\nA snowman in sun -- is a sad sort of all.",
+      "My nose is a button. My eyes are two coins. --\nMy heart -- wawoo -- is a clock with no joins.",
+      "I came from a winter you'll some day forget. --\nI brought you a quiet. -- It hasn't gone yet.",
+      "The wind makes me speak. (Wawoo.) The wind is my mouth. --\nWhen the wind isn't blowing, I just point south."
+    ]
+  },
+
   'peep_Lulumi_F_14': {
     voice: "Older but not far older. Patient. Loves lists.",
     catchphrase: "-- perhaps.",

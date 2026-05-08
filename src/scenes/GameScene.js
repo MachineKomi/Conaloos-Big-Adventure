@@ -55,7 +55,7 @@ export class GameScene extends Phaser.Scene {
     this.hotspots.createAll(this.def.hotspots || [], { w: width, h: height });
 
     if (this.def.music) {
-      this.services.audio.playMusic(this.def.music);
+      this.services.audio.playMusic(this.def.music, this);
     }
 
     // Allow a tap on empty space to dismiss an open dialogue early.

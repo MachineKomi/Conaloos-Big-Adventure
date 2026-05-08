@@ -152,14 +152,22 @@ export const scenes = {
 
       portal('to-lake',
         { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'mountain-lake-childlike')
+        'mountain-lake-childlike'),
+
+      portal('to-village',
+        { x: 0.32, y: 0.04, w: 0.16, h: 0.14 },
+        'whimsical-villiage'),
+
+      portal('to-playground',
+        { x: 0.40, y: 0.92, w: 0.20, h: 0.08 },
+        'fantasy-garden-playground')
     ]
   },
 
   // -------- HOME INTERIOR --------
   'cosy-cottage-interior': {
     background: 'bg_cosy-cottage-interior',
-    music: 'music_calm',
+    music: 'music_lullaby',
     ambient_sfx: [],
     themes: ['emotions', 'culture-history', 'art-history'],
     characters: [
@@ -286,10 +294,220 @@ export const scenes = {
     ]
   },
 
+  // -------- FANTASY GARDEN PLAYGROUND --------
+  'fantasy-garden-playground': {
+    background: 'bg_fantasy-garden-playground',
+    music: 'music_silly',
+    ambient_sfx: [],
+    themes: ['animals', 'philosophy', 'emotions', 'language'],
+    characters: [
+      { sprite: 'peep_Loosa_cactus',              x: 0.16, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'peep_Tootsie_friendly-cactus',   x: 0.30, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'peep_Amelia_F_4',                x: 0.50, y: 0.95, heightFrac: 0.55, idle: 'bob'  },
+      { sprite: 'peep_Poona_F_4',                 x: 0.62, y: 0.95, heightFrac: 0.55, idle: 'bob'  },
+      { sprite: 'animal_Seesa_pink-bee',          x: 0.78, y: 0.32, heightFrac: 0.10, idle: 'bob'  }
+    ],
+    things: [
+      { sprite: 'thing_colourful_tree_A',          x: 0.08, y: 0.85, heightFrac: 0.55 },
+      { sprite: 'thing_colourful_tree_B',          x: 0.92, y: 0.85, heightFrac: 0.55 },
+      { sprite: 'thing_birthday-cake-with-one-candle', x: 0.78, y: 0.92, heightFrac: 0.16 }
+    ],
+    hotspots: [
+      characterHotspot('loosa', 'peep_Loosa_cactus',
+        { x: 0.10, y: 0.45, w: 0.18, h: 0.50 },
+        { theme: 'philosophy' }),
+
+      characterHotspot('tootsie', 'peep_Tootsie_friendly-cactus',
+        { x: 0.26, y: 0.45, w: 0.18, h: 0.50 },
+        { theme: 'emotions' }),
+
+      characterHotspot('amelia', 'peep_Amelia_F_4',
+        { x: 0.42, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'language' }),
+
+      characterHotspot('poona', 'peep_Poona_F_4',
+        { x: 0.54, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'language' }),
+
+      characterHotspot('seesa', 'animal_Seesa_pink-bee',
+        { x: 0.70, y: 0.24, w: 0.16, h: 0.16 },
+        { theme: 'animals' }),
+
+      tinyMuseum('cake',
+        { x: 0.72, y: 0.78, w: 0.14, h: 0.20 },
+        [
+          "A cake is a thing for a *somebody's* day --\nA candle, a wish, and a 'hooray-and-yay.'",
+          "Different lands have a different cake --\nSome with no candles, some sweet, some opaque.",
+          "One candle means one of a year that is new.\nSo: somebody, somewhere, just turned into TWO."
+        ],
+        'culture-history'),
+
+      tinyMuseum('tree-A',
+        { x: 0.0, y: 0.30, w: 0.18, h: 0.55 },
+        [
+          "A tree, all in colours, is mostly a green --\nBut every leaf carries a different sheen.",
+          "Two greens, made together: a yellow and blue.\nThe trees know this trick. (Now you know it too.)",
+          "Each leaf is a hand that the wind likes to shake.\nThe tree doesn't mind. The tree's wide awake."
+        ],
+        'art-history'),
+
+      tinyMuseum('tree-B',
+        { x: 0.82, y: 0.30, w: 0.18, h: 0.55 },
+        [
+          "*Tree* in some languages: arbre, baum, ki, ya --\nThe shape is the same, but the names go quite far.",
+          "A tree is so quiet it sounds like a bell --\nThe slow kind of bell that you ring just to dwell.",
+          "It stands and it stands. And the standing's the song.\nWe're walking past trees that have stood -- oh, so long."
+        ],
+        'language'),
+
+      portal('to-hub',
+        { x: 0.0, y: 0.05, w: 0.10, h: 0.30 },
+        'sunny-rocket-garden'),
+
+      portal('to-village',
+        { x: 0.90, y: 0.05, w: 0.10, h: 0.30 },
+        'whimsical-villiage')
+    ]
+  },
+
+  // -------- SEASIDE VILLAGE AT SUNSET --------
+  'seaside-village-sunset': {
+    background: 'bg_seaside-village-sunset',
+    music: 'music_calm',
+    ambient_sfx: [],
+    themes: ['art-history', 'philosophy', 'language', 'science'],
+    characters: [
+      { sprite: 'peep_Keefa_M_25',                x: 0.50, y: 0.95, heightFrac: 0.60, idle: 'sway' },
+      { sprite: 'peep_Konessa_has-flower',        x: 0.32, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'animal_Conaloo_bear-butterly',   x: 0.16, y: 0.94, heightFrac: 0.30, idle: 'sway' },
+      { sprite: 'animal_Pepsi_dog-thing',         x: 0.85, y: 0.96, heightFrac: 0.22, idle: 'bob'  }
+    ],
+    things: [],
+    hotspots: [
+      characterHotspot('keefa', 'peep_Keefa_M_25',
+        { x: 0.44, y: 0.40, w: 0.16, h: 0.55 },
+        { theme: 'language' }),
+
+      characterHotspot('konessa', 'peep_Konessa_has-flower',
+        { x: 0.26, y: 0.45, w: 0.16, h: 0.50 },
+        { theme: 'art-history' }),
+
+      characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
+        { x: 0.08, y: 0.70, w: 0.16, h: 0.28 },
+        { theme: 'philosophy' }),
+
+      characterHotspot('pepsi', 'animal_Pepsi_dog-thing',
+        { x: 0.78, y: 0.78, w: 0.18, h: 0.20 },
+        { theme: 'emotions' }),
+
+      tinyMuseum('sunset',
+        { x: 0.20, y: 0.05, w: 0.60, h: 0.25 },
+        [
+          "A sunset is light that has travelled all day --\nIt's tired, it's pinker, it's slowing its way.",
+          "The blue gets all scattered when sun is so low --\nWhich leaves us the orange, and red, and the glow.",
+          "Painters love sunset because it has *all* --\nThe colours arranged on a thin canvas wall.",
+          "The trick of a sunset: it's never the same.\nEach evening's a one-of, with no proper name."
+        ],
+        'art-history'),
+
+      tinyMuseum('waves',
+        { x: 0.10, y: 0.78, w: 0.30, h: 0.18 },
+        [
+          "A wave is a story the water decides --\nIt rolls to the shore and then quietly hides.",
+          "The moon -- you know -- pulls at the sea every day,\nWhich is why all the waves feel a need to obey.",
+          "No wave ever comes in just twice, in the same.\nEach one is a one-of. (The sea doesn't claim.)"
+        ],
+        'science'),
+
+      questionStone('seagull',
+        { x: 0.55, y: 0.10, w: 0.20, h: 0.18 },
+        [
+          "What is a seagull saying, do you think?\nIs it a 'hello'? Or a 'bring me a drink'?",
+          "Every gull-call is a conversation, perhaps --\nWith news of the fish, and the weather, and traps.",
+          "If we wrote down the words for the sounds that they say --\nWe'd need a new alphabet just for the day."
+        ],
+        'language'),
+
+      portal('to-hub',
+        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
+        'sunny-rocket-garden'),
+
+      portal('to-village',
+        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
+        'whimsical-villiage')
+    ]
+  },
+
+  // -------- WHIMSICAL VILLAGE --------
+  // Note: filename has a typo ("villiage") — preserved per CLAUDE.md §3.
+  'whimsical-villiage': {
+    background: 'bg_whimsical-villiage',
+    music: 'music_quick',
+    ambient_sfx: [],
+    themes: ['culture-history', 'economics', 'language', 'philosophy'],
+    characters: [
+      { sprite: 'peep_mommy_F_30ish',     x: 0.16, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'peep_daddy_M_30ish',     x: 0.32, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'peep_Cosenae_M_5',       x: 0.52, y: 0.95, heightFrac: 0.45, idle: 'bob'  },
+      { sprite: 'peep_Lulumi_F_14',       x: 0.70, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      { sprite: 'peep_Wawoo_robo-snowman', x: 0.88, y: 0.95, heightFrac: 0.55, idle: 'bob'  }
+    ],
+    things: [
+      { sprite: 'thing_funky-house-glass-colourful', x: 0.46, y: 0.55, heightFrac: 0.40 }
+    ],
+    hotspots: [
+      characterHotspot('mommy', 'peep_mommy_F_30ish',
+        { x: 0.08, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'art-history' }),
+
+      characterHotspot('daddy', 'peep_daddy_M_30ish',
+        { x: 0.24, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'economics' }),
+
+      characterHotspot('cosenae', 'peep_Cosenae_M_5',
+        { x: 0.44, y: 0.55, w: 0.16, h: 0.40 },
+        { theme: 'science' }),
+
+      characterHotspot('lulumi', 'peep_Lulumi_F_14',
+        { x: 0.62, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'language' }),
+
+      characterHotspot('wawoo', 'peep_Wawoo_robo-snowman',
+        { x: 0.80, y: 0.50, w: 0.16, h: 0.45 },
+        { theme: 'science' }),
+
+      tinyMuseum('glass-house',
+        { x: 0.40, y: 0.20, w: 0.24, h: 0.40 },
+        [
+          "A house can be brick. A house can be wood.\nA house can be GLASS! (If you handle it good.)",
+          "Long ago, glass was a thing of the rich --\nA window was magic, a wonder, a stitch.",
+          "Each home is a different shape and a sound --\nAnd all of them, all of them, sit on the ground."
+        ],
+        'culture-history'),
+
+      questionStone('village-square',
+        { x: 0.30, y: 0.05, w: 0.40, h: 0.18 },
+        [
+          "What makes a village more than a few of a house?\nIs it a square? Is it a baker? A mouse?",
+          "If you could invent a new village to live --\nWhat would you put in? And what would you give?",
+          "What do you call your favourite small place?\nThe kind that you carry inside, not by chase?"
+        ],
+        'philosophy'),
+
+      portal('to-garden',
+        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
+        'fantasy-garden-playground'),
+
+      portal('to-seaside',
+        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
+        'seaside-village-sunset')
+    ]
+  },
+
   // -------- LAKE (VISTA) --------
   'mountain-lake-vista': {
     background: 'bg_mountain-lake-vista',
-    music: 'music_calm',
+    music: 'music_journey',
     ambient_sfx: [],
     themes: ['science', 'art-history', 'philosophy', 'language'],
     characters: [
