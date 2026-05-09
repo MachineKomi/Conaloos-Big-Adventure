@@ -47,7 +47,9 @@ export class SceneRouter {
       return;
     }
 
-    // Fade through white.
+    // Fade through white. Note that GameScene._enterPortal handles its own
+    // fade-out for portal clicks, so this path is taken only for non-portal
+    // navigations (home button, programmatic goToScene).
     const fromScene = this.game.scene.getScene(fromKey);
     if (fromScene && fromScene.cameras?.main) {
       fromScene.cameras.main.fadeOut(FADE_MS / 2, 255, 248, 231);
@@ -55,7 +57,17 @@ export class SceneRouter {
         this.game.scene.stop(fromKey);
         this.game.scene.start(toKey);
         const toScene = this.game.scene.getScene(toKey);
-        toScene?.cameras?.main?.fadeIn(FADE_MS / 2, 255, 248, 231);
+        // Fade-in is initiated by the destination scene itself in create()
+        // via cameraFadeIn(); fallback if a scene forgot to call it.
+        if (toScene?.cameras?.main) {
+          // Defer to next tick so create() runs first.
+          setTimeout(() => {
+            const cam = toScene.cameras?.main;
+            if (cam && cam.fadeEffect?.alpha > 0.01) {
+              cam.fadeIn(FADE_MS / 2, 255, 248, 231);
+            }
+          }, 0);
+        }
       });
     } else {
       this.game.scene.start(toKey);

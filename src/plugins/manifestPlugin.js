@@ -73,7 +73,7 @@ export function manifestPlugin() {
   }
 
   function emptyByType() {
-    return { peep: [], animal: [], bg: [], thing: [], music: [], sfx: [] };
+    return { peep: [], animal: [], bg: [], thing: [], portal: [], gem: [], music: [], sfx: [] };
   }
 
   function groupByType(entries) {

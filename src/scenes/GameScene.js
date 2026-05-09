@@ -8,9 +8,13 @@
  * Responsibilities:
  *   - Stretch the background to fit the viewport (cover).
  *   - Place characters & things at normalized coordinates.
+ *   - Render visible portal sprites with floating labels.
  *   - Light idle motion (bob, sway) unless reducedMotion.
  *   - Drive HotspotManager + DialogueBox + AudioManager.
+ *   - Wire the Protagonist (Amelia): she walks toward every click, and a
+ *     portal click only fires AFTER she reaches it.
  *   - Apply remix effects from rare responses (e.g. parent a thing to a character).
+ *   - Allow Amelia to collect `thing_*` items into her inventory.
  */
 
 import Phaser from 'phaser';
@@ -22,12 +26,20 @@ const IDLE_BOB_AMPL = 8;
 const IDLE_BOB_MS = 1900;
 const IDLE_SWAY_DEG = 2.5;
 const IDLE_SWAY_MS = 2400;
+const SCENE_FADE_MS = 600;
+const PORTAL_LABEL_FONT_PX = 22;
+const PORTAL_PULSE_AMPL = 0.06;
+const PORTAL_PULSE_MS = 1600;
+const COLLECTABLE_THINGS = new Set([
+  'thing_birthday-cake-with-one-candle'
+  // The rocketship and trees stay decorative; only collectables go here.
+]);
 
 export class GameScene extends Phaser.Scene {
   /**
    * @param {string} slug
    * @param {object} def         scene definition from scenes.js
-   * @param {object} services    { audio, router, loader }
+   * @param {object} services    { audio, router, loader, protagonist }
    */
   constructor(slug, def, services) {
     super({ key: `scene:${slug}` });
@@ -35,47 +47,83 @@ export class GameScene extends Phaser.Scene {
     this.def = def;
     this.services = services;
     this.spritesByKey = new Map();
+    this._portalSprites = [];
+    this._portalDefsById = new Map();
+    this._isTransitioning = false;
+  }
+
+  init(data) {
+    this._enterEdge = data?.enterEdge || null;
   }
 
   create() {
     const { width, height } = this.scale;
 
+    // Fade in from the white the previous scene faded out to.
+    if (!Accessibility.reducedMotion) {
+      this.cameras.main.fadeIn(SCENE_FADE_MS, 255, 248, 231);
+    }
+
+    // Make the input plane full-scene so background clicks are catchable.
+    this.input.topOnly = true;
+
     this._renderBackground(width, height);
     this._renderThings(width, height);
     this._renderCharacters(width, height);
+    this._renderPortalSprites(width, height);
+
+    // Spawn Amelia at the entry edge for this scene (or default centre).
+    this.services.protagonist?.attach(this, { fromEdge: this._enterEdge });
 
     this.dialogue = new DialogueBox(this);
 
     this.hotspots = new HotspotManager(this, {
       audio: this.services.audio,
       dialogue: this.dialogue,
-      router: this.services.router,
-      onResponse: (h, response) => this._applyRemix(response)
+      router: null, // we handle navigation ourselves to walk Amelia first
+      onResponse: (h, response) => this._afterResponse(h, response),
+      spritesByKey: this.spritesByKey
     });
     this.hotspots.createAll(this.def.hotspots || [], { w: width, h: height });
+
+    // Override the manager's portal click — we want to walk Amelia to the
+    // portal sprite before transitioning.
+    this._wirePortalClicks();
 
     if (this.def.music) {
       this.services.audio.playMusic(this.def.music, this);
     }
 
-    // Allow a tap on empty space to dismiss an open dialogue early.
+    // Background click: walk Amelia to that x. Lets the child move her
+    // around without needing to hit a hotspot.
     this.input.on('pointerup', (pointer, currentlyOver) => {
-      if (currentlyOver.length === 0 && this.dialogue.isVisible()) {
+      if (this._isTransitioning) return;
+      // If a UI button on global scenes was clicked, skip.
+      if (currentlyOver && currentlyOver.length > 0) return;
+      // Dismiss any open dialogue first.
+      if (this.dialogue.isVisible()) {
         this.dialogue.dismiss();
+        return;
       }
+      this.services.protagonist?.walkTo(pointer.worldX, pointer.worldY);
     });
 
     this.scale.on('resize', () => {
-      // Crude: full re-create on resize. Scenes are cheap.
-      this.scene.restart();
+      // Crude: full re-create on resize.
+      this.scene.restart({ enterEdge: this._enterEdge });
     });
 
     this.events.on('shutdown', () => {
       this.dialogue?.destroy();
       this.hotspots?.destroy();
       this.spritesByKey.clear();
+      for (const p of this._portalSprites) p.destroy();
+      this._portalSprites = [];
+      this._portalDefsById.clear();
     });
   }
+
+  // ------------------------------- rendering -------------------------------
 
   _renderBackground(w, h) {
     const bgKey = this.def.background;
@@ -87,8 +135,8 @@ export class GameScene extends Phaser.Scene {
     const tex = this.textures.get(bgKey).getSourceImage();
     const sx = w / tex.width;
     const sy = h / tex.height;
-    const s = Math.max(sx, sy);
-    img.setScale(s);
+    img.setScale(Math.max(sx, sy));
+    img.setDepth(-100);
   }
 
   _renderThings(w, h) {
@@ -98,6 +146,7 @@ export class GameScene extends Phaser.Scene {
         .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
         .setOrigin(0.5);
       applyDisplaySize(img, t, h, 0.22);
+      img.setDepth(50);
       this.spritesByKey.set(t.sprite, img);
     }
   }
@@ -105,10 +154,14 @@ export class GameScene extends Phaser.Scene {
   _renderCharacters(w, h) {
     for (const c of this.def.characters || []) {
       if (!this.textures.exists(c.sprite)) continue;
+      // Skip Amelia in scene-level character lists — Protagonist owns her.
+      if (c.sprite === 'peep_Amelia_F_4') continue;
+
       const img = this.add
         .image((c.x ?? 0.5) * w, (c.y ?? 0.5) * h, c.sprite)
         .setOrigin(0.5, 1);
       applyDisplaySize(img, c, h, 0.45);
+      img.setDepth(100);
       this.spritesByKey.set(c.sprite, img);
 
       if (Accessibility.reducedMotion) continue;
@@ -135,25 +188,149 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Apply a remix from a rare response.
-   * Supported recipe: { add_sprite, on_top_of, scale, as }.
-   */
+  _renderPortalSprites(w, h) {
+    const portals = (this.def.hotspots || []).filter((h) => h.type === 'portal' && h.sprite);
+    for (const p of portals) {
+      if (!this.textures.exists(p.sprite)) continue;
+
+      const x = (p.x ?? 0.5) * w;
+      const y = (p.y ?? 0.95) * h;
+      const img = this.add.image(x, y, p.sprite).setOrigin(0.5, 1);
+      applyDisplaySize(img, { heightFrac: p.heightFrac ?? 0.30 }, h, 0.30);
+      img.setDepth(80);
+      this.spritesByKey.set(p.sprite, img);
+      this._portalSprites.push(img);
+      this._portalDefsById.set(p.id, { def: p, sprite: img });
+
+      // Soft pulse so the eye finds it.
+      if (!Accessibility.reducedMotion) {
+        const baseScale = img.scale;
+        this.tweens.add({
+          targets: img,
+          scale: baseScale * (1 + PORTAL_PULSE_AMPL),
+          duration: PORTAL_PULSE_MS,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
+      // Floating label.
+      if (p.label) {
+        const labelY = y - img.displayHeight - 8;
+        const label = this.add
+          .text(x, labelY, p.label, {
+            fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
+            fontSize: `${PORTAL_LABEL_FONT_PX}px`,
+            color: '#2b2b2b',
+            backgroundColor: 'rgba(255,248,231,0.85)',
+            padding: { left: 10, right: 10, top: 4, bottom: 4 }
+          })
+          .setOrigin(0.5, 1)
+          .setDepth(81);
+        this._portalSprites.push(label);
+      }
+    }
+  }
+
+  // ------------------------- click & transition flow -----------------------
+
+  _wirePortalClicks() {
+    // HotspotManager already attached pointerup handlers that call
+    // _afterResponse via onResponse. For portals, we want to:
+    //   1. Walk Amelia to the portal sprite
+    //   2. Then fade out + start the destination scene
+    // The HotspotManager doesn't know about Protagonist, so we intercept
+    // here by replacing its inner _onClick logic for portals via the
+    // onResponse callback (called after the click is processed).
+    //
+    // Simpler path used here: we listen on the portal sprite directly so
+    // the portal sprite IS the click target, not just an invisible zone.
+    for (const { def, sprite } of this._portalDefsById.values()) {
+      sprite.setInteractive({ useHandCursor: true });
+      sprite.on('pointerover', () => sprite.setTint(0xfff5d0));
+      sprite.on('pointerout', () => sprite.clearTint());
+      sprite.on('pointerup', () => this._enterPortal(def, sprite));
+    }
+  }
+
+  _enterPortal(portalDef, portalSprite) {
+    if (this._isTransitioning) return;
+    this._isTransitioning = true;
+
+    const protagonist = this.services.protagonist;
+    const arriveX = portalSprite.x;
+    const targetKey = `scene:${portalDef.target}`;
+    const enterEdge = portalDef.enterEdge || 'left';
+
+    const doFade = () => {
+      this.services.audio?.playSfx('sfx_swoosh');
+      this.cameras.main.fadeOut(SCENE_FADE_MS, 255, 248, 231);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        // Be explicit: stop ourselves, then start the destination. Phaser's
+        // `this.scene.start` should do this via its op queue, but in some
+        // configurations the calling scene stays running in the background,
+        // which leaves two scenes ticking and a frozen-feeling transition.
+        const mgr = this.scene.manager;
+        const myKey = this.scene.key;
+        mgr.start(targetKey, { enterEdge });
+        mgr.stop(myKey);
+      });
+    };
+
+    if (protagonist && !Accessibility.reducedMotion) {
+      protagonist.walkTo(arriveX, 0, doFade);
+    } else {
+      doFade();
+    }
+  }
+
+  cameraFadeIn() {
+    this.cameras.main.fadeIn(SCENE_FADE_MS, 255, 248, 231);
+  }
+
+  // ------------------------------- responses -------------------------------
+
+  _afterResponse(hotspot, response) {
+    this._applyRemix(response);
+    // Inventory pickup: collect on first click, then the thing-sprite
+    // pops and hides so it visibly "moves into" Amelia's pouch.
+    if (hotspot?.collect && this.services.protagonist) {
+      const newlyCollected = this.services.protagonist.collect(hotspot.collect);
+      if (newlyCollected) {
+        const thingSprite = this.spritesByKey.get(hotspot.collect);
+        if (thingSprite) this._popAndHide(thingSprite);
+        this.services.audio?.playSfx?.('sfx_coin');
+      }
+    }
+  }
+
+  _popAndHide(sprite) {
+    if (Accessibility.reducedMotion) {
+      sprite.setVisible(false);
+      return;
+    }
+    this.tweens.add({
+      targets: sprite,
+      scale: sprite.scale * 0.1,
+      alpha: 0,
+      duration: 280,
+      ease: 'Back.easeIn',
+      onComplete: () => sprite.setVisible(false)
+    });
+  }
+
+  /** Apply a remix from a rare response. */
   _applyRemix(response) {
     const remix = response?.remix;
     if (!remix || !remix.add_sprite) return;
     if (!this.textures.exists(remix.add_sprite)) return;
-
     const target = this.spritesByKey.get(remix.on_top_of);
     if (!target) return;
-
     const overlay = this.add.image(target.x, target.y, remix.add_sprite).setOrigin(0.5, 1);
     overlay.setScale(remix.scale ?? 0.4);
-    // Stack above the target's "head" — origin is bottom-centre, so subtract height.
     overlay.y = target.y - target.displayHeight + 4;
     overlay.setDepth((target.depth ?? 0) + 1);
-
-    // Soft pop-in.
     if (!Accessibility.reducedMotion) {
       overlay.setScale(0.05);
       this.tweens.add({
@@ -166,11 +343,6 @@ export class GameScene extends Phaser.Scene {
   }
 }
 
-/**
- * Size a sprite either by explicit `scale` (multiplier) or by `heightFrac`
- * (target display height as a fraction of the scene height — preferred,
- * since source PNGs vary wildly in resolution).
- */
 function applyDisplaySize(img, def, sceneH, defaultHeightFrac) {
   if (typeof def.scale === 'number') {
     img.setScale(def.scale);
@@ -181,3 +353,7 @@ function applyDisplaySize(img, def, sceneH, defaultHeightFrac) {
   const sourceH = img.height || 1;
   img.setScale(targetH / sourceH);
 }
+
+// Keep the export of a marker so unused-asset audits can pick this up if
+// future code paths import it.
+export { COLLECTABLE_THINGS };

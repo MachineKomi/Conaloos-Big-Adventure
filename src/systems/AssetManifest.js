@@ -89,6 +89,25 @@ export function parseAssetFilename(filename) {
     return { type: 'thing', key: stem, name, ext };
   }
 
+  if (stem.startsWith('portal_')) {
+    if (!IMAGE_EXTS.has(ext)) return null;
+    const name = stem.slice(7);
+    if (!name) return null;
+    return { type: 'portal', key: stem, name, ext };
+  }
+
+  if (stem.startsWith('gem_')) {
+    // gem_{n}.png  or  gem_{n}_glowing.png
+    if (!IMAGE_EXTS.has(ext)) return null;
+    const rest = stem.slice(4);
+    const m = rest.match(/^(\d+)(?:_(glowing|glow))?$/);
+    if (!m) return null;
+    const number = Number.parseInt(m[1], 10);
+    const variant = m[2] ? 'glowing' : 'normal';
+    if (!Number.isFinite(number)) return null;
+    return { type: 'gem', key: stem, number, variant, ext };
+  }
+
   if (stem.startsWith('music_')) {
     if (!AUDIO_EXTS.has(ext)) return null;
     const tone = stem.slice(6);

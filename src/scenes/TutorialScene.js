@@ -1,0 +1,135 @@
+/**
+ * TutorialScene — single page that explains, in rhyme, how to play.
+ *
+ * Shown automatically on first launch, or any time from the title screen
+ * via "How to play". One short rhyming explanation, single Continue
+ * button. No timers; tap-anywhere does nothing.
+ */
+
+import Phaser from 'phaser';
+
+const VERSE = [
+  "Hello! I'm Amelia. The world is below.",
+  "Click anywhere on it -- I walk where I go.",
+  "",
+  "Click *peeps*, click *animals*, click *things* on the floor --",
+  "And listen for rhymes, then click some more.",
+  "",
+  "If a *door* or a *ladder* is what you've spied,",
+  "Just click on it -- and I'll go for a ride."
+];
+
+const CONTINUE_LABEL = "Off we go!";
+
+export class TutorialScene extends Phaser.Scene {
+  constructor() { super({ key: 'scene:tutorial' }); }
+
+  init(data) {
+    this.audio = data?.audio || this.audio;
+    this.onContinue = data?.onContinue || (() => {});
+    this.fromTitle = data?.fromTitle || false;
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    // Backdrop — pale, to make the page panel pop.
+    const candidates = ['bg_cosy-cottage-interior', 'bg_sunny-rocket-garden'];
+    const bgKey = candidates.find((k) => this.textures.exists(k));
+    if (bgKey) {
+      const bg = this.add.image(width / 2, height / 2, bgKey).setOrigin(0.5);
+      const tex = this.textures.get(bgKey).getSourceImage();
+      bg.setScale(Math.max(width / tex.width, height / tex.height));
+      bg.setAlpha(0.35);
+    } else {
+      this.cameras.main.setBackgroundColor('#fff8e7');
+    }
+    const veil = this.add.graphics();
+    veil.fillStyle(0xfff8e7, 0.55);
+    veil.fillRect(0, 0, width, height);
+
+    // Page panel — centered, generous padding.
+    const panelW = Math.round(Math.min(width * 0.86, 720));
+    const panelH = Math.round(Math.min(height * 0.78, 640));
+    const panelX = (width - panelW) / 2;
+    const panelY = (height - panelH) / 2;
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0xfff8e7, 0.96);
+    panel.lineStyle(4, 0x4a3a1f, 1);
+    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 32);
+    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 32);
+
+    // Title.
+    const titleSize = Math.round(Math.min(panelW * 0.10, 56));
+    const title = this.add.text(width / 2, panelY + 28, "How to play", {
+      fontFamily: '"Fredoka", system-ui, sans-serif',
+      fontSize: `${titleSize}px`,
+      color: '#4a3a1f'
+    }).setOrigin(0.5, 0);
+
+    // Verse — sized to fit.
+    const verseSize = Math.round(Math.min(panelW * 0.045, 26));
+    const verse = this.add.text(width / 2, panelY + 28 + titleSize + 28, VERSE.join('\n'), {
+      fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
+      fontSize: `${verseSize}px`,
+      color: '#2b2b2b',
+      align: 'center',
+      lineSpacing: 4,
+      wordWrap: { width: panelW - 80, useAdvancedWrap: true }
+    }).setOrigin(0.5, 0);
+
+    // Amelia portrait OUTSIDE the panel, lower-left.
+    if (this.textures.exists('peep_Amelia_F_4')) {
+      const portraitH = Math.min(height * 0.40, 360);
+      const margin = 12;
+      const ameliaX = Math.max(panelX - portraitH * 0.4, portraitH * 0.5 + margin);
+      const ameliaY = height - margin;
+      const amelia = this.add.image(ameliaX, ameliaY, 'peep_Amelia_F_4').setOrigin(0.5, 1);
+      const sourceH = amelia.height || 1;
+      amelia.setScale(portraitH / sourceH);
+      this.tweens.add({
+        targets: amelia,
+        y: amelia.y - 6,
+        duration: 1700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    // Continue button — anchored to the bottom of the panel.
+    this._makeButton(width / 2, panelY + panelH - 48, CONTINUE_LABEL);
+  }
+
+  _makeButton(cx, cy, label) {
+    const w = Math.round(Math.min(this.scale.width * 0.32, 280));
+    const h = Math.round(Math.min(this.scale.height * 0.10, 70));
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0xfff2a8, 1);
+    bg.lineStyle(4, 0x4a3a1f, 1);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 22);
+
+    const text = this.add.text(0, 0, label, {
+      fontFamily: '"Fredoka", system-ui, sans-serif',
+      fontSize: `${Math.round(h * 0.45)}px`,
+      color: '#4a3a1f'
+    }).setOrigin(0.5);
+
+    const container = this.add.container(cx, cy, [bg, text]);
+    container.setSize(w, h);
+    container.setInteractive(
+      new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
+      Phaser.Geom.Rectangle.Contains
+    );
+    container.on('pointerover', () => container.setScale(1.03));
+    container.on('pointerout',  () => container.setScale(1.0));
+    container.on('pointerup', () => {
+      this.audio?.playSfx?.('sfx_chime');
+      this.onContinue?.();
+    });
+    return container;
+  }
+}
