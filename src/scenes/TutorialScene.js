@@ -105,31 +105,37 @@ export class TutorialScene extends Phaser.Scene {
   _makeButton(cx, cy, label) {
     const w = Math.round(Math.min(this.scale.width * 0.32, 280));
     const h = Math.round(Math.min(this.scale.height * 0.10, 70));
+    const bgX = cx - w / 2;
+    const bgY = cy - h / 2;
 
     const bg = this.add.graphics();
     bg.fillStyle(0xfff2a8, 1);
     bg.lineStyle(4, 0x4a3a1f, 1);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 22);
-    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 22);
+    bg.fillRoundedRect(bgX, bgY, w, h, 22);
+    bg.strokeRoundedRect(bgX, bgY, w, h, 22);
 
-    const text = this.add.text(0, 0, label, {
+    const text = this.add.text(cx, cy, label, {
       fontFamily: '"Fredoka", system-ui, sans-serif',
       fontSize: `${Math.round(h * 0.45)}px`,
       color: '#4a3a1f'
     }).setOrigin(0.5);
 
-    const container = this.add.container(cx, cy, [bg, text]);
-    container.setSize(w, h);
-    container.setInteractive(
-      new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
-      Phaser.Geom.Rectangle.Contains
-    );
-    container.on('pointerover', () => container.setScale(1.03));
-    container.on('pointerout',  () => container.setScale(1.0));
-    container.on('pointerup', () => {
+    const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
+    zone.setInteractive({ useHandCursor: true });
+    zone.on('pointerover', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 1.04, duration: 120, ease: 'Sine.easeOut' });
+    });
+    zone.on('pointerout', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 1.0, duration: 120, ease: 'Sine.easeOut' });
+    });
+    zone.on('pointerup', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 0.94, duration: 90, yoyo: true });
       this.audio?.playSfx?.('sfx_chime');
       this.onContinue?.();
     });
-    return container;
+    return { bg, text, zone };
   }
 }

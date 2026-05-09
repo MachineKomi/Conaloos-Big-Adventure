@@ -64,31 +64,49 @@ export class GlobalUIScene extends Phaser.Scene {
     btn.label.setText(label);
   }
 
+  /**
+   * Build a UI button. Uses a Zone for hit detection (independent from
+   * the visual graphics + label) so clicks register exactly on the
+   * visible square, no offset weirdness.
+   */
   _makeButton(labelText, onClick) {
     const bg = this.add.graphics();
-    bg.fillStyle(BUTTON_BG, BUTTON_BG_ALPHA);
-    bg.lineStyle(BUTTON_STROKE_WIDTH, BUTTON_STROKE, 1);
-    bg.fillRoundedRect(0, 0, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
-    bg.strokeRoundedRect(0, 0, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
-
-    const label = this.add.text(BUTTON_SIZE / 2, BUTTON_SIZE / 2, labelText, {
+    const label = this.add.text(0, 0, labelText, {
       fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
       fontSize: '16px',
       color: ICON_COLOUR,
       align: 'center'
     }).setOrigin(0.5);
 
-    const container = this.add.container(0, 0, [bg, label]);
-    container.setSize(BUTTON_SIZE, BUTTON_SIZE);
-    container.setDepth(UI_DEPTH);
-    container.setInteractive(
-      new Phaser.Geom.Rectangle(0, 0, BUTTON_SIZE, BUTTON_SIZE),
-      Phaser.Geom.Rectangle.Contains
-    );
-    container.on('pointerup', onClick);
-    container.label = label;
-    container.bg = bg;
-    return container;
+    const zone = this.add.zone(0, 0, BUTTON_SIZE, BUTTON_SIZE).setOrigin(0, 0);
+    zone.setInteractive({ useHandCursor: true });
+
+    bg.setDepth(UI_DEPTH);
+    label.setDepth(UI_DEPTH + 1);
+    zone.setDepth(UI_DEPTH + 2);
+
+    const btn = { bg, label, zone, x: 0, y: 0 };
+    btn.setPosition = (x, y) => {
+      btn.x = x;
+      btn.y = y;
+      bg.clear();
+      bg.fillStyle(BUTTON_BG, BUTTON_BG_ALPHA);
+      bg.lineStyle(BUTTON_STROKE_WIDTH, BUTTON_STROKE, 1);
+      bg.fillRoundedRect(x, y, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
+      bg.strokeRoundedRect(x, y, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
+      label.setPosition(x + BUTTON_SIZE / 2, y + BUTTON_SIZE / 2);
+      zone.setPosition(x, y);
+    };
+
+    zone.on('pointerover', () => label.setScale(1.10));
+    zone.on('pointerout',  () => label.setScale(1.00));
+    zone.on('pointerup', () => {
+      this.tweens.killTweensOf(label);
+      this.tweens.add({ targets: label, scale: 0.85, duration: 80, yoyo: true });
+      onClick();
+    });
+
+    return btn;
   }
 
   _reposition() {

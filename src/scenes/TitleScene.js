@@ -110,36 +110,49 @@ export class TitleScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Build a button at world (cx, cy) using a Zone for unambiguous hit
+   * detection. The visible bg/text are separate; an invisible Zone the
+   * exact size of the button catches the click. (Container-based hit
+   * areas were producing offset/missed clicks in v1.0.)
+   */
   _makeButton(cx, cy, label, fillColour, onClick) {
-    const w = Math.round(this.scale.width * 0.32);
-    const h = Math.round(this.scale.height * 0.10);
+    const w = Math.round(Math.min(this.scale.width * 0.32, 320));
+    const h = Math.round(Math.min(this.scale.height * 0.10, 80));
+
+    const bgX = cx - w / 2;
+    const bgY = cy - h / 2;
 
     const bg = this.add.graphics();
     bg.fillStyle(Phaser.Display.Color.HexStringToColor(fillColour).color, 1);
     bg.lineStyle(4, 0x4a3a1f, 1);
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 24);
-    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 24);
+    bg.fillRoundedRect(bgX, bgY, w, h, 24);
+    bg.strokeRoundedRect(bgX, bgY, w, h, 24);
 
-    const text = this.add.text(0, 0, label, {
+    const text = this.add.text(cx, cy, label, {
       fontFamily: '"Fredoka", system-ui, sans-serif',
       fontSize: `${Math.round(h * 0.45)}px`,
       color: PALETTE.warm
     }).setOrigin(0.5);
 
-    const container = this.add.container(cx, cy, [bg, text]);
-    container.setSize(w, h);
-    container.setInteractive(
-      new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h),
-      Phaser.Geom.Rectangle.Contains
-    );
+    const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
+    zone.setInteractive({ useHandCursor: true });
 
-    container.on('pointerover', () => container.setScale(1.03));
-    container.on('pointerout',  () => container.setScale(1.0));
-    container.on('pointerup',   () => {
-      this.tweens.add({ targets: container, scale: 0.96, duration: 90, yoyo: true });
+    zone.on('pointerover', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 1.04, duration: 120, ease: 'Sine.easeOut' });
+    });
+    zone.on('pointerout', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 1.0, duration: 120, ease: 'Sine.easeOut' });
+    });
+    zone.on('pointerup', () => {
+      this.tweens.killTweensOf([bg, text]);
+      this.tweens.add({ targets: [bg, text], scale: 0.94, duration: 90, yoyo: true });
       onClick();
     });
-    return container;
+
+    return { bg, text, zone };
   }
 
   _unlockAudio() {
