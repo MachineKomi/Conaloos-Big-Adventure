@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-05-09 — v1.3.3: rocket actually launches + no crop on things
+
+### Rocketship launch is now satisfying
+
+- **Click count drives launch.** Each rocketship picks a random
+  trigger of 1, 2, or 3 the first time it's seen this visit. Each
+  click increments. Pre-trigger clicks do a small wiggle to hint
+  something's coming.
+- **On the trigger click**: pre-launch quiver, three smoke puffs at
+  the base, sound, then the rocket tweens **fully off the top of
+  the screen** (y goes to -40% scene height) over 1.2s, shrinking
+  as it goes. It's then **destroyed** — gone for the rest of this
+  visit.
+- **Respawns only on scene re-entry.** Walk to another scene and
+  back, the rocket is there again, ready to launch.
+
+### Sprite cropping removed
+
+- The 18% crop on collectable thing sprites was clipping the corners
+  of the teddybear (and others). Replaced with **over-scaling**: the
+  sprite renders at ~1.45x the calculated height-to-fill so the
+  visible content fills the slot without ever clipping. Some empty
+  pixels render outside the slot bounds, which is invisible.
+- Same for the inventory icon (backpack) and inventory slots.
+
 ## 2026-05-09 — v1.3.2: tutorial glitch + title hover + warp-back rename + playground rocket
 
 ### Bug fixes

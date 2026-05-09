@@ -206,30 +206,20 @@ export class GameScene extends Phaser.Scene {
       if (collectedSpriteKeys.has(t.sprite)) continue;
       const isCollectable = collectableSprites.has(t.sprite);
       const img = this.add
-        .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite);
+        .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
+        .setOrigin(0.5, 1);
 
       if (isCollectable) {
-        // Crop transparent margins (assume 18% on each side is safe)
-        // and align the sprite's origin to the bottom-centre of the
-        // CROPPED region so the world-y still corresponds to the
-        // visual feet of the item.
-        const tex = this.textures.get(t.sprite).getSourceImage();
-        const cropFrac = 0.18;
-        const cropX = tex.width * cropFrac;
-        const cropY = tex.height * cropFrac;
-        const cropW = tex.width - cropX * 2;
-        const cropH = tex.height - cropY * 2;
-        img.setCrop(cropX, cropY, cropW, cropH);
-        // Origin = (0.5, 1 - cropFrac) puts the cropped-content's
-        // bottom at img.y, just as if origin were (0.5, 1) on a
-        // perfectly-trimmed sprite.
-        img.setOrigin(0.5, 1 - cropFrac);
-        const defaultFrac = 0.36;
+        // Over-scale (no crop) so the visible content reads big
+        // without ever cutting off the corners of teddy bears /
+        // books / etc. Some transparent margin renders past the
+        // ground line, which is invisible anyway.
+        const overscale = 1.45;
+        const defaultFrac = 0.32;
         const heightFrac = (typeof t.heightFrac === 'number') ? t.heightFrac : defaultFrac;
-        const targetH = h * heightFrac;
-        img.setScale(targetH / cropH);
+        const targetH = h * heightFrac * overscale;
+        img.setScale(targetH / img.height);
       } else {
-        img.setOrigin(0.5, 1);
         applyDisplaySize(img, t, h, 0.22);
       }
 
@@ -491,9 +481,13 @@ export class GameScene extends Phaser.Scene {
   _afterResponse(hotspot, response) {
     this._applyRemix(response);
 
-    // Sprite animations: random chance for special characters/things
-    // to do something visually delightful in addition to their dialogue.
-    if (Math.random() < 0.30) {
+    // Rocketship: launch on the 1st, 2nd, or 3rd click (random target
+    // per visit). Once launched, it's gone for this visit and only
+    // respawns on re-entering the scene. Anything else: 30% chance of
+    // a small special animation.
+    if (hotspot?.speaker === 'thing_rocketship') {
+      this._rocketTick(hotspot);
+    } else if (Math.random() < 0.30) {
       this._maybeSpecialAnimation(hotspot);
     }
 
@@ -590,31 +584,84 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Track click count on each rocketship sprite. On its (random)
+   *  trigger click, fully launch off the top of the screen — gone
+   *  for the rest of this scene visit. The kid leaves and comes
+   *  back to find it ready to launch again. */
+  _rocketTick(hotspot) {
+    const sprite = this.spritesByKey.get(hotspot.speaker);
+    if (!sprite || !sprite.active || sprite._launched) return;
+    sprite._clickCount = (sprite._clickCount || 0) + 1;
+    // Pick a random launch trigger (1, 2, or 3) the first time we
+    // see this sprite this visit.
+    if (!sprite._launchOnClick) {
+      sprite._launchOnClick = 1 + Math.floor(Math.random() * 3);
+    }
+    if (sprite._clickCount >= sprite._launchOnClick) {
+      this._rocketLaunch(sprite);
+    } else {
+      // Pre-launch: a small wiggle/preheat shake to hint a launch is
+      // coming.
+      this.tweens.add({
+        targets: sprite,
+        angle: { from: -3, to: 3 },
+        duration: 80,
+        yoyo: true,
+        repeat: 3,
+        onComplete: () => { sprite.angle = 0; }
+      });
+    }
+  }
+
   _rocketLaunch(sprite) {
-    if (sprite._launching) return;
-    sprite._launching = true;
+    if (sprite._launched) return;
+    sprite._launched = true;
     const startY = sprite.y;
     const startX = sprite.x;
+    const sceneH = this.scale.height;
+
     this.services.audio?.playSfx?.('sfx_powerup');
+
+    // Phase 1: pre-launch quiver.
     this.tweens.add({
       targets: sprite,
-      y: startY - this.scale.height * 0.3,
-      x: startX + 6,
-      angle: { from: 0, to: -2 },
-      duration: 700,
-      ease: 'Cubic.easeIn',
+      x: { from: startX - 4, to: startX + 4 },
+      duration: 60,
+      yoyo: true,
+      repeat: 4,
       onComplete: () => {
+        sprite.x = startX;
         this.services.audio?.playSfx?.('sfx_swoosh');
-        // Hold off-screen briefly, then come back down.
+
+        // Smoke puff at the base — three quick expanding circles.
+        for (let i = 0; i < 3; i++) {
+          this.time.delayedCall(i * 60, () => {
+            const puff = this.add.circle(startX + (Math.random() - 0.5) * 40, startY, 18, 0xffffff, 0.7).setDepth(sprite.depth - 1);
+            this.tweens.add({
+              targets: puff,
+              scale: 3.5,
+              alpha: 0,
+              duration: 700,
+              onComplete: () => puff.destroy()
+            });
+          });
+        }
+
+        // Phase 2: full launch off the top of the screen (and gone).
         this.tweens.add({
           targets: sprite,
-          y: startY,
-          x: startX,
-          angle: 0,
-          duration: 800,
-          delay: 300,
-          ease: 'Bounce.easeOut',
-          onComplete: () => { sprite._launching = false; }
+          y: -sceneH * 0.4,           // well above the visible area
+          x: startX + 12,
+          angle: -3,
+          scale: sprite.scale * 0.7,  // shrinks as it disappears into the sky
+          duration: 1200,
+          ease: 'Cubic.easeIn',
+          onComplete: () => {
+            // Destroy so the rocket stays gone for this visit.
+            // (It re-renders next time the scene is entered.)
+            this.spritesByKey.delete('thing_rocketship');
+            sprite.destroy();
+          }
         });
       }
     });

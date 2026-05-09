@@ -20,9 +20,10 @@ const ICON_BG = 0xfff8e7;
 const ICON_BG_ALPHA = 0.92;
 const ICON_STROKE = 0x4a3a1f;
 const ICON_STROKE_W = 4;
-// Crop the backpack sprite to its visible content (sprites have lots
-// of transparent margin in the source PNG).
-const BACKPACK_CROP = 0.20;        // crop 20% off each side
+// Over-scale the backpack image rather than cropping it (cropping cut
+// off the corners of some sprites). The over-scale factor is roughly
+// the inverse of the average opaque-region fraction.
+const BACKPACK_OVERSCALE = 1.45;
 
 const SLOT_SIZE = 120;
 const SLOT_GAP = 12;
@@ -33,10 +34,9 @@ const PANEL_BG_ALPHA = 0.94;
 const PANEL_STROKE = 0x4a3a1f;
 const PANEL_STROKE_W = 4;
 const COUNT_FONT = 22;
-// Same idea inside slots — crop the inner 60% so the visible content
-// fills more of the slot. Gems aren't cropped (their content already
-// fills the texture).
-const SLOT_THING_CROP = 0.18;
+// Slot items: over-scale (no crop, since cropping cut off the edges
+// of teddy bears, books, etc.).
+const SLOT_THING_OVERSCALE = 1.50;
 
 const BACKPACK_KEY = 'thing_backpack';
 const AUTO_HIDE_MS = 3000;
@@ -89,14 +89,11 @@ export class InventoryScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(7101);
       const tex = this.textures.get(BACKPACK_KEY).getSourceImage();
-      // Crop the transparent margins so the visible content fills the
-      // icon area instead of looking tiny in a sea of empty pixels.
-      const cropX = tex.width * BACKPACK_CROP;
-      const cropY = tex.height * BACKPACK_CROP;
-      const cropW = tex.width - cropX * 2;
-      const cropH = tex.height - cropY * 2;
-      img.setCrop(cropX, cropY, cropW, cropH);
-      img.setScale((ICON_SIZE - 14) / cropH);
+      // Over-scale (no crop) — keeps the full bag silhouette but
+      // makes the visible content fill the icon. Some pixels render
+      // outside the icon's rounded-rect area; that's fine because
+      // the bag's empty corners ARE transparent.
+      img.setScale(((ICON_SIZE - 8) * BACKPACK_OVERSCALE) / tex.height);
       this._iconImg = img;
     } else {
       this._iconLabel = this.add.text(x + ICON_SIZE / 2, y + ICON_SIZE / 2, 'bag', {
@@ -206,17 +203,12 @@ export class InventoryScene extends Phaser.Scene {
 
       const img = this.add.image(cx, cy, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
-      // Crop transparent margins for things (gems already fill their
-      // texture and look fine without cropping).
+      // Over-scale things (no crop) so the bag/teddy/etc visible
+      // content fills the slot. Gems already fill their textures.
       const isGem = key.startsWith('gem_');
-      const cropFrac = isGem ? 0 : SLOT_THING_CROP;
-      const cropX = tex.width * cropFrac;
-      const cropY = tex.height * cropFrac;
-      const cropW = tex.width - cropX * 2;
-      const cropH = tex.height - cropY * 2;
-      if (cropFrac > 0) img.setCrop(cropX, cropY, cropW, cropH);
-      const targetH = SLOT_SIZE - 8;
-      img.setScale(targetH / cropH);
+      const overscale = isGem ? 1.0 : SLOT_THING_OVERSCALE;
+      const targetH = (SLOT_SIZE - 8) * overscale;
+      img.setScale(targetH / tex.height);
       img.setDepth(7001);
 
       // Slot click — show the item's collect-dialogue (if any) WITHOUT
