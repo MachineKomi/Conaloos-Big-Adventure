@@ -43,7 +43,13 @@ export class AssetLoader {
         case 'animal':
         case 'bg':
         case 'thing':
+        case 'portal':
           scene.load.image(e.key, e.url);
+          break;
+        case 'gem':
+          // Reserved for a future feature (per Dad's instruction). Parsed
+          // so they aren't logged as "unparsed", but not loaded so the
+          // browser doesn't waste bandwidth on them yet.
           break;
         case 'music':
         case 'sfx':

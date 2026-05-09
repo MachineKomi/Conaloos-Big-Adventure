@@ -10,23 +10,24 @@
 import { characters as bios } from './characters.js';
 import { themedLines, genericLines, portalLines } from './lines.js';
 
-/** Build a hotspot whose responses are pulled from a character's bio lines. */
+/** Build a hotspot whose responses are pulled from a character's bio lines.
+ *  All bio lines go into the response pool — HotspotManager exhausts the
+ *  whole pool (in shuffled order) before any line repeats. */
 function characterHotspot(id, character, bounds, opts = {}) {
   const lines = bios[character]?.lines || genericLines.character;
-  const cycle = (lines.length >= 3 ? lines.slice(0, 3) : lines).map((text) => ({
+  const responses = lines.map((text) => ({
     text,
     sfx: 'sfx_pop',
     speaker: character,
     theme: opts.theme
   }));
-  const rare = lines[3] ? { text: lines[3], sfx: 'sfx_chime', speaker: character } : null;
   return {
     id,
     type: 'reactor',
     cursor: 'sparkle',
+    speaker: character,
     bounds,
-    responses: cycle,
-    rare_response: opts.rare ?? rare
+    responses
   };
 }
 
@@ -52,15 +53,46 @@ function tinyMuseum(id, bounds, facts, theme) {
   };
 }
 
-/** Build a portal hotspot to another scene. */
-function portal(id, bounds, target) {
+/**
+ * Build a portal hotspot — a visible sprite the child can click to travel
+ * to another scene. The sprite IS the click target; bounds are derived
+ * from the sprite's display rectangle at render time.
+ *
+ * @param {string} id
+ * @param {string} target            destination scene slug
+ * @param {object} opts
+ * @param {string} opts.sprite       portal_* asset key
+ * @param {number} opts.x            normalized 0..1
+ * @param {number} opts.y            normalized 0..1 (sprite anchored bottom-centre)
+ * @param {number} [opts.heightFrac=0.30]   target display height as fraction of scene
+ * @param {'left'|'right'|'top'|'bottom'} opts.enterEdge
+ *        Which edge of the destination Amelia walks in from when she arrives.
+ */
+function portal(id, target, opts) {
+  const heightFrac = opts.heightFrac ?? 0.30;
+  // Provide bounds as a fallback hit area; the GameScene will replace with the
+  // actual sprite display rect when rendering.
+  const halfW = 0.07;
+  const halfH = heightFrac * 0.5;
   return {
     id,
     type: 'portal',
     cursor: 'walk',
-    bounds,
     target,
-    responses: portalLines.map((text) => ({ text, sfx: 'sfx_step' }))
+    sprite: opts.sprite,
+    x: opts.x,
+    y: opts.y,
+    heightFrac,
+    enterEdge: opts.enterEdge,
+    label: opts.label || null,
+    bounds: {
+      x: opts.x - halfW,
+      y: opts.y - heightFrac,
+      w: halfW * 2,
+      h: heightFrac
+    },
+    // No popup before transition — the walk + fade is the reward.
+    responses: []
   };
 }
 
@@ -146,21 +178,25 @@ export const scenes = {
         ],
         'science'),
 
-      portal('to-cottage',
-        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
-        'cosy-cottage-interior'),
+      portal('to-cottage', 'cosy-cottage-interior', {
+        sprite: 'portal_door',     x: 0.05, y: 0.86, heightFrac: 0.32,
+        enterEdge: 'right',        label: 'home'
+      }),
 
-      portal('to-lake',
-        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'mountain-lake-childlike'),
+      portal('to-lake', 'mountain-lake-childlike', {
+        sprite: 'portal_portal_blue', x: 0.96, y: 0.86, heightFrac: 0.32,
+        enterEdge: 'left',         label: 'the lake'
+      }),
 
-      portal('to-village',
-        { x: 0.32, y: 0.04, w: 0.16, h: 0.14 },
-        'whimsical-villiage'),
+      portal('to-playground', 'fantasy-garden-playground', {
+        sprite: 'portal_ladder',   x: 0.18, y: 0.97, heightFrac: 0.30,
+        enterEdge: 'top',          label: 'the playground'
+      }),
 
-      portal('to-playground',
-        { x: 0.40, y: 0.92, w: 0.20, h: 0.08 },
-        'fantasy-garden-playground')
+      portal('to-seaside', 'seaside-village-sunset', {
+        sprite: 'portal_slime-portal', x: 0.82, y: 0.96, heightFrac: 0.30,
+        enterEdge: 'left',         label: 'the seaside'
+      })
     ]
   },
 
@@ -225,9 +261,10 @@ export const scenes = {
         ],
         'computer-science'),
 
-      portal('to-garden',
-        { x: 0.0, y: 0.50, w: 0.10, h: 0.40 },
-        'sunny-rocket-garden')
+      portal('to-garden', 'sunny-rocket-garden', {
+        sprite: 'portal_door',     x: 0.05, y: 0.92, heightFrac: 0.40,
+        enterEdge: 'left',         label: 'the garden'
+      })
     ]
   },
 
@@ -284,13 +321,15 @@ export const scenes = {
         ],
         'numbers'),
 
-      portal('to-vista',
-        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'mountain-lake-vista'),
+      portal('to-vista', 'mountain-lake-vista', {
+        sprite: 'portal_ladder',   x: 0.94, y: 0.93, heightFrac: 0.32,
+        enterEdge: 'left',         label: 'up the mountain'
+      }),
 
-      portal('to-garden',
-        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
-        'sunny-rocket-garden')
+      portal('to-garden', 'sunny-rocket-garden', {
+        sprite: 'portal_portal_green', x: 0.05, y: 0.86, heightFrac: 0.30,
+        enterEdge: 'right',        label: 'the garden'
+      })
     ]
   },
 
@@ -333,14 +372,20 @@ export const scenes = {
         { x: 0.70, y: 0.24, w: 0.16, h: 0.16 },
         { theme: 'animals' }),
 
-      tinyMuseum('cake',
-        { x: 0.72, y: 0.78, w: 0.14, h: 0.20 },
-        [
-          "A cake is a thing for a *somebody's* day --\nA candle, a wish, and a 'hooray-and-yay.'",
-          "Different lands have a different cake --\nSome with no candles, some sweet, some opaque.",
-          "One candle means one of a year that is new.\nSo: somebody, somewhere, just turned into TWO."
-        ],
-        'culture-history'),
+      {
+        id: 'cake',
+        type: 'reactor',
+        cursor: 'sparkle',
+        bounds: { x: 0.72, y: 0.78, w: 0.14, h: 0.20 },
+        speaker: 'thing_birthday-cake-with-one-candle',
+        collect: 'thing_birthday-cake-with-one-candle',
+        responses: [
+          { text: "A cake is a thing for a *somebody's* day --\nA candle, a wish, and a 'hooray-and-yay.'", sfx: 'sfx_chime', theme: 'culture-history' },
+          { text: "Take it along! Carry it gentle and slow --\nThe cake comes with you, wherever you go.", sfx: 'sfx_coin', theme: 'culture-history' },
+          { text: "Different lands have a different cake --\nSome with no candles, some sweet, some opaque.", sfx: 'sfx_chime', theme: 'culture-history' },
+          { text: "One candle means one of a year that is new.\nSo: somebody, somewhere, just turned into TWO.", sfx: 'sfx_chime', theme: 'numbers' }
+        ]
+      },
 
       tinyMuseum('tree-A',
         { x: 0.0, y: 0.30, w: 0.18, h: 0.55 },
@@ -360,13 +405,15 @@ export const scenes = {
         ],
         'language'),
 
-      portal('to-hub',
-        { x: 0.0, y: 0.05, w: 0.10, h: 0.30 },
-        'sunny-rocket-garden'),
+      portal('to-hub', 'sunny-rocket-garden', {
+        sprite: 'portal_ladder',   x: 0.05, y: 0.92, heightFrac: 0.32,
+        enterEdge: 'bottom',       label: 'the garden'
+      }),
 
-      portal('to-village',
-        { x: 0.90, y: 0.05, w: 0.10, h: 0.30 },
-        'whimsical-villiage')
+      portal('to-village', 'whimsical-villiage', {
+        sprite: 'portal_door',     x: 0.94, y: 0.92, heightFrac: 0.32,
+        enterEdge: 'left',         label: 'the village'
+      })
     ]
   },
 
@@ -428,13 +475,15 @@ export const scenes = {
         ],
         'language'),
 
-      portal('to-hub',
-        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
-        'sunny-rocket-garden'),
+      portal('to-hub', 'sunny-rocket-garden', {
+        sprite: 'portal_slime-portal', x: 0.05, y: 0.93, heightFrac: 0.32,
+        enterEdge: 'right',        label: 'the garden'
+      }),
 
-      portal('to-village',
-        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'whimsical-villiage')
+      portal('to-village', 'whimsical-villiage', {
+        sprite: 'portal_door',     x: 0.94, y: 0.93, heightFrac: 0.32,
+        enterEdge: 'left',         label: 'the village'
+      })
     ]
   },
 
@@ -494,13 +543,15 @@ export const scenes = {
         ],
         'philosophy'),
 
-      portal('to-garden',
-        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
-        'fantasy-garden-playground'),
+      portal('to-garden', 'fantasy-garden-playground', {
+        sprite: 'portal_door',     x: 0.05, y: 0.93, heightFrac: 0.32,
+        enterEdge: 'right',        label: 'the playground'
+      }),
 
-      portal('to-seaside',
-        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'seaside-village-sunset')
+      portal('to-seaside', 'seaside-village-sunset', {
+        sprite: 'portal_door',     x: 0.94, y: 0.93, heightFrac: 0.32,
+        enterEdge: 'left',         label: 'the seaside'
+      })
     ]
   },
 
@@ -560,13 +611,15 @@ export const scenes = {
         ],
         'computer-science'),
 
-      portal('to-childlike',
-        { x: 0.0, y: 0.40, w: 0.10, h: 0.50 },
-        'mountain-lake-childlike'),
+      portal('to-childlike', 'mountain-lake-childlike', {
+        sprite: 'portal_ladder',   x: 0.05, y: 0.92, heightFrac: 0.32,
+        enterEdge: 'right',        label: 'down to the lake'
+      }),
 
-      portal('to-garden',
-        { x: 0.90, y: 0.40, w: 0.10, h: 0.50 },
-        'sunny-rocket-garden')
+      portal('to-garden', 'sunny-rocket-garden', {
+        sprite: 'portal_portal_blue', x: 0.94, y: 0.92, heightFrac: 0.32,
+        enterEdge: 'right',        label: 'the garden'
+      })
     ]
   }
 };

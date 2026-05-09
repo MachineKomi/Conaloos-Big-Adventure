@@ -1,5 +1,119 @@
 # Changelog
 
+## 2026-05-09 — v1.1: protagonist, visible portals, title screen, big polish pass
+
+Branch `v1-1-protagonist-and-polish`. OpenSpec proposal in
+`/openspec/changes/v1-1-protagonist-and-polish/`. Addresses every blocker the
+4-year-old's dad reported in the v1.0 playtest.
+
+### Headline
+
+- **Amelia is the protagonist.** Click anywhere → she walks toward the
+  click; click a peep/animal/thing → she walks to them, then they speak.
+  Click a portal → she walks to it, the camera fades, and the next scene
+  loads. New `Protagonist` system in `src/systems/Protagonist.js`.
+- **Portals are visible.** Each portal in every scene now renders a
+  `portal_*.png` sprite with a soft pulsing animation and a labeled
+  destination ("home", "the lake", "the playground", "the seaside",
+  "the village", etc). Five portal sprites the user dropped in are wired
+  across the seven scenes; door, ladder, slime-portal, blue-magic, green-magic.
+- **Title + Tutorial scenes.** New `scene:title` (rhyming title card,
+  "Let's go!" + "How to play" buttons) and `scene:tutorial` (single
+  rhyming page explaining the controls, with Amelia's portrait and a
+  Continue button). First-launch flag in localStorage routes through
+  the tutorial once; subsequent launches go straight to the hub.
+- **Music autoplay unlock.** First gesture (the title's Start click)
+  resumes the WebAudio context. No more silent first-load.
+- **Smooth transitions.** Portal click → 400–800ms walk to portal → 600ms
+  fade out → destination scene fades in with Amelia entering from the
+  matching opposite edge. No more "click portal, see popup, click again
+  to teleport".
+
+### UX fixes
+
+- **No more hit-box flash.** The transparent halo `Graphics` rectangle
+  that appeared on hover (and again on click) is gone. Hover now lightly
+  tints + scales the *speaker sprite itself*; click does a 130ms scale
+  bounce + a small sparkle particle ring at the click point. (Reduced-
+  motion: short tint flash, no scale tween, no particles.)
+- **Smarter dialogue cycling.** Hotspots now use an exhaustive shuffle
+  queue: every unique line is shown once before any line repeats. The
+  every-7th-click `rare_response` mechanic is gone — those lines fold
+  into the regular pool so all content is reachable without forcing
+  Dad to read a repeat.
+
+### New asset support
+
+- New `portal_*` parser in `AssetManifest.js` for the user's portal
+  sprites (door, ladder, slime-portal, portal_blue, portal_green,
+  open-door, office-door-portal). All seven loaded.
+- New `gem_*` parser. Gem assets are recognized and indexed but **not
+  loaded into the runtime cache yet** — reserved for an upcoming
+  feature the user wants to design separately.
+- New 3-part `peep_{name}_{descriptor}` form (Loosa cactus, Tootsie
+  friendly-cactus, Wawoo robo-snowman, Konessa has-flower) — already
+  shipped in the previous batch but worth restating.
+
+### Inventory (skeleton)
+
+- `Protagonist` keeps a `Set<thingKey>` collection.
+- `InventoryScene` is a global UI scene that renders the held items as a
+  small panel along the bottom of the screen.
+- The birthday cake (`thing_birthday-cake-with-one-candle`) is now a
+  collectable hotspot in the playground — clicking it the first time
+  pops the sprite away with a sparkle and adds it to Amelia's inventory.
+- Inventory-aware character reactions deferred to v1.2.
+
+### Bug fixed mid-pass
+
+- `Protagonist.attach()` registered a `shutdown` listener on the
+  current scene that destroyed `this.sprite`. When Amelia transitioned
+  between scenes, the *previous* scene's shutdown fired *after* the new
+  scene's `attach()` had already reassigned `this.sprite` to the new
+  sprite — so the shutdown listener was destroying the *new* sprite by
+  reference, leaving Amelia missing on every scene after the first.
+  Fixed by capturing the sprite reference in a closure local to the
+  attach call so the listener destroys the right one.
+- `AudioManager.playMusic()` referenced `this.game.tweens` (which is
+  undefined in Phaser 3 — tween managers are scene-scoped, not
+  game-scoped). Now takes an optional `scene` argument; falls back to
+  the first active scene's tween manager.
+- `BootScene` data-passing: `onReady` now passed via
+  `game.scene.add('boot', BootScene, true, { onReady })` so Phaser's
+  auto-call to `init(data)` doesn't clobber it.
+
+### Layout fixes
+
+- Title font scales by min(width-, height-based) so the title isn't
+  cropped on narrow viewports (preview panel, phone portrait).
+- Tutorial verse and Amelia portrait don't overlap; Continue button
+  anchored to the panel bottom.
+- Sprite sizing in `GameScene` accepts `heightFrac` (preferred) so
+  source PNGs at 2048×2048 don't render gigantic.
+
+### Tooling
+
+- Installed Anthropic's `superpowers` plugin from the official
+  marketplace (14 skills available next session: brainstorming, TDD,
+  systematic-debugging, writing-plans, etc).
+- OpenSpec change proposal at
+  `openspec/changes/v1-1-protagonist-and-polish/{proposal,tasks}.md`.
+
+### Open hooks for next pass / playtest feedback
+
+- Inventory-aware character reactions: when Amelia carries the cake,
+  mommy notices; when she carries the flower (post-collectable), Konessa
+  responds. Lines drafted but not wired.
+- Speech bubbles anchored to character (Phase 3 from the proposal —
+  current dialogue still uses the centred panel; positioning is improved
+  but not yet a tail-pointing bubble).
+- World coherence callbacks (Phase 6 from the proposal) — characters
+  referencing each other.
+- `anima_Umi_jelly-fish.png` filename typo still skipped. Renaming
+  unblocks Umi (bio + placement ready in `Konessa.md`-style format).
+- The 9 unused-but-loaded SFX (honk, twinkle, jackpot, etc.) wait for
+  hotspot-specific bindings.
+
 ## 2026-05-09 — Third pass: audio + 3 new scenes + 4 new characters
 
 **Touched:** `src/content/scenes.js`, `src/content/characters.js`, `src/content/audioAliases.js` (new), `src/systems/AssetManifest.js`, `src/systems/AudioManager.js`, `docs/characters/*`, `docs/scenes/*`, `docs/THEME_COVERAGE.md`.
