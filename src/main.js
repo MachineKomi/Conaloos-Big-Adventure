@@ -21,6 +21,8 @@ import { TitleScene } from './scenes/TitleScene.js';
 import { TutorialScene } from './scenes/TutorialScene.js';
 import { GlobalUIScene } from './systems/GlobalUI.js';
 import { InventoryScene } from './systems/Inventory.js';
+import { GemHUDScene } from './systems/GemHUD.js';
+import { GemBag } from './systems/GemBag.js';
 import { Protagonist } from './systems/Protagonist.js';
 import { AudioManager } from './systems/AudioManager.js';
 import { SceneRouter } from './systems/SceneRouter.js';
@@ -59,24 +61,26 @@ function start() {
   const audio = new AudioManager(game);
   const router = new SceneRouter(game);
   const protagonist = new Protagonist();
+  const gemBag = new GemBag();
 
   // Expose for dev-time debugging only.
   if (import.meta.env?.DEV) {
     window.__game = game;
     window.__router = router;
     window.__protagonist = protagonist;
+    window.__gemBag = gemBag;
   }
 
   // Phaser calls scene.init(data) when it starts a scene, so pass
   // onReady through the start-data hand-off (init() would be clobbered).
   game.scene.add('boot', BootScene, true, {
-    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist)
+    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag)
   });
   console.log('[main] game created, boot scene queued');
 }
 
-function onAssetsReady(game, loader, audio, router, protagonist) {
-  // GlobalUI + Inventory run above gameplay scenes.
+function onAssetsReady(game, loader, audio, router, protagonist, gemBag) {
+  // GlobalUI + Inventory + GemHUD run above gameplay scenes.
   const ui = new GlobalUIScene();
   ui.init({ router });
   game.scene.add('global:ui', ui, true);
@@ -84,6 +88,10 @@ function onAssetsReady(game, loader, audio, router, protagonist) {
   const inv = new InventoryScene();
   inv.init({ protagonist });
   game.scene.add('global:inventory', inv, true);
+
+  const gemHud = new GemHUDScene();
+  gemHud.init({ gemBag });
+  game.scene.add('global:gemhud', gemHud, true);
 
   if (!loader.hasAnyBackground) {
     game.scene.add('scene:waiting', new WaitingScene(), true);
@@ -97,7 +105,7 @@ function onAssetsReady(game, loader, audio, router, protagonist) {
   // Register every scene up front; we navigate via scene.start() with data.
   for (const slug of Object.keys(catalog.scenes)) {
     const def = catalog.scenes[slug];
-    const scene = new GameScene(slug, def, { audio, router, loader, protagonist });
+    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag });
     game.scene.add(`scene:${slug}`, scene, false);
   }
 

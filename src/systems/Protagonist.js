@@ -29,7 +29,8 @@ export class Protagonist {
     this.scene = null;
     this.sprite = null;
     this._walkTween = null;
-    this._collected = new Set();          // thing keys Amelia has picked up
+    /** Map<thingKey, count> — Amelia's inventory with stacking. */
+    this._collected = new Map();
     this._collectListeners = new Set();
     this._lastDirection = 'right';
   }
@@ -37,7 +38,12 @@ export class Protagonist {
   /**
    * Spawn Amelia in the given scene at an entry point determined by the
    * portal we just came through. `fromEdge` is one of 'left' | 'right' |
-   * 'top' | 'bottom' | null (default: bottom-centre).
+   * 'top' | 'bottom' | null (default: middle).
+   *
+   * The resting position is chosen to avoid covering any portal sprite
+   * in the scene, and is always inside the visible bounds. We pick from
+   * three rest points (left third / centre / right third) and use the
+   * one that's furthest from any existing portal.
    */
   attach(scene, { fromEdge = null } = {}) {
     this.scene = scene;
@@ -51,28 +57,41 @@ export class Protagonist {
 
     let startX, startY = floorY;
     switch (fromEdge) {
-      case 'left':   startX = -width * 0.10; break;
-      case 'right':  startX = width * 1.10; break;
-      case 'top':    startX = width * 0.50; startY = -height * 0.10; break;
-      case 'bottom': startX = width * 0.50; startY = height * 1.10; break;
+      case 'left':   startX = -width * 0.05; break;
+      case 'right':  startX = width * 1.05;  break;
+      case 'top':    startX = width * 0.50;  startY = -height * 0.05; break;
+      case 'bottom': startX = width * 0.50;  startY = height * 1.05; break;
       default:       startX = width * 0.50;
     }
 
-    this.sprite = scene.add
+    // Compute scale FIRST so we can size-aware pick a rest point.
+    const tempSprite = scene.add
       .image(startX, startY, SPRITE_KEY)
       .setOrigin(0.5, 1)
       .setDepth(Z_DEPTH);
+    const sourceH = tempSprite.height || 1;
+    tempSprite.setScale((height * HEIGHT_FRAC) / sourceH);
+    this.sprite = tempSprite;
+    this.sprite.setDepth(this.sprite.y); // y-based depth (matches GameScene)
 
-    const sourceH = this.sprite.height || 1;
-    this.sprite.setScale((height * HEIGHT_FRAC) / sourceH);
-
-    // Walk to the resting position from the entry edge.
-    const restX = width * 0.50;
+    // Pick a rest point that doesn't cover a portal. Try centre first,
+    // then left third, then right third — first one that's at least
+    // half a sprite-width from every portal wins.
     const restY = floorY;
+    const halfW = (this.sprite.displayWidth || width * 0.2) * 0.5;
+    const candidates = [width * 0.50, width * 0.30, width * 0.70, width * 0.40, width * 0.60];
+    const portals = this._collectPortalCenters(scene);
+    let restX = candidates[0];
+    for (const cand of candidates) {
+      const ok = portals.every((p) => Math.abs(p.x - cand) > halfW + p.r);
+      if (ok) { restX = cand; break; }
+    }
+
     if (fromEdge && !Accessibility.reducedMotion) {
       this._tweenTo(restX, restY, this._durationFor(startX, restX));
     } else {
       this.sprite.setPosition(restX, restY);
+      this.sprite.setDepth(restY);
     }
 
     // Capture the sprite + tween references so the shutdown listener
@@ -130,6 +149,7 @@ export class Protagonist {
 
     if (Accessibility.reducedMotion) {
       this.sprite.setPosition(tx, ty);
+      this.sprite.setDepth(ty);
       onArrive?.();
       return;
     }
@@ -138,15 +158,30 @@ export class Protagonist {
     this._tweenTo(tx, ty, ms, onArrive);
   }
 
+  _collectPortalCenters(scene) {
+    const out = [];
+    for (const def of (scene.def?.hotspots || [])) {
+      if (def.type === 'portal' && def.sprite) {
+        const cx = (def.x ?? 0.5) * scene.scale.width;
+        const r  = (def.heightFrac ?? 0.30) * scene.scale.height * 0.5;
+        out.push({ x: cx, r });
+      }
+    }
+    return out;
+  }
+
   _tweenTo(x, y, durationMs, onComplete) {
     this._walkTween?.remove();
+    const sprite = this.sprite;
     this._walkTween = this.scene.tweens.add({
-      targets: this.sprite,
+      targets: sprite,
       x,
       y,
       duration: durationMs || MIN_WALK_MS,
       ease: 'Sine.easeInOut',
+      onUpdate: () => { if (sprite) sprite.setDepth(sprite.y); },
       onComplete: () => {
+        if (sprite) sprite.setDepth(sprite.y);
         this._walkTween = null;
         onComplete?.();
       }
@@ -158,28 +193,35 @@ export class Protagonist {
     return clamp((dist / WALK_SPEED_PX_PER_SEC) * 1000, MIN_WALK_MS, MAX_WALK_MS);
   }
 
-  // -------- Inventory --------
+  // -------- Inventory (with stacking) --------
 
-  /** True if Amelia has collected this thing key. */
-  has(thingKey) { return this._collected.has(thingKey); }
+  /** True if Amelia has at least one of this thing key. */
+  has(thingKey) { return (this._collected.get(thingKey) ?? 0) > 0; }
 
-  /** Snapshot of inventory (array of keys). */
-  inventory() { return Array.from(this._collected); }
+  /** Count of this thing in inventory. */
+  countOf(thingKey) { return this._collected.get(thingKey) ?? 0; }
 
-  /** Add a thing to inventory. Idempotent. Notifies listeners. */
-  collect(thingKey) {
-    if (this._collected.has(thingKey)) return false;
-    this._collected.add(thingKey);
-    for (const fn of this._collectListeners) fn(thingKey, this.inventory());
-    return true;
+  /** Snapshot of inventory as array of { key, count } for HUD render. */
+  inventory() {
+    return Array.from(this._collected.entries()).map(([key, count]) => ({ key, count }));
   }
 
-  /** Remove a thing (rarely used; primarily for "give to..." moments). */
-  drop(thingKey) {
-    if (!this._collected.has(thingKey)) return false;
-    this._collected.delete(thingKey);
+  /** Add a thing. Always succeeds. Returns the new count. */
+  collect(thingKey) {
+    const next = (this._collected.get(thingKey) ?? 0) + 1;
+    this._collected.set(thingKey, next);
     for (const fn of this._collectListeners) fn(thingKey, this.inventory());
-    return true;
+    return next;
+  }
+
+  /** Remove one of a thing. */
+  drop(thingKey) {
+    const cur = this._collected.get(thingKey) ?? 0;
+    if (cur <= 0) return 0;
+    if (cur === 1) this._collected.delete(thingKey);
+    else this._collected.set(thingKey, cur - 1);
+    for (const fn of this._collectListeners) fn(thingKey, this.inventory());
+    return Math.max(0, cur - 1);
   }
 
   onCollectChange(fn) {

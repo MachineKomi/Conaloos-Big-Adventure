@@ -54,6 +54,16 @@ export class GameScene extends Phaser.Scene {
 
   init(data) {
     this._enterEdge = data?.enterEdge || null;
+    // CRITICAL: GameScene instances are constructed once in main.js and
+    // reused on every visit. Without resetting these, a portal click
+    // sets _isTransitioning=true, the scene shuts down, comes back...
+    // and the flag is still true. Then no portal in this scene works
+    // again until full page reload. This was the "portals stop being
+    // clickable after a few rooms" bug.
+    this._isTransitioning = false;
+    this._portalSprites = [];
+    this._portalDefsById = new Map();
+    this.spritesByKey = new Map();
   }
 
   create() {
@@ -71,6 +81,7 @@ export class GameScene extends Phaser.Scene {
     this._renderThings(width, height);
     this._renderCharacters(width, height);
     this._renderPortalSprites(width, height);
+    this._renderGems(width, height);
 
     // Spawn Amelia at the entry edge for this scene (or default centre).
     this.services.protagonist?.attach(this, { fromEdge: this._enterEdge });
@@ -144,9 +155,10 @@ export class GameScene extends Phaser.Scene {
       if (!this.textures.exists(t.sprite)) continue;
       const img = this.add
         .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
-        .setOrigin(0.5);
+        .setOrigin(0.5, 1);
       applyDisplaySize(img, t, h, 0.22);
-      img.setDepth(50);
+      // Depth = y so things lower on screen appear in front.
+      img.setDepth(img.y);
       this.spritesByKey.set(t.sprite, img);
     }
   }
@@ -161,7 +173,10 @@ export class GameScene extends Phaser.Scene {
         .image((c.x ?? 0.5) * w, (c.y ?? 0.5) * h, c.sprite)
         .setOrigin(0.5, 1);
       applyDisplaySize(img, c, h, 0.45);
-      img.setDepth(100);
+      // Depth = y so character lower on screen appears in front of one
+      // higher up. Avoids "Amelia walks behind a peep that's visually
+      // in front of her" weirdness.
+      img.setDepth(img.y);
       this.spritesByKey.set(c.sprite, img);
 
       if (Accessibility.reducedMotion) continue;
@@ -188,6 +203,75 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _renderGems(w, h) {
+    const gems = this.def.gems || [];
+    for (const g of gems) {
+      const key = g.key;             // e.g. 'gem_3'
+      const fromName = Number.parseInt(key.replace(/^gem_/, ''), 10);
+      const value = (g.value ?? fromName) || 1;
+      if (!this.textures.exists(key)) continue;
+      const x = (g.x ?? 0.5) * w;
+      const y = (g.y ?? 0.5) * h;
+      const img = this.add.image(x, y, key).setOrigin(0.5);
+      const tex = this.textures.get(key).getSourceImage();
+      const targetH = h * (g.heightFrac ?? 0.10);
+      img.setScale(targetH / tex.height);
+      img.setRotation(g.rotation ?? (Math.random() - 0.5) * 0.5);
+      img.setDepth(y + 1);
+
+      // Subtle bob/twinkle so the gems read as collectible.
+      if (!Accessibility.reducedMotion) {
+        this.tweens.add({
+          targets: img,
+          y: y - 4,
+          duration: 1100 + Math.random() * 700,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
+      img.setInteractive({ useHandCursor: true });
+      img.on('pointerover', () => img.setTint(0xfff5d0));
+      img.on('pointerout', () => img.clearTint());
+      img.on('pointerup', () => this._collectGem(img, key, value));
+    }
+  }
+
+  /**
+   * Click → swap to glowing variant → fly to GemHUD top-left → on
+   * arrival add to GemBag (which ticks the math reveal in the HUD).
+   */
+  _collectGem(img, key, value) {
+    if (img._collected) return;
+    img._collected = true;
+
+    // Swap to glowing variant if available.
+    const glowKey = `${key}_glowing`;
+    if (this.textures.exists(glowKey)) img.setTexture(glowKey);
+
+    this.services.audio?.playSfx?.('sfx_coin');
+
+    const target = { x: 60, y: 44 }; // GemHUD's icon roughly
+    if (Accessibility.reducedMotion) {
+      img.destroy();
+      this.services.gemBag?.add(key, value);
+      return;
+    }
+    this.tweens.add({
+      targets: img,
+      x: target.x,
+      y: target.y,
+      scale: img.scale * 0.5,
+      duration: 600,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        img.destroy();
+        this.services.gemBag?.add(key, value);
+      }
+    });
+  }
+
   _renderPortalSprites(w, h) {
     const portals = (this.def.hotspots || []).filter((h) => h.type === 'portal' && h.sprite);
     for (const p of portals) {
@@ -197,7 +281,8 @@ export class GameScene extends Phaser.Scene {
       const y = (p.y ?? 0.95) * h;
       const img = this.add.image(x, y, p.sprite).setOrigin(0.5, 1);
       applyDisplaySize(img, { heightFrac: p.heightFrac ?? 0.30 }, h, 0.30);
-      img.setDepth(80);
+      // Same y-based depth as characters so they sort naturally.
+      img.setDepth(y);
       this.spritesByKey.set(p.sprite, img);
       this._portalSprites.push(img);
       this._portalDefsById.set(p.id, { def: p, sprite: img });
@@ -215,7 +300,7 @@ export class GameScene extends Phaser.Scene {
         });
       }
 
-      // Floating label.
+      // Floating label always sits above its portal sprite (depth+1).
       if (p.label) {
         const labelY = y - img.displayHeight - 8;
         const label = this.add
@@ -227,7 +312,7 @@ export class GameScene extends Phaser.Scene {
             padding: { left: 10, right: 10, top: 4, bottom: 4 }
           })
           .setOrigin(0.5, 1)
-          .setDepth(81);
+          .setDepth(y + 1);
         this._portalSprites.push(label);
       }
     }

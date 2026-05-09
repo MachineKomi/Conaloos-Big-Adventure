@@ -122,17 +122,18 @@ export class TutorialScene extends Phaser.Scene {
 
     const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
     zone.setInteractive({ useHandCursor: true });
+    bg.setAlpha(0.92);
     zone.on('pointerover', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 1.04, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: 1.0, duration: 120, ease: 'Sine.easeOut' });
     });
     zone.on('pointerout', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 1.0, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: 0.92, duration: 120, ease: 'Sine.easeOut' });
     });
     zone.on('pointerup', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 0.94, duration: 90, yoyo: true });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: { from: 0.7, to: 1.0 }, duration: 180, ease: 'Sine.easeOut' });
       this.audio?.playSfx?.('sfx_chime');
       this.onContinue?.();
     });

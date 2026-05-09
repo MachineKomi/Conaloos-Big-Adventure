@@ -19,6 +19,7 @@
  */
 
 import { Accessibility } from './Accessibility.js';
+import { pickClickSfx } from '../content/sfxPools.js';
 
 const MIN_HIT_PX = 64;
 const HOVER_TINT = 0xfff5d0;
@@ -87,6 +88,12 @@ export class HotspotManager {
     // Hover/click feedback rides the speaker sprite (if any). Narrator-only
     // hotspots (no speaker) get only the cursor change.
     const sprite = hotspot.speaker ? this.spritesByKey.get(hotspot.speaker) : null;
+
+    // Match the zone's depth to the speaker sprite (if any) so clicks
+    // route to the visually-front character when zones overlap. Phaser
+    // input with topOnly=true picks the highest-depth interactive hit.
+    if (sprite) zone.setDepth(sprite.depth + 0.5);
+    else zone.setDepth(ay);
     let savedScale = sprite ? sprite.scale : 1;
     let hoverTween = null;
     let clickTween = null;
@@ -178,11 +185,12 @@ export class HotspotManager {
     // Portal hotspots fire the response, then transition once dialogue dismisses.
     if (hotspot.type === 'portal' && hotspot.target) {
       const line = this._nextResponse(hotspot);
-      if (line?.sfx) this.audio?.playSfx(line.sfx);
+      const portalSfx = pickClickSfx(hotspot.speaker, 'portal', line?.sfx);
+      this.audio?.playSfx(portalSfx);
       if (line?.text) {
         this.dialogue.show(line.text, {
           avoid: pos,
-          speaker: hotspot.speaker || null,
+          speakerSprite: hotspot.speaker ? this.spritesByKey.get(hotspot.speaker) : null,
           onDismiss: () => this.router?.goToScene(hotspot.target)
         });
       } else {
@@ -193,13 +201,15 @@ export class HotspotManager {
     }
 
     const response = this._nextResponse(hotspot);
-    if (response?.sfx) this.audio?.playSfx(response.sfx);
-    else this.audio?.playSfx('sfx_pop');
+    // Pick a SFX from the speaker's pool (or hotspot-type default) so a
+    // single character doesn't always make the same click sound.
+    const sfx = pickClickSfx(hotspot.speaker, hotspot.type, response?.sfx);
+    if (sfx) this.audio?.playSfx(sfx);
 
     if (response?.text) {
       this.dialogue.show(response.text, {
         avoid: pos,
-        speaker: hotspot.speaker || null
+        speakerSprite: hotspot.speaker ? this.spritesByKey.get(hotspot.speaker) : null
       });
     }
 

@@ -1,5 +1,113 @@
 # Changelog
 
+## 2026-05-09 — v1.2: Take the Long Way (rename + gem collectathon + maze + fixes)
+
+Branch `v1-2-take-the-long-way`. OpenSpec proposal in
+`/openspec/changes/v1-2-take-the-long-way/`. Addresses Dad's playtest
+feedback after v1.1 + introduces the gem collectathon mechanic.
+
+### Game renamed
+
+- **"Conaloo's Big Adventure" → "Take the Long Way".** Reflects the
+  game's actual loop (wandering, exploring, collecting) better than
+  the protagonist-focused name. Updated in TitleScene, WaitingScene,
+  index.html, package.json. Conaloo (the bear-butterly) remains a
+  central character.
+
+### Critical bug fixes
+
+- **`_isTransitioning` was sticky between scene visits.** GameScene
+  instances are constructed once in main.js and reused on every visit.
+  After a portal click set `_isTransitioning = true` and the scene
+  shut down, the flag persisted. Coming back, no portal in that scene
+  would fire because the guard returned early. Fix: reset state in
+  `init()`. This was the "portals stop working after a few rooms" bug.
+- **Amelia getting lost off-screen.** Resting position now picked from
+  five candidate columns (centre / left / right / left-of-centre /
+  right-of-centre), choosing the first that's at least half a sprite
+  away from every portal sprite. She always ends visible and never
+  blocking a portal click.
+- **Z-ordering.** Sprites (characters, things, portals, gems, Amelia)
+  all set their depth equal to their screen-y. Lower-on-screen sprites
+  render in front of higher ones (standard 2.5D layering). Fixes
+  "Amelia walks behind a peep that's visually in front of her" and
+  related clickability problems. Hotspot zones inherit the speaker's
+  depth so clicks route to the visually-front sprite.
+
+### UX polish
+
+- **Hover effect toned down.** Buttons and corner UI no longer scale
+  up — they brighten via alpha (the bg goes from 0.92 to 1.0) so the
+  text stays perfectly readable on hover.
+- **Corner-button labels clearer.** "AM/AL/AS" → "text S/M/L". "mute"
+  → "sound on / sound off". "still/wind" → "still / motion".
+- **Speech bubbles.** Replaced the fixed bottom-of-screen `DialogueBox`
+  with a real speech bubble that anchors to the speaking sprite and
+  has a triangular tail pointing at them. Auto-flips above/below
+  based on the speaker's screen position. Narrator-only hotspots
+  (Tiny Museum, Question Stone) still use a soft top banner with no
+  tail.
+- **Per-character SFX pools.** Each peep/animal/thing now picks its
+  click sfx from a small pool (2–4 sounds) instead of always playing
+  `sfx_pop`. New `src/content/sfxPools.js` defines pools per character
+  with sensible defaults (Pepsi yips, Wawoo swooshes, Conaloo chimes).
+  No more "I clicked five different things and they all went pop pop
+  pop pop pop".
+
+### Gem collectathon (new mechanic)
+
+- **GemBag** — singleton that tracks total stones and per-gem counts.
+- **GemHUD** — top-left panel shows the running total. On collect,
+  animates a "+N → total" math reveal that floats up next to the
+  counter while the counter itself ticks from previousTotal up to
+  newTotal. Edutainment hook: a 4-year-old sees the addition happen.
+- **Gem placement** — scenes now have a `gems` field listing
+  placements. Each gem renders with a slight random rotation so they
+  don't all look identical, plus a gentle bob/twinkle. Click → swap
+  to glowing variant → fly to HUD over 600ms with shrinking scale →
+  on arrival, GemBag.add fires the math reveal.
+- 9 gems (gem_1 through gem_9, values 1..9) sprinkled across all 11
+  scenes. Total possible: 45+ stones depending on scene revisits.
+
+### Inventory expansion
+
+- Inventory model changed from `Set<thingKey>` to `Map<thingKey, count>`.
+- HUD shows a "×N" badge on stacked items.
+- 10 new collectable things wired into scenes (teddybear, books,
+  flashlight in the bedroom; microscope, globe, backpack at the
+  school; hourglass on the rooftop; bucket and banana at the
+  waterfall; cake still in the playground; tyre still pending).
+
+### Maze topology + new scenes
+
+- Hub portals reduced from 4 to 3 (cottage / lake / playground).
+  Seaside is now reachable through the village or the waterfall.
+- 4 new scenes from the new backgrounds:
+  - `girls-bedroom` — Amelia's room, lullaby music, teddy + books +
+    flashlight to collect, Pepsi sleeping.
+  - `school-courtyard` — Cosenae and Lulumi, microscope + globe +
+    backpack collectables, a chalkboard Tiny Museum that touches
+    numbers / letters / "if-then" recipes.
+  - `skyscraper-roof` — Conaloo and Wawoo overlooking the city,
+    hourglass collectable, philosophical Question Stone.
+  - `waterfall-mt-fuji-in-distance` — Lucy and Cofeenie by the
+    water, bucket + banana, art-history Tiny Museum about the famous
+    far-distant mountain.
+- Topology is now non-linear:
+  - cottage ↔ bedroom ↔ (back to cottage)
+  - lake-childlike ↔ vista ↔ skyscraper-roof
+  - lake-childlike → waterfall ↔ seaside
+  - playground → school ↔ village
+  - village ↔ school
+- Every scene reachable; many destinations have 2+ paths from hub.
+
+### Out of scope (deferred to v1.3)
+
+- **Mobile/tablet responsive scaling.** Needs a layout pass.
+- **Sprite animations** (rocketship launch, dog flip).
+- **Inventory-aware character lines** (peeps reacting to what
+  Amelia is carrying — combination logic, etc).
+
 ## 2026-05-09 — v1.1: protagonist, visible portals, title screen, big polish pass
 
 Branch `v1-1-protagonist-and-polish`. OpenSpec proposal in

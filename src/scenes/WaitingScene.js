@@ -18,7 +18,7 @@ export class WaitingScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#fff8e7');
 
     const title = this.add
-      .text(width / 2, height / 2 - 60, "Conaloo's Big Adventure", {
+      .text(width / 2, height / 2 - 60, "Take the Long Way", {
         fontFamily: '"Fredoka", system-ui, sans-serif',
         fontSize: '52px',
         color: '#4a3a1f'
