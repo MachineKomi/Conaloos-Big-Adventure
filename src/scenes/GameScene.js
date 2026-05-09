@@ -101,7 +101,8 @@ export class GameScene extends Phaser.Scene {
       dialogue: this.dialogue,
       router: null, // we handle navigation ourselves to walk Amelia first
       onResponse: (h, response) => this._afterResponse(h, response),
-      spritesByKey: this.spritesByKey
+      spritesByKey: this.spritesByKey,
+      seenQuizzes: this.services.seenQuizzes
     });
     // Skip hotspots for things Amelia has already collected this session.
     const liveHotspots = (this.def.hotspots || []).filter((h) => {
@@ -182,17 +183,33 @@ export class GameScene extends Phaser.Scene {
       if (collectedSpriteKeys.has(t.sprite)) continue;
       const isCollectable = collectableSprites.has(t.sprite);
       const img = this.add
-        .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
-        .setOrigin(0.5, 1);
-      // Bigger collectables (50% larger), keep decorative things at default.
-      const defaultFrac = isCollectable ? 0.30 : 0.22;
-      applyDisplaySize(img, t, h, defaultFrac);
+        .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite);
 
-      // Collectable things render on a HIGH depth so a peep can never
-      // hide them — Dad's feedback was "some collectables can't be
-      // clicked because they're behind sprites". Decorative things
-      // (rocketship / trees / glass-house) keep y-based depth so they
-      // layer naturally with characters.
+      if (isCollectable) {
+        // Crop transparent margins (assume 18% on each side is safe)
+        // and align the sprite's origin to the bottom-centre of the
+        // CROPPED region so the world-y still corresponds to the
+        // visual feet of the item.
+        const tex = this.textures.get(t.sprite).getSourceImage();
+        const cropFrac = 0.18;
+        const cropX = tex.width * cropFrac;
+        const cropY = tex.height * cropFrac;
+        const cropW = tex.width - cropX * 2;
+        const cropH = tex.height - cropY * 2;
+        img.setCrop(cropX, cropY, cropW, cropH);
+        // Origin = (0.5, 1 - cropFrac) puts the cropped-content's
+        // bottom at img.y, just as if origin were (0.5, 1) on a
+        // perfectly-trimmed sprite.
+        img.setOrigin(0.5, 1 - cropFrac);
+        const defaultFrac = 0.36;
+        const heightFrac = (typeof t.heightFrac === 'number') ? t.heightFrac : defaultFrac;
+        const targetH = h * heightFrac;
+        img.setScale(targetH / cropH);
+      } else {
+        img.setOrigin(0.5, 1);
+        applyDisplaySize(img, t, h, 0.22);
+      }
+
       if (isCollectable) {
         img.setDepth(8500 + (img.y / h));
       } else {
@@ -451,6 +468,13 @@ export class GameScene extends Phaser.Scene {
 
   _afterResponse(hotspot, response) {
     this._applyRemix(response);
+
+    // Sprite animations: random chance for special characters/things
+    // to do something visually delightful in addition to their dialogue.
+    if (Math.random() < 0.30) {
+      this._maybeSpecialAnimation(hotspot);
+    }
+
     // Inventory pickup: collect on first click, the thing-sprite pops
     // and hides, Amelia hops in celebration, and the placement is
     // persisted so the item doesn't respawn on a scene revisit.
@@ -473,6 +497,110 @@ export class GameScene extends Phaser.Scene {
         if (sourceSprite) this._spawnGemBurst(sourceSprite);
       }
     }
+  }
+
+  /**
+   * Trigger a special animation for certain speakers — adds visual
+   * delight without breaking the click-and-listen loop.
+   */
+  _maybeSpecialAnimation(hotspot) {
+    if (!hotspot?.speaker) return;
+    const sprite = this.spritesByKey.get(hotspot.speaker);
+    if (!sprite || !sprite.active) return;
+
+    if (hotspot.speaker === 'thing_rocketship') {
+      this._rocketLaunch(sprite);
+    } else if (hotspot.speaker === 'animal_Pepsi_dog-thing') {
+      this._dogFlip(sprite);
+    } else if (hotspot.speaker === 'animal_Seesa_pink-bee') {
+      this._beeBuzz(sprite);
+    } else if (hotspot.speaker === 'animal_Monaloo_butterfly') {
+      this._butterflyFlit(sprite);
+    }
+  }
+
+  _rocketLaunch(sprite) {
+    if (sprite._launching) return;
+    sprite._launching = true;
+    const startY = sprite.y;
+    const startX = sprite.x;
+    this.services.audio?.playSfx?.('sfx_powerup');
+    this.tweens.add({
+      targets: sprite,
+      y: startY - this.scale.height * 0.3,
+      x: startX + 6,
+      angle: { from: 0, to: -2 },
+      duration: 700,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        this.services.audio?.playSfx?.('sfx_swoosh');
+        // Hold off-screen briefly, then come back down.
+        this.tweens.add({
+          targets: sprite,
+          y: startY,
+          x: startX,
+          angle: 0,
+          duration: 800,
+          delay: 300,
+          ease: 'Bounce.easeOut',
+          onComplete: () => { sprite._launching = false; }
+        });
+      }
+    });
+  }
+
+  _dogFlip(sprite) {
+    if (sprite._flipping) return;
+    sprite._flipping = true;
+    const startY = sprite.y;
+    this.services.audio?.playSfx?.('sfx_voice_yip');
+    this.tweens.add({
+      targets: sprite,
+      y: startY - 60,
+      angle: 360,
+      duration: 600,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        sprite.angle = 0;
+        sprite.y = startY;
+        this.services.audio?.playSfx?.('sfx_thud');
+        sprite._flipping = false;
+      }
+    });
+  }
+
+  _beeBuzz(sprite) {
+    if (sprite._buzzing) return;
+    sprite._buzzing = true;
+    const startX = sprite.x;
+    const startY = sprite.y;
+    this.services.audio?.playSfx?.('sfx_swoosh');
+    this.tweens.chain({
+      targets: sprite,
+      tweens: [
+        { x: startX + 60, y: startY - 30, duration: 240, ease: 'Sine.easeInOut' },
+        { x: startX - 40, y: startY - 50, duration: 240, ease: 'Sine.easeInOut' },
+        { x: startX + 30, y: startY - 20, duration: 240, ease: 'Sine.easeInOut' },
+        { x: startX,      y: startY,      duration: 240, ease: 'Sine.easeInOut' }
+      ],
+      onComplete: () => { sprite._buzzing = false; }
+    });
+  }
+
+  _butterflyFlit(sprite) {
+    if (sprite._flitting) return;
+    sprite._flitting = true;
+    const startX = sprite.x;
+    const startY = sprite.y;
+    this.tweens.chain({
+      targets: sprite,
+      tweens: [
+        { x: startX + 80, y: startY - 50, angle: 12,  duration: 500, ease: 'Sine.easeInOut' },
+        { x: startX - 60, y: startY - 80, angle: -10, duration: 500, ease: 'Sine.easeInOut' },
+        { x: startX,      y: startY,      angle: 0,   duration: 500, ease: 'Sine.easeInOut' }
+      ],
+      onComplete: () => { sprite._flitting = false; }
+    });
   }
 
   /**

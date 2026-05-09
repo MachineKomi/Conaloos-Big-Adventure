@@ -1,5 +1,75 @@
 # Changelog
 
+## 2026-05-09 — v1.3: quizzes, sprite animations, mobile responsive, polish
+
+The "actually-implement-everything-Dad-asked-for" pass. Three new
+mechanics + several bug fixes + the items deferred from v1.2.
+
+### New mechanics
+
+- **Quiz/trivia from peeps.** Some characters now sometimes ask
+  multiple-choice questions instead of speaking a normal line (~25%
+  of clicks when a quiz pool exists). Two flavours:
+  - **Knowledge quiz** with a correct answer. Right → big sfx,
+    a teaching response, gem reward (1–3 gems). Wrong → a kind
+    correction explaining the right answer.
+  - **Preference question** ("favourite colour?", "which creature
+    would you be?") with no wrong answer. Always rewarded with gems.
+  Per-character pools live in `src/content/quizzes.js`. Ones authored
+  for: Cosenae (facts), Lulumi (rhymes/seasons), Conaloo
+  (preferences), Amelia (preferences), mommy (vocabulary), Pepsi
+  (preferences). Session-wide unseen-tracking so the same quiz
+  doesn't fire twice in one playthrough.
+- **Inventory-aware character lines.** When Amelia clicks a peep
+  while carrying certain items, the peep may say a line that
+  references what she's holding (40% chance per click, when
+  applicable). E.g. mommy notices the cake, Cosenae lights up at
+  the microscope, Tootsie celebrates a banana. Authored in
+  `src/content/inventoryReactions.js`.
+- **Sprite animations.** Some clicks now trigger a small cinematic:
+  - Rocketship: launches off-screen and bounces back down.
+  - Pepsi: jumps and does a 360° flip with a "yip → thud".
+  - Seesa: zigzags around her spot like a real bee.
+  - Monaloo: flits in a flower-petal pattern.
+  Triggered with 30% probability after any matching speaker click.
+
+### Mobile / tablet responsive
+
+- **Phaser scale mode FIT** at 1600×900 design resolution. Phaser
+  scales the canvas with letterboxing to fit any viewport. UI sizes
+  no longer have to do per-component math — everything's laid out at
+  the design size and proportionally scaled. Phone in landscape,
+  tablet, laptop all share the same proportional layout.
+
+### Critical UX fixes
+
+- **Inventory click bug** (clicks passing through to game sprites and
+  re-collecting items): the panel now has a transparent click-blocker
+  zone behind the items. Clicking an inventory item shows a brief
+  "what's this?" lore line WITHOUT re-collecting.
+- **Inventory bag icon bigger** (80→100px), and the backpack image
+  inside is auto-cropped to ignore transparent margins so the visible
+  bag fills the icon properly.
+- **Collectable thing sprites cropped** (~18% off each side) on both
+  the world AND the inventory slots, so the visible content fills
+  the slot — fixing "tiny sprite floating in lots of empty space".
+  Decorative things (rocketship, trees, glass-house) keep full
+  silhouette.
+- **Settings collapsed behind a burger menu.** Single ≡ button at
+  top-right; tap to expand a vertical panel of three large clearly-
+  labelled buttons (home / sound on-off / text S-M-L). Fonts are
+  bigger than v1.2.3 and don't wrap. **Motion toggle removed
+  entirely** — Dad asked for it; motion is now always on (the game
+  is just worse without Amelia gliding).
+- **Speech bubbles dodge the gem HUD.** Bubbles never overlap the
+  reserved top region so the running total + equation reveal stay
+  readable.
+
+### Asset audit (still 100%)
+
+- 11/11 BGs, 11/11 peeps, 6/6 valid animals, 15/15 things (backpack
+  is the inventory icon), 7/7 music, 21/21 SFX in pools.
+
 ## 2026-05-09 — v1.2.3: walk fix (for real), bigger HUD, auto-show inventory, more gems
 
 ### Critical bug fixes

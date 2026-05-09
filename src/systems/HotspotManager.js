@@ -20,6 +20,12 @@
 
 import { Accessibility } from './Accessibility.js';
 import { pickClickSfx } from '../content/sfxPools.js';
+import { pickQuizFor, quizzes } from '../content/quizzes.js';
+import { pickInventoryReaction } from '../content/inventoryReactions.js';
+import { QuizDialog } from './QuizDialog.js';
+
+const QUIZ_FIRE_CHANCE = 0.25;          // 25% chance a click fires a quiz
+const INVENTORY_REACTION_CHANCE = 0.4;  // 40% chance to pick an inventory-aware line if applicable
 
 const MIN_HIT_PX = 64;
 const HOVER_TINT = 0xfff5d0;
@@ -47,6 +53,9 @@ export class HotspotManager {
     this.zones = [];
     /** Per-hotspot queues of unseen responses. */
     this.unseen = new Map();
+    /** Per-session quiz tracking — Set of "characterKey:quizIdx" strings. */
+    this.seenQuizzes = services.seenQuizzes || new Set();
+    this.quizDialog = new QuizDialog(scene);
   }
 
   destroy() {
@@ -212,9 +221,30 @@ export class HotspotManager {
       return;
     }
 
+    // Maybe a quiz instead of a regular line.
+    if (hotspot.speaker && quizzes[hotspot.speaker] && Math.random() < QUIZ_FIRE_CHANCE) {
+      this._fireQuiz(hotspot, pos);
+      return;
+    }
+
+    // Maybe an inventory-aware reaction (if Amelia carries something
+    // this character has lines about).
+    if (hotspot.speaker && Math.random() < INVENTORY_REACTION_CHANCE) {
+      const protag = this.scene.services?.protagonist;
+      const inv = protag?.inventory?.() || [];
+      const reactionText = pickInventoryReaction(hotspot.speaker, inv);
+      if (reactionText) {
+        this.audio?.playSfx(pickClickSfx(hotspot.speaker, hotspot.type));
+        this.dialogue.show(reactionText, {
+          avoid: pos,
+          speakerSprite: this.spritesByKey.get(hotspot.speaker)
+        });
+        this.onResponse?.(hotspot, { text: reactionText, fromInventoryReaction: true });
+        return;
+      }
+    }
+
     const response = this._nextResponse(hotspot);
-    // Pick a SFX from the speaker's pool (or hotspot-type default) so a
-    // single character doesn't always make the same click sound.
     const sfx = pickClickSfx(hotspot.speaker, hotspot.type, response?.sfx);
     if (sfx) this.audio?.playSfx(sfx);
 
@@ -226,6 +256,55 @@ export class HotspotManager {
     }
 
     this.onResponse?.(hotspot, response);
+  }
+
+  _fireQuiz(hotspot, pos) {
+    const quiz = pickQuizFor(hotspot.speaker, this.seenQuizzes);
+    if (!quiz) {
+      // Fallback to normal response if no quiz available.
+      const response = this._nextResponse(hotspot);
+      const sfx = pickClickSfx(hotspot.speaker, hotspot.type, response?.sfx);
+      if (sfx) this.audio?.playSfx(sfx);
+      if (response?.text) {
+        this.dialogue.show(response.text, {
+          avoid: pos,
+          speakerSprite: this.spritesByKey.get(hotspot.speaker)
+        });
+      }
+      this.onResponse?.(hotspot, response);
+      return;
+    }
+
+    this.audio?.playSfx('sfx_chime');
+    const speakerSprite = this.spritesByKey.get(hotspot.speaker);
+    this.quizDialog.show(quiz, {
+      speakerSprite,
+      onAnswer: (result) => this._onQuizAnswered(hotspot, quiz, result, pos)
+    });
+  }
+
+  _onQuizAnswered(hotspot, quiz, result, pos) {
+    const speakerSprite = this.spritesByKey.get(hotspot.speaker);
+    // Reaction line.
+    let reactionText;
+    if (result.isPreference) reactionText = quiz.onCorrect;
+    else reactionText = result.isCorrect ? quiz.onCorrect : quiz.onWrong;
+
+    if (reactionText) {
+      this.dialogue.show(reactionText, { speakerSprite });
+    }
+
+    if (result.isCorrect) {
+      this.audio?.playSfx('sfx_jackpot');
+      // Reward gem spray from the speaker (if any).
+      if (this.scene._spawnGemBurst && speakerSprite) {
+        this.scene._spawnGemBurst(speakerSprite);
+      }
+    } else {
+      this.audio?.playSfx('sfx_descend');
+    }
+
+    this.onResponse?.(hotspot, { text: reactionText, fromQuiz: true });
   }
 
   /**

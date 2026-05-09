@@ -1,29 +1,41 @@
 /**
- * GlobalUI — persistent corner controls (mute, reduced motion, home, text size).
+ * GlobalUIScene — corner controls.
  *
- * Lives on its own Phaser scene that runs above the active scene so it
- * stays visible during fades and transitions. Each control is a clickable
- * label drawn in Phaser; we deliberately avoid HTML overlay so it scales
- * with the canvas.
+ * v1.3: collapsed into a single "≡" burger button in the top-right.
+ * Tap the burger to expand a vertical settings panel with three large,
+ * clearly-labelled buttons: HOME, SOUND (toggle), TEXT SIZE (cycler).
+ * The motion toggle has been REMOVED — motion is always on now;
+ * disabling it broke the protagonist mechanic and confused the
+ * 4-year-old.
  */
 
 import Phaser from 'phaser';
 import { Accessibility } from './Accessibility.js';
 
-const UI_DEPTH = 5000;
-const PADDING = 18;
-const BUTTON_SIZE = 56;
-const BUTTON_RADIUS = 16;
-const BUTTON_BG = 0xfff8e7;
-const BUTTON_BG_ALPHA = 0.85;
-const BUTTON_STROKE = 0x4a3a1f;
-const BUTTON_STROKE_WIDTH = 3;
-const ICON_COLOUR = '#4a3a1f';
+const UI_DEPTH = 9500;
+const PADDING = 16;
+
+const BURGER_SIZE = 64;
+const BURGER_RADIUS = 18;
+
+const ITEM_W = 180;
+const ITEM_H = 64;
+const ITEM_RADIUS = 16;
+const ITEM_GAP = 10;
+
+const BG_COLOUR = 0xfff8e7;
+const BG_ALPHA = 0.94;
+const STROKE_COLOUR = 0x4a3a1f;
+const STROKE_WIDTH = 4;
+const TEXT_COLOUR = '#4a3a1f';
+const TEXT_FONT_PX = 22;
 
 export class GlobalUIScene extends Phaser.Scene {
   constructor() {
     super({ key: 'global:ui', active: false });
     this.router = null;
+    this.expanded = false;
+    this._items = [];
   }
 
   init({ router } = {}) {
@@ -31,102 +43,126 @@ export class GlobalUIScene extends Phaser.Scene {
   }
 
   create() {
-    this.buttons = [];
-    this._build();
+    this._buildBurger();
     this.scale.on('resize', () => this._reposition());
-    Accessibility.on(() => this._refreshIcons());
+    Accessibility.on(() => this._refreshLabels());
+    this.scene.bringToTop();
   }
 
-  _build() {
-    // Top-right cluster: home, mute, reduce-motion, text-size.
-    this._home = this._makeButton('home', () => this.router?.goHome?.());
-    this._mute = this._makeButton(this._muteIcon(), () => Accessibility.toggleMuted());
-    this._motion = this._makeButton(this._motionIcon(), () => {
-      const cur = Accessibility.reducedMotion;
-      Accessibility.setReducedMotion(!cur);
-    });
-    this._text = this._makeButton(this._textIcon(), () => Accessibility.cycleTextSize());
+  _buildBurger() {
+    const x = this.scale.width - PADDING - BURGER_SIZE;
+    const y = PADDING;
 
-    this.buttons = [this._home, this._mute, this._motion, this._text];
-    this._reposition();
-  }
+    const bg = this.add.graphics().setDepth(UI_DEPTH);
+    bg.fillStyle(BG_COLOUR, BG_ALPHA);
+    bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+    bg.fillRoundedRect(x, y, BURGER_SIZE, BURGER_SIZE, BURGER_RADIUS);
+    bg.strokeRoundedRect(x, y, BURGER_SIZE, BURGER_SIZE, BURGER_RADIUS);
 
-  _muteIcon() { return Accessibility.muted ? 'sound\noff' : 'sound\non'; }
-  _motionIcon() { return Accessibility.reducedMotion ? 'still' : 'motion'; }
-  _textIcon() { return `text\n${Accessibility.textSize.toLowerCase()}`; }
+    // Three lines for the burger icon.
+    const icon = this.add.graphics().setDepth(UI_DEPTH + 1);
+    icon.lineStyle(4, STROKE_COLOUR, 1);
+    const cx = x + BURGER_SIZE / 2;
+    const cy = y + BURGER_SIZE / 2;
+    icon.lineBetween(cx - 14, cy - 10, cx + 14, cy - 10);
+    icon.lineBetween(cx - 14, cy,      cx + 14, cy);
+    icon.lineBetween(cx - 14, cy + 10, cx + 14, cy + 10);
 
-  _refreshIcons() {
-    this._setLabel(this._mute, this._muteIcon());
-    this._setLabel(this._motion, this._motionIcon());
-    this._setLabel(this._text, this._textIcon());
-  }
-
-  _setLabel(btn, label) {
-    btn.label.setText(label);
-  }
-
-  /**
-   * Build a UI button. Uses a Zone for hit detection (independent from
-   * the visual graphics + label) so clicks register exactly on the
-   * visible square, no offset weirdness.
-   */
-  _makeButton(labelText, onClick) {
-    const bg = this.add.graphics();
-    const label = this.add.text(0, 0, labelText, {
-      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: '13px',
-      color: ICON_COLOUR,
-      align: 'center',
-      lineSpacing: 0
-    }).setOrigin(0.5);
-
-    const zone = this.add.zone(0, 0, BUTTON_SIZE, BUTTON_SIZE).setOrigin(0, 0);
+    const zone = this.add.zone(x, y, BURGER_SIZE, BURGER_SIZE).setOrigin(0, 0);
     zone.setInteractive({ useHandCursor: true });
-
-    bg.setDepth(UI_DEPTH);
-    label.setDepth(UI_DEPTH + 1);
     zone.setDepth(UI_DEPTH + 2);
-
-    const btn = { bg, label, zone, x: 0, y: 0 };
-    btn.setPosition = (x, y) => {
-      btn.x = x;
-      btn.y = y;
-      bg.clear();
-      bg.fillStyle(BUTTON_BG, BUTTON_BG_ALPHA);
-      bg.lineStyle(BUTTON_STROKE_WIDTH, BUTTON_STROKE, 1);
-      bg.fillRoundedRect(x, y, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
-      bg.strokeRoundedRect(x, y, BUTTON_SIZE, BUTTON_SIZE, BUTTON_RADIUS);
-      label.setPosition(x + BUTTON_SIZE / 2, y + BUTTON_SIZE / 2);
-      zone.setPosition(x, y);
-    };
-
-    // Hover lifts the bg slightly (alpha) — no scale change so labels
-    // stay readable. Click pulses bg alpha briefly.
-    zone.on('pointerover', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: 1.0, duration: 100 });
-    });
-    zone.on('pointerout', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: BUTTON_BG_ALPHA, duration: 100 });
-    });
+    zone.on('pointerover', () => this.tweens.add({ targets: bg, alpha: 1, duration: 100 }));
+    zone.on('pointerout',  () => this.tweens.add({ targets: bg, alpha: BG_ALPHA, duration: 100 }));
     zone.on('pointerup', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: { from: 0.6, to: BUTTON_BG_ALPHA }, duration: 200 });
-      onClick();
+      this.expanded = !this.expanded;
+      this._renderItems();
     });
 
-    return btn;
+    this._burger = { bg, icon, zone, x, y };
   }
 
   _reposition() {
-    const { width } = this.scale;
-    let x = width - PADDING - BUTTON_SIZE;
-    const y = PADDING;
-    // right-to-left so home is closest to the corner
-    for (const btn of [this._text, this._motion, this._mute, this._home]) {
-      btn.setPosition(x, y);
-      x -= BUTTON_SIZE + 10;
+    if (this._burger) {
+      const x = this.scale.width - PADDING - BURGER_SIZE;
+      const y = PADDING;
+      this._burger.x = x; this._burger.y = y;
+      this._burger.bg.clear();
+      this._burger.bg.fillStyle(BG_COLOUR, BG_ALPHA);
+      this._burger.bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+      this._burger.bg.fillRoundedRect(x, y, BURGER_SIZE, BURGER_SIZE, BURGER_RADIUS);
+      this._burger.bg.strokeRoundedRect(x, y, BURGER_SIZE, BURGER_SIZE, BURGER_RADIUS);
+      this._burger.icon.clear();
+      this._burger.icon.lineStyle(4, STROKE_COLOUR, 1);
+      const cx = x + BURGER_SIZE / 2;
+      const cy = y + BURGER_SIZE / 2;
+      this._burger.icon.lineBetween(cx - 14, cy - 10, cx + 14, cy - 10);
+      this._burger.icon.lineBetween(cx - 14, cy,      cx + 14, cy);
+      this._burger.icon.lineBetween(cx - 14, cy + 10, cx + 14, cy + 10);
+      this._burger.zone.setPosition(x, y);
     }
+    this._renderItems();
+  }
+
+  _renderItems() {
+    for (const item of this._items) {
+      item.bg?.destroy();
+      item.label?.destroy();
+      item.zone?.destroy();
+    }
+    this._items = [];
+
+    if (!this.expanded) return;
+
+    const baseX = this.scale.width - PADDING - ITEM_W;
+    let y = PADDING + BURGER_SIZE + ITEM_GAP;
+
+    const buttons = [
+      { label: 'home',                      onClick: () => this.router?.goHome?.() },
+      { label: this._soundLabel(),          onClick: () => Accessibility.toggleMuted() },
+      { label: this._textLabel(),           onClick: () => Accessibility.cycleTextSize() }
+    ];
+
+    for (const def of buttons) {
+      const item = this._makeItem(baseX, y, def.label, def.onClick);
+      this._items.push(item);
+      y += ITEM_H + ITEM_GAP;
+    }
+  }
+
+  _makeItem(x, y, labelText, onClick) {
+    const bg = this.add.graphics().setDepth(UI_DEPTH);
+    bg.fillStyle(BG_COLOUR, BG_ALPHA);
+    bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+    bg.fillRoundedRect(x, y, ITEM_W, ITEM_H, ITEM_RADIUS);
+    bg.strokeRoundedRect(x, y, ITEM_W, ITEM_H, ITEM_RADIUS);
+
+    const label = this.add.text(x + ITEM_W / 2, y + ITEM_H / 2, labelText, {
+      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
+      fontSize: `${TEXT_FONT_PX}px`,
+      color: TEXT_COLOUR
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 1);
+
+    const zone = this.add.zone(x, y, ITEM_W, ITEM_H).setOrigin(0, 0);
+    zone.setInteractive({ useHandCursor: true });
+    zone.setDepth(UI_DEPTH + 2);
+    zone.on('pointerover', () => this.tweens.add({ targets: bg, alpha: 1, duration: 100 }));
+    zone.on('pointerout',  () => this.tweens.add({ targets: bg, alpha: BG_ALPHA, duration: 100 }));
+    zone.on('pointerup', () => {
+      onClick();
+      // After action, refresh labels (toggles can change them).
+      this._refreshLabels();
+    });
+
+    return { bg, label, zone };
+  }
+
+  _soundLabel() { return Accessibility.muted ? 'sound: off' : 'sound: on'; }
+  _textLabel()  { return `text: ${Accessibility.textSize.toLowerCase()}`; }
+
+  _refreshLabels() {
+    if (!this._items.length) return;
+    // items[0] = home (no label change), items[1] = sound, items[2] = text
+    if (this._items[1]?.label) this._items[1].label.setText(this._soundLabel());
+    if (this._items[2]?.label) this._items[2].label.setText(this._textLabel());
   }
 }

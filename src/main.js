@@ -28,8 +28,13 @@ import { AudioManager } from './systems/AudioManager.js';
 import { SceneRouter } from './systems/SceneRouter.js';
 import { buildSceneCatalog } from './content/sceneCatalog.js';
 
-const GAME_WIDTH = 1280;
-const GAME_HEIGHT = 800;
+// Fixed design resolution. Phaser scales the canvas to fit the
+// viewport (with letterboxing to preserve aspect). All UI is laid
+// out against this size, so a phone, tablet, and laptop all see the
+// same proportional layout. Mobile-responsive without per-component
+// font math.
+const GAME_WIDTH = 1600;
+const GAME_HEIGHT = 900;
 const FIRST_LAUNCH_KEY = 'conaloo.firstLaunchSeen.v1';
 
 function makeGame() {
@@ -38,7 +43,7 @@ function makeGame() {
     parent: 'app',
     backgroundColor: '#fff8e7',
     scale: {
-      mode: Phaser.Scale.RESIZE,
+      mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: GAME_WIDTH,
       height: GAME_HEIGHT
@@ -62,6 +67,9 @@ function start() {
   const router = new SceneRouter(game);
   const protagonist = new Protagonist();
   const gemBag = new GemBag();
+  // Session-wide set so a quiz isn't asked twice — even after a scene
+  // transition. Cleared on page reload (no localStorage).
+  const seenQuizzes = new Set();
 
   // Expose for dev-time debugging only.
   if (import.meta.env?.DEV) {
@@ -74,12 +82,12 @@ function start() {
   // Phaser calls scene.init(data) when it starts a scene, so pass
   // onReady through the start-data hand-off (init() would be clobbered).
   game.scene.add('boot', BootScene, true, {
-    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag)
+    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes)
   });
   console.log('[main] game created, boot scene queued');
 }
 
-function onAssetsReady(game, loader, audio, router, protagonist, gemBag) {
+function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes) {
   if (!loader.hasAnyBackground) {
     game.scene.add('scene:waiting', new WaitingScene(), true);
     game.scene.stop('boot');
@@ -96,7 +104,7 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag) {
   // every game scene).
   for (const slug of Object.keys(catalog.scenes)) {
     const def = catalog.scenes[slug];
-    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag });
+    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag, seenQuizzes });
     game.scene.add(`scene:${slug}`, scene, false);
   }
   game.scene.add('scene:title', new TitleScene(), false);

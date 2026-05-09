@@ -99,10 +99,16 @@ export class DialogueBox {
     // single combined path so the stroke goes around the OUTSIDE of
     // the whole shape (no line crossing the tail base).
     let cx, cy, tailAnchorX = null, tailAbove = false;
+    // Reserve top region for the gem HUD (a fixed-size centred panel).
+    // Bubbles never enter this band so the HUD's number stays readable.
+    const HUD_RESERVED_TOP = 120;
+
     if (speakerSprite) {
       const speakerCx = speakerSprite.x;
       const speakerTop = speakerSprite.y - speakerSprite.displayHeight;
-      tailAbove = speakerTop - boxH - 36 > MARGIN_FROM_EDGE;
+      const aboveTopY = speakerTop - 28 - boxH / 2;
+      const belowTopY = speakerSprite.y + 24 + boxH / 2;
+      tailAbove = aboveTopY - boxH / 2 > HUD_RESERVED_TOP;
 
       cx = clamp(
         speakerCx,
@@ -110,14 +116,14 @@ export class DialogueBox {
         width - boxW / 2 - MARGIN_FROM_EDGE
       );
       cy = tailAbove
-        ? speakerTop - 28 - boxH / 2
-        : Math.min(speakerSprite.y + 24 + boxH / 2, height - boxH / 2 - MARGIN_FROM_EDGE);
+        ? Math.max(aboveTopY, HUD_RESERVED_TOP + boxH / 2)
+        : Math.min(belowTopY, height - boxH / 2 - MARGIN_FROM_EDGE);
 
       tailAnchorX = clamp(speakerCx - cx, -boxW / 2 + 30, boxW / 2 - 30);
     } else {
-      // Narrator banner (no tail).
+      // Narrator banner — sits below the HUD, not over it.
       cx = width / 2;
-      cy = boxH / 2 + MARGIN_FROM_EDGE;
+      cy = HUD_RESERVED_TOP + boxH / 2 + 8;
     }
 
     drawBubbleWithTail(bg, boxW, boxH, CORNER_RADIUS, tailAnchorX, tailAbove);
