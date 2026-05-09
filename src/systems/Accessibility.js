@@ -7,7 +7,11 @@ const KEY = 'conaloo.a11y.v1';
 
 const DEFAULTS = {
   muted: false,
-  reducedMotion: null,   // null = inherit from OS, true/false = override
+  // Default `false` (NOT null/inherit) — Dad's tablet had OS-level
+  // prefers-reduced-motion enabled which made Amelia teleport instead
+  // of walk, defeating the protagonist mechanic. The user can still
+  // toggle it on via the corner button.
+  reducedMotion: false,
   textSize: 'M'          // 'S' | 'M' | 'L'
 };
 

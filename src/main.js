@@ -80,7 +80,29 @@ function start() {
 }
 
 function onAssetsReady(game, loader, audio, router, protagonist, gemBag) {
-  // GlobalUI + Inventory + GemHUD run above gameplay scenes.
+  if (!loader.hasAnyBackground) {
+    game.scene.add('scene:waiting', new WaitingScene(), true);
+    game.scene.stop('boot');
+    return;
+  }
+
+  const catalog = buildSceneCatalog(loader);
+  router.setHubSlug(catalog.hubSlug);
+
+  // IMPORTANT scene-add order: gameplay + title scenes FIRST, HUD scenes
+  // LAST. Phaser renders scenes in the order they were added; the last-
+  // added scene draws on top. If HUDs are added before gameplay, they
+  // render BEHIND gameplay (the v1.2.1 bug — gem counter was hidden by
+  // every game scene).
+  for (const slug of Object.keys(catalog.scenes)) {
+    const def = catalog.scenes[slug];
+    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag });
+    game.scene.add(`scene:${slug}`, scene, false);
+  }
+  game.scene.add('scene:title', new TitleScene(), false);
+  game.scene.add('scene:tutorial', new TutorialScene(), false);
+
+  // HUDs go on TOP — added last, so they render last.
   const ui = new GlobalUIScene();
   ui.init({ router });
   game.scene.add('global:ui', ui, true);
@@ -92,26 +114,6 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag) {
   const gemHud = new GemHUDScene();
   gemHud.init({ gemBag });
   game.scene.add('global:gemhud', gemHud, true);
-
-  if (!loader.hasAnyBackground) {
-    game.scene.add('scene:waiting', new WaitingScene(), true);
-    game.scene.stop('boot');
-    return;
-  }
-
-  const catalog = buildSceneCatalog(loader);
-  router.setHubSlug(catalog.hubSlug);
-
-  // Register every scene up front; we navigate via scene.start() with data.
-  for (const slug of Object.keys(catalog.scenes)) {
-    const def = catalog.scenes[slug];
-    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag });
-    game.scene.add(`scene:${slug}`, scene, false);
-  }
-
-  // Title + tutorial — title runs first; first launch routes through tutorial.
-  game.scene.add('scene:title', new TitleScene(), false);
-  game.scene.add('scene:tutorial', new TutorialScene(), false);
 
   const firstLaunch = !localStorage.getItem(FIRST_LAUNCH_KEY);
   console.log('[main] firstLaunch =', firstLaunch);

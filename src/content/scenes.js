@@ -121,7 +121,8 @@ export const scenes = {
       { sprite: 'animal_Pepsi_dog-thing',       x: 0.10, y: 0.96, heightFrac: 0.30, idle: 'sway' }
     ],
     things: [
-      { sprite: 'thing_rocketship', x: 0.66, y: 0.85, heightFrac: 0.45 }
+      { sprite: 'thing_rocketship', x: 0.66, y: 0.85, heightFrac: 0.45 },
+      { sprite: 'thing_banana',     x: 0.45, y: 0.92, heightFrac: 0.10 }
     ],
     hotspots: [
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
@@ -176,6 +177,16 @@ export const scenes = {
         ],
         'economics'),
 
+      {
+        id: 'banana-hub', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.40, y: 0.80, w: 0.12, h: 0.16 },
+        speaker: 'thing_banana',
+        collect: 'thing_banana',
+        responses: [
+          { text: "Cosenae's lost his banana, it seems --\nA snack on the path, of his after-lunch dreams.", theme: 'language' }
+        ]
+      },
+
       questionStone('sun',
         { x: 0.10, y: 0.04, w: 0.20, h: 0.20 },
         [
@@ -186,24 +197,26 @@ export const scenes = {
         'science'),
 
       portal('to-cottage', 'cosy-cottage-interior', {
-        sprite: 'portal_door',     x: 0.05, y: 0.86, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.05, y: 0.62, heightFrac: 0.28,
         enterEdge: 'right',        label: 'home'
       }),
 
       portal('to-lake', 'mountain-lake-childlike', {
-        sprite: 'portal_portal_blue', x: 0.96, y: 0.86, heightFrac: 0.32,
+        sprite: 'portal_portal_blue', x: 0.97, y: 0.62, heightFrac: 0.28,
         enterEdge: 'left',         label: 'the lake'
       }),
 
       portal('to-playground', 'fantasy-garden-playground', {
-        sprite: 'portal_ladder',   x: 0.18, y: 0.97, heightFrac: 0.30,
+        sprite: 'portal_ladder',   x: 0.32, y: 0.97, heightFrac: 0.26,
         enterEdge: 'top',          label: 'the playground'
       })
     ],
     gems: [
-      { key: 'gem_1', x: 0.06, y: 0.18 },
-      { key: 'gem_2', x: 0.93, y: 0.50 },
-      { key: 'gem_4', x: 0.36, y: 0.68 }
+      { key: 'gem_1', x: 0.06, y: 0.16 },
+      { key: 'gem_2', x: 0.92, y: 0.42 },
+      { key: 'gem_4', x: 0.38, y: 0.20 },
+      { key: 'gem_6', x: 0.55, y: 0.40 },
+      { key: 'gem_8', x: 0.82, y: 0.22 }
     ]
   },
 
@@ -218,7 +231,10 @@ export const scenes = {
       { sprite: 'peep_daddy_M_30ish',   x: 0.75, y: 0.95, heightFrac: 0.65, idle: 'sway' },
       { sprite: 'animal_Pepsi_dog-thing', x: 0.50, y: 0.97, heightFrac: 0.28, idle: 'bob' }
     ],
-    things: [],
+    things: [
+      { sprite: 'thing_books',     x: 0.42, y: 0.93, heightFrac: 0.12 },
+      { sprite: 'thing_teddybear', x: 0.58, y: 0.93, heightFrac: 0.16 }
+    ],
     hotspots: [
       characterHotspot('mommy', 'peep_mommy_F_30ish',
         { x: 0.16, y: 0.40, w: 0.20, h: 0.55 },
@@ -231,6 +247,26 @@ export const scenes = {
       characterHotspot('pepsi', 'animal_Pepsi_dog-thing',
         { x: 0.42, y: 0.78, w: 0.18, h: 0.20 },
         { theme: 'emotions' }),
+
+      {
+        id: 'cottage-books', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.38, y: 0.83, w: 0.10, h: 0.12 },
+        speaker: 'thing_books',
+        collect: 'thing_books',
+        responses: [
+          { text: "A book on the table, half-read and half-marked --\nThe story is paused (but it'll come back, embarked).", theme: 'language' }
+        ]
+      },
+
+      {
+        id: 'cottage-teddy', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.54, y: 0.81, w: 0.10, h: 0.14 },
+        speaker: 'thing_teddybear',
+        collect: 'thing_teddybear',
+        responses: [
+          { text: "A teddy left out on the rug at the door --\nHe waited for someone, and now waits for more.", theme: 'emotions' }
+        ]
+      },
 
       tinyMuseum('hearth',
         { x: 0.40, y: 0.20, w: 0.20, h: 0.40 },
@@ -269,18 +305,21 @@ export const scenes = {
         'computer-science'),
 
       portal('to-garden', 'sunny-rocket-garden', {
-        sprite: 'portal_door',     x: 0.05, y: 0.92, heightFrac: 0.40,
+        sprite: 'portal_door',     x: 0.05, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the garden'
       }),
 
       portal('to-bedroom', 'girls-bedroom', {
-        sprite: 'portal_open-door', x: 0.95, y: 0.92, heightFrac: 0.40,
+        sprite: 'portal_open-door', x: 0.95, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the bedroom'
       })
     ],
     gems: [
-      { key: 'gem_3', x: 0.10, y: 0.30 },
-      { key: 'gem_5', x: 0.92, y: 0.55 }
+      { key: 'gem_3', x: 0.10, y: 0.28 },
+      { key: 'gem_5', x: 0.92, y: 0.30 },
+      { key: 'gem_2', x: 0.55, y: 0.18 },
+      { key: 'gem_7', x: 0.30, y: 0.55 },
+      { key: 'gem_1', x: 0.65, y: 0.46 }
     ]
   },
 
@@ -295,7 +334,10 @@ export const scenes = {
       { sprite: 'animal_Lucy_Queen-of-Rabbits-Twin', x: 0.20, y: 0.96, heightFrac: 0.38, idle: 'bob' },
       { sprite: 'animal_Cofeenie_Queen-of-Rabbits-Twin', x: 0.80, y: 0.96, heightFrac: 0.38, idle: 'sway' }
     ],
-    things: [],
+    things: [
+      { sprite: 'thing_bucket',  x: 0.34, y: 0.94, heightFrac: 0.16 },
+      { sprite: 'thing_banana',  x: 0.62, y: 0.94, heightFrac: 0.10 }
+    ],
     hotspots: [
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
         { x: 0.42, y: 0.55, w: 0.16, h: 0.40 },
@@ -308,6 +350,26 @@ export const scenes = {
       characterHotspot('cofeenie', 'animal_Cofeenie_Queen-of-Rabbits-Twin',
         { x: 0.72, y: 0.62, w: 0.18, h: 0.36 },
         { theme: 'culture-history' }),
+
+      {
+        id: 'lake-bucket', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.30, y: 0.82, w: 0.10, h: 0.14 },
+        speaker: 'thing_bucket',
+        collect: 'thing_bucket',
+        responses: [
+          { text: "A bucket by the lake -- a fine sort of haul.\nFor catching the small things that fall when they fall.", theme: 'science' }
+        ]
+      },
+
+      {
+        id: 'lake-banana', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.58, y: 0.86, w: 0.10, h: 0.12 },
+        speaker: 'thing_banana',
+        collect: 'thing_banana',
+        responses: [
+          { text: "A banana left out on a lake-side stone --\nLucy says she didn't bring it. (No-one will own.)", theme: 'language' }
+        ]
+      },
 
       tinyMuseum('lake',
         { x: 0.20, y: 0.40, w: 0.60, h: 0.20 },
@@ -338,24 +400,27 @@ export const scenes = {
         'numbers'),
 
       portal('to-vista', 'mountain-lake-vista', {
-        sprite: 'portal_ladder',   x: 0.94, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_ladder',   x: 0.95, y: 0.40, heightFrac: 0.30,
         enterEdge: 'left',         label: 'up the mountain'
       }),
 
       portal('to-garden', 'sunny-rocket-garden', {
-        sprite: 'portal_portal_green', x: 0.05, y: 0.86, heightFrac: 0.30,
+        sprite: 'portal_portal_green', x: 0.04, y: 0.40, heightFrac: 0.28,
         enterEdge: 'right',        label: 'the garden'
       }),
 
       portal('to-waterfall', 'waterfall-mt-fuji-in-distance', {
-        sprite: 'portal_portal_blue', x: 0.50, y: 0.55, heightFrac: 0.20,
+        sprite: 'portal_portal_blue', x: 0.50, y: 0.45, heightFrac: 0.20,
         enterEdge: 'left',         label: 'far away'
       })
     ],
     gems: [
-      { key: 'gem_2', x: 0.08, y: 0.22 },
-      { key: 'gem_6', x: 0.93, y: 0.85 },
-      { key: 'gem_8', x: 0.42, y: 0.10 }
+      { key: 'gem_2', x: 0.08, y: 0.18 },
+      { key: 'gem_6', x: 0.92, y: 0.78 },
+      { key: 'gem_8', x: 0.40, y: 0.10 },
+      { key: 'gem_3', x: 0.20, y: 0.62 },
+      { key: 'gem_5', x: 0.72, y: 0.20 },
+      { key: 'gem_9', x: 0.78, y: 0.62 }
     ]
   },
 
@@ -432,24 +497,26 @@ export const scenes = {
         'language'),
 
       portal('to-hub', 'sunny-rocket-garden', {
-        sprite: 'portal_ladder',   x: 0.05, y: 0.92, heightFrac: 0.32,
+        sprite: 'portal_ladder',   x: 0.04, y: 0.55, heightFrac: 0.30,
         enterEdge: 'bottom',       label: 'the garden'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.50, y: 0.95, heightFrac: 0.28,
+        sprite: 'portal_door',     x: 0.55, y: 0.10, heightFrac: 0.22,
         enterEdge: 'left',         label: 'the village'
       }),
 
       portal('to-school', 'school-courtyard', {
-        sprite: 'portal_office-door-portal', x: 0.94, y: 0.92, heightFrac: 0.32,
+        sprite: 'portal_office-door-portal', x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the school'
       })
     ],
     gems: [
-      { key: 'gem_1', x: 0.06, y: 0.22 },
-      { key: 'gem_4', x: 0.95, y: 0.18 },
-      { key: 'gem_7', x: 0.50, y: 0.60 }
+      { key: 'gem_1', x: 0.06, y: 0.20 },
+      { key: 'gem_4', x: 0.96, y: 0.18 },
+      { key: 'gem_7', x: 0.40, y: 0.30 },
+      { key: 'gem_5', x: 0.70, y: 0.40 },
+      { key: 'gem_9', x: 0.20, y: 0.40 }
     ]
   },
 
@@ -465,7 +532,10 @@ export const scenes = {
       { sprite: 'animal_Conaloo_bear-butterly',   x: 0.16, y: 0.94, heightFrac: 0.30, idle: 'sway' },
       { sprite: 'animal_Pepsi_dog-thing',         x: 0.85, y: 0.96, heightFrac: 0.22, idle: 'bob'  }
     ],
-    things: [],
+    things: [
+      { sprite: 'thing_bucket',     x: 0.68, y: 0.94, heightFrac: 0.14 },
+      { sprite: 'thing_flashlight', x: 0.78, y: 0.94, heightFrac: 0.12 }
+    ],
     hotspots: [
       characterHotspot('keefa', 'peep_Keefa_M_25',
         { x: 0.44, y: 0.40, w: 0.16, h: 0.55 },
@@ -474,6 +544,26 @@ export const scenes = {
       characterHotspot('konessa', 'peep_Konessa_has-flower',
         { x: 0.26, y: 0.45, w: 0.16, h: 0.50 },
         { theme: 'art-history' }),
+
+      {
+        id: 'seaside-bucket', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.62, y: 0.82, w: 0.12, h: 0.16 },
+        speaker: 'thing_bucket',
+        collect: 'thing_bucket',
+        responses: [
+          { text: "A bucket of seaside, full to the brim --\nFor minnows and shells and the salt-of-the-swim.", theme: 'science' }
+        ]
+      },
+
+      {
+        id: 'seaside-flashlight', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.74, y: 0.86, w: 0.10, h: 0.12 },
+        speaker: 'thing_flashlight',
+        collect: 'thing_flashlight',
+        responses: [
+          { text: "A torch by the wall, for the dimming of light --\nKeefa says: 'Take it. The walk home is bright.'", theme: 'emotions' }
+        ]
+      },
 
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
         { x: 0.08, y: 0.70, w: 0.16, h: 0.28 },
@@ -512,19 +602,22 @@ export const scenes = {
         'language'),
 
       portal('to-waterfall', 'waterfall-mt-fuji-in-distance', {
-        sprite: 'portal_portal_blue', x: 0.05, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_portal_blue', x: 0.05, y: 0.55, heightFrac: 0.28,
         enterEdge: 'right',        label: 'far away'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.94, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.30,
         enterEdge: 'left',         label: 'the village'
       })
     ],
     gems: [
-      { key: 'gem_3', x: 0.07, y: 0.20 },
-      { key: 'gem_9', x: 0.95, y: 0.10 },
-      { key: 'gem_5', x: 0.45, y: 0.78 }
+      { key: 'gem_3', x: 0.07, y: 0.16 },
+      { key: 'gem_9', x: 0.95, y: 0.08 },
+      { key: 'gem_5', x: 0.40, y: 0.70 },
+      { key: 'gem_2', x: 0.62, y: 0.30 },
+      { key: 'gem_6', x: 0.30, y: 0.18 },
+      { key: 'gem_8', x: 0.72, y: 0.78 }
     ]
   },
 
@@ -585,23 +678,26 @@ export const scenes = {
         'philosophy'),
 
       portal('to-garden', 'fantasy-garden-playground', {
-        sprite: 'portal_door',     x: 0.05, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.04, y: 0.62, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the playground'
       }),
 
       portal('to-school', 'school-courtyard', {
-        sprite: 'portal_office-door-portal', x: 0.50, y: 0.93, heightFrac: 0.30,
+        sprite: 'portal_office-door-portal', x: 0.50, y: 0.40, heightFrac: 0.26,
         enterEdge: 'right',        label: 'the school'
       }),
 
       portal('to-seaside', 'seaside-village-sunset', {
-        sprite: 'portal_door',     x: 0.94, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.96, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the seaside'
       })
     ],
     gems: [
       { key: 'gem_3', x: 0.10, y: 0.20 },
-      { key: 'gem_8', x: 0.85, y: 0.45 }
+      { key: 'gem_8', x: 0.85, y: 0.30 },
+      { key: 'gem_2', x: 0.30, y: 0.55 },
+      { key: 'gem_6', x: 0.70, y: 0.65 },
+      { key: 'gem_4', x: 0.40, y: 0.10 }
     ]
   },
 
@@ -615,7 +711,10 @@ export const scenes = {
       { sprite: 'animal_Conaloo_bear-butterly', x: 0.20, y: 0.94, heightFrac: 0.30, idle: 'sway' },
       { sprite: 'peep_Lulumi_F_14',             x: 0.78, y: 0.95, heightFrac: 0.55, idle: 'sway' }
     ],
-    things: [],
+    things: [
+      { sprite: 'thing_books',     x: 0.55, y: 0.94, heightFrac: 0.14 },
+      { sprite: 'thing_hourglass', x: 0.40, y: 0.94, heightFrac: 0.16 }
+    ],
     hotspots: [
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
         { x: 0.12, y: 0.68, w: 0.18, h: 0.30 },
@@ -624,6 +723,26 @@ export const scenes = {
       characterHotspot('lulumi', 'peep_Lulumi_F_14',
         { x: 0.70, y: 0.45, w: 0.20, h: 0.50 },
         { theme: 'language' }),
+
+      {
+        id: 'vista-books', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.50, y: 0.84, w: 0.10, h: 0.14 },
+        speaker: 'thing_books',
+        collect: 'thing_books',
+        responses: [
+          { text: "Lulumi's left a book in the long mountain grass --\nIt's marked with a leaf at a paragraph's pass.", theme: 'language' }
+        ]
+      },
+
+      {
+        id: 'vista-hourglass', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.36, y: 0.82, w: 0.12, h: 0.16 },
+        speaker: 'thing_hourglass',
+        collect: 'thing_hourglass',
+        responses: [
+          { text: "An hourglass set on a stone, gently tilted --\nThe sand's nearly through, but it never quite wilted.", theme: 'science' }
+        ]
+      },
 
       tinyMuseum('peak',
         { x: 0.30, y: 0.05, w: 0.40, h: 0.30 },
@@ -662,19 +781,21 @@ export const scenes = {
         'computer-science'),
 
       portal('to-childlike', 'mountain-lake-childlike', {
-        sprite: 'portal_ladder',   x: 0.05, y: 0.92, heightFrac: 0.32,
+        sprite: 'portal_ladder',   x: 0.04, y: 0.52, heightFrac: 0.32,
         enterEdge: 'right',        label: 'down to the lake'
       }),
 
       portal('to-roof', 'skyscraper-roof', {
-        sprite: 'portal_portal_green', x: 0.94, y: 0.92, heightFrac: 0.32,
+        sprite: 'portal_portal_green', x: 0.96, y: 0.40, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the rooftop'
       })
     ],
     gems: [
-      { key: 'gem_2', x: 0.08, y: 0.18 },
-      { key: 'gem_7', x: 0.94, y: 0.40 },
-      { key: 'gem_5', x: 0.42, y: 0.70 }
+      { key: 'gem_2', x: 0.08, y: 0.14 },
+      { key: 'gem_7', x: 0.94, y: 0.78 },
+      { key: 'gem_5', x: 0.42, y: 0.40 },
+      { key: 'gem_3', x: 0.65, y: 0.18 },
+      { key: 'gem_9', x: 0.30, y: 0.78 }
     ]
   },
 
@@ -743,14 +864,16 @@ export const scenes = {
         'philosophy'),
 
       portal('to-cottage', 'cosy-cottage-interior', {
-        sprite: 'portal_open-door', x: 0.05, y: 0.93, heightFrac: 0.40,
+        sprite: 'portal_open-door', x: 0.05, y: 0.55, heightFrac: 0.36,
         enterEdge: 'right',        label: 'home'
       })
     ],
     gems: [
-      { key: 'gem_5', x: 0.10, y: 0.30 },
-      { key: 'gem_1', x: 0.92, y: 0.20 },
-      { key: 'gem_6', x: 0.40, y: 0.62 }
+      { key: 'gem_5', x: 0.08, y: 0.20 },
+      { key: 'gem_1', x: 0.94, y: 0.18 },
+      { key: 'gem_6', x: 0.40, y: 0.30 },
+      { key: 'gem_3', x: 0.55, y: 0.62 },
+      { key: 'gem_8', x: 0.72, y: 0.50 }
     ]
   },
 
@@ -822,19 +945,21 @@ export const scenes = {
         'numbers'),
 
       portal('to-playground', 'fantasy-garden-playground', {
-        sprite: 'portal_office-door-portal', x: 0.05, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_office-door-portal', x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the playground'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.95, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the village'
       })
     ],
     gems: [
-      { key: 'gem_8', x: 0.07, y: 0.25 },
-      { key: 'gem_4', x: 0.94, y: 0.12 },
-      { key: 'gem_2', x: 0.45, y: 0.58 }
+      { key: 'gem_8', x: 0.07, y: 0.20 },
+      { key: 'gem_4', x: 0.94, y: 0.10 },
+      { key: 'gem_2', x: 0.45, y: 0.30 },
+      { key: 'gem_6', x: 0.30, y: 0.55 },
+      { key: 'gem_9', x: 0.65, y: 0.40 }
     ]
   },
 
@@ -881,13 +1006,16 @@ export const scenes = {
         'philosophy'),
 
       portal('to-vista', 'mountain-lake-vista', {
-        sprite: 'portal_ladder',   x: 0.05, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_ladder',   x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the mountain'
       })
     ],
     gems: [
-      { key: 'gem_9', x: 0.45, y: 0.30 },
-      { key: 'gem_2', x: 0.92, y: 0.32 }
+      { key: 'gem_9', x: 0.45, y: 0.18 },
+      { key: 'gem_2', x: 0.93, y: 0.20 },
+      { key: 'gem_5', x: 0.62, y: 0.55 },
+      { key: 'gem_7', x: 0.16, y: 0.30 },
+      { key: 'gem_3', x: 0.36, y: 0.48 }
     ]
   },
 
@@ -946,18 +1074,22 @@ export const scenes = {
         'art-history'),
 
       portal('to-lake', 'mountain-lake-childlike', {
-        sprite: 'portal_portal_blue', x: 0.05, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_portal_blue', x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the lake'
       }),
 
       portal('to-seaside', 'seaside-village-sunset', {
-        sprite: 'portal_door',     x: 0.95, y: 0.93, heightFrac: 0.32,
+        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the seaside'
       })
     ],
     gems: [
       { key: 'gem_6', x: 0.10, y: 0.50 },
-      { key: 'gem_4', x: 0.50, y: 0.65 }
+      { key: 'gem_4', x: 0.50, y: 0.30 },
+      { key: 'gem_8', x: 0.30, y: 0.18 },
+      { key: 'gem_2', x: 0.70, y: 0.12 },
+      { key: 'gem_5', x: 0.86, y: 0.55 },
+      { key: 'gem_1', x: 0.45, y: 0.68 }
     ]
   }
 };

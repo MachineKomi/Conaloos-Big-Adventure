@@ -39,6 +39,7 @@ export class GemHUDScene extends Phaser.Scene {
   create() {
     this._unsubscribe = this.gemBag.onChange((evt) => this._onChange(evt));
     this._build();
+    this.scene.bringToTop();
     this.scale.on('resize', () => this._reposition());
     this.events.on('shutdown', () => this._unsubscribe?.());
   }

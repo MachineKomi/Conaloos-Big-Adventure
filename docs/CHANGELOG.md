@@ -1,5 +1,64 @@
 # Changelog
 
+## 2026-05-09 — v1.2.2: HUD visibility + smoother walk + content fill
+
+Dad ran the v1.2.1 deploy and found the gem counter was still
+hidden during gameplay (only faintly visible on the title), Amelia
+was still teleporting instead of gliding, and there weren't enough
+gems / collectables. This fixes all three.
+
+### Critical bug fixes
+
+- **Gem HUD was rendering BEHIND game scenes.** Phaser scenes draw
+  in the order they're added — last added is on top. The HUDs were
+  added before gameplay scenes, so every game scene covered them.
+  Fix: in `main.js`, gameplay + title + tutorial are now added FIRST,
+  then the HUDs (GlobalUI, Inventory, GemHUD) added LAST. They now
+  render on top of every gameplay scene.
+- **Amelia teleporting instead of gliding.** Two causes:
+  1. `Accessibility.reducedMotion` defaulted to `null` (inherit from
+     OS). Many tablets / Windows configurations have prefers-reduced-
+     motion enabled by default for accessibility, so Amelia
+     teleported. Default is now `false` — the user can still toggle
+     reduced motion via the corner button if they want it.
+  2. Walk-tween parameters were too short. Bumped MIN_WALK_MS 380→600
+     and dropped speed 420→380 px/s. Switched to `Sine.easeOut` for a
+     snappier launch and gentler landing.
+
+### Content fill
+
+- **Way more gems.** ~55 gem placements across the 11 scenes (up from
+  ~25). 4–6 per scene, distributed across corners, edges, mid-height,
+  and tucked-away spots — not just the centre.
+- **More collectables.** Added thing pickups to scenes that had none:
+  banana in the hub, books + teddybear in the cottage, bucket +
+  banana at the lake (childlike), bucket + flashlight at the seaside,
+  books + hourglass at the vista. All using existing things — many
+  are duplicates so the inventory's stacking ×N badge gets exercised.
+- **Portal placement varied.** Most portals moved off the bottom-edge
+  to mid-screen y values (some in the centre, some on side walls,
+  some up high in the village square). Less "everything's at the
+  ground" — each scene now has portals at differentiated y positions
+  so they feel like actual places in the painting, not buttons on a
+  shelf.
+
+### Asset audit (everything's in use)
+
+- 11 / 11 backgrounds → scenes ✓
+- 11 / 11 peeps → at least one scene ✓
+- 6 / 6 valid animals → at least one scene ✓ (Umi still typo'd
+  `anima_…` in filename → skipped by parser; rename when ready)
+- 15 / 15 things → in scenes (or as the inventory icon in the case
+  of the backpack) ✓
+- 7 / 7 music tracks → wired to scenes via aliases ✓
+- 21 / 21 SFX → in `sfxPools.js` (most used, a few held in reserve) ✓
+
+### Still deferred to v1.3
+
+- Mobile/tablet responsive scaling.
+- Sprite animations (rocketship launch, dog flip).
+- Inventory-aware character lines.
+
 ## 2026-05-09 — v1.2.1: post-playtest fixes
 
 Same v1.2 branch — post-deploy playtest revealed several issues that

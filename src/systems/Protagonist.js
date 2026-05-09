@@ -16,9 +16,9 @@
 import { Accessibility } from './Accessibility.js';
 
 const FLOOR_Y_FRAC = 0.95;
-const WALK_SPEED_PX_PER_SEC = 420;
-const MIN_WALK_MS = 380;
-const MAX_WALK_MS = 1400;
+const WALK_SPEED_PX_PER_SEC = 380;
+const MIN_WALK_MS = 600;     // Make even tiny clicks tween for >0.6s
+const MAX_WALK_MS = 1800;
 const HEIGHT_FRAC = 0.55;
 const SPRITE_KEY = 'peep_Amelia_F_4';
 const Z_DEPTH = 800;
@@ -215,12 +215,15 @@ export class Protagonist {
   _tweenTo(x, y, durationMs, onComplete) {
     this._walkTween?.remove();
     const sprite = this.sprite;
+    // Linear-ish ease so movement reads as a smooth glide instead of a
+    // slow-start-and-stop. Sine.easeOut feels best — quick to commit
+    // to the move, gentle landing.
     this._walkTween = this.scene.tweens.add({
       targets: sprite,
       x,
       y,
       duration: durationMs || MIN_WALK_MS,
-      ease: 'Sine.easeInOut',
+      ease: 'Sine.easeOut',
       onUpdate: () => { if (sprite) sprite.setDepth(sprite.y); },
       onComplete: () => {
         if (sprite) sprite.setDepth(sprite.y);
