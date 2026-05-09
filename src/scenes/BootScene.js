@@ -20,6 +20,13 @@ export class BootScene extends Phaser.Scene {
     const cx = width / 2;
     const cy = height / 2;
 
+    // Hide the HTML pre-boot message immediately — Phaser is taking
+    // over now, and we don't want both messages showing at once
+    // ("the crayons are warming up" was duplicated for several
+    // seconds during Phaser preload).
+    const bootMessage = document.getElementById('boot-message');
+    if (bootMessage) bootMessage.classList.add('hidden');
+
     this.add.rectangle(0, 0, width, height, 0xfff8e7).setOrigin(0, 0);
 
     const hello = this.add

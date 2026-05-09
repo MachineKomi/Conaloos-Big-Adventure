@@ -15,6 +15,12 @@ const VERSE = [
   "Click *peeps*, click *animals*, click *things* on the floor --",
   "And listen for rhymes, then click some more.",
   "",
+  "Pick up shiny *gems* and they'll fly to the top --",
+  "They add up like sums, the math doesn't stop.",
+  "",
+  "Pick up *small things* -- they slide into my bag.",
+  "Tap the backpack to peek. (It's a fine little brag.)",
+  "",
   "If a *door* or a *ladder* is what you've spied,",
   "Just click on it -- and I'll go for a ride."
 ];

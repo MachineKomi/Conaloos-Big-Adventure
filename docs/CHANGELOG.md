@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-05-09 — v1.3.1: final polish
+
+### Polish
+
+- **Boot text duplication fixed.** "The crayons are warming up..."
+  now appears just once (in Phaser); the HTML pre-boot overlay is
+  hidden as soon as Phaser preload starts.
+- **Tutorial updated** to mention gems, the inventory bag, and the
+  flying-collect feedback.
+
+### Gem balance
+
+- Reduced gems per scene from 7–9 → ~5. Total scattered ≈ 55.
+- Gem size unified: scattered AND reward-burst gems both use
+  `heightFrac: 0.13` (was 0.16 vs 0.10 — visually inconsistent).
+- Reward-burst from peep clicks: 2–5 gems instead of 1–3.
+- Per-character `rewardGemChance` 30% → 45%. Talking pays better.
+
+### Things fly to the bag (matching gems-fly-to-counter)
+
+- On collect, the thing-sprite tweens to the inventory bag icon
+  (top-left) over 600ms with a slight spin, then the count
+  increments with the bag's existing pop animation.
+
+### Rocketship is now properly interactive
+
+- Hotspot has `speaker: 'thing_rocketship'` so the special
+  `_rocketLaunch` animation fires (~30% chance per click): the
+  rocket launches off-screen and bounces back down. Always restored
+  on revisit so kids can launch it again and again.
+
+### Quiz freeze grace period
+
+- When a quiz opens, hotspot zone clicks AND background-walk clicks
+  are blocked for 2.5 seconds. The quiz answer buttons are NOT
+  blocked (they use a separate event path on QuizDialog). This
+  stops accidental taps from dismissing dialog/hopping Amelia mid-
+  question.
+
+### Dynamic surprises
+
+- **Random idle reactions.** Every 6–14 seconds a random
+  character/thing in the scene does a small wiggle + hop. Adds a
+  sense the world is alive when the kid hasn't clicked recently.
+- **Ambient sparkles.** Every 4–9 seconds a small coloured sparkle
+  drifts gently across the upper half of the scene. Pure
+  decoration; no interaction.
+- **Three new collectables** (sprinkled per "more collectables
+  dotted around"): teddybear by the rocketship, books + banana in
+  the village square.
+
 ## 2026-05-09 — v1.3: quizzes, sprite animations, mobile responsive, polish
 
 The "actually-implement-everything-Dad-asked-for" pass. Three new

@@ -119,10 +119,31 @@ export class GameScene extends Phaser.Scene {
       this.services.audio.playMusic(this.def.music, this);
     }
 
+    // Random tiny idle reactions — every 6-14 seconds, a random
+    // character does a small wiggle / tiny hop. Adds a sense the
+    // world is alive even when the kid hasn't clicked recently.
+    this._idleReactionTimer = this.time.addEvent({
+      delay: 6000 + Math.random() * 8000,
+      loop: true,
+      callback: () => this._randomIdleReaction()
+    });
+
+    // Occasional ambient sparkle drifting across the background —
+    // pure delight, no interaction.
+    this._ambientSparkleTimer = this.time.addEvent({
+      delay: 4000 + Math.random() * 5000,
+      loop: true,
+      callback: () => this._ambientSparkle()
+    });
+
     // Background click: walk Amelia to that x. Lets the child move her
     // around without needing to hit a hotspot.
     this.input.on('pointerup', (pointer, currentlyOver) => {
       if (this._isTransitioning) return;
+      // Quiz active — ignore stray bg clicks so they don't dismiss
+      // dialogue or distract the kid mid-question.
+      if (this.hotspots?._quizFreezeUntil && Date.now() < this.hotspots._quizFreezeUntil) return;
+      if (this.hotspots?.quizDialog?.isVisible?.()) return;
       // If a UI button on global scenes was clicked, skip.
       if (currentlyOver && currentlyOver.length > 0) return;
       // Dismiss any open dialogue first.
@@ -145,6 +166,8 @@ export class GameScene extends Phaser.Scene {
       for (const p of this._portalSprites) p.destroy();
       this._portalSprites = [];
       this._portalDefsById.clear();
+      this._idleReactionTimer?.remove(false);
+      this._ambientSparkleTimer?.remove(false);
     });
   }
 
@@ -274,15 +297,14 @@ export class GameScene extends Phaser.Scene {
       if (worldCollected.has(placementId)) continue;
       const img = this.add.image(x, y, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
-      // Bigger gems (60% larger than v1.2.2 default) so kids can find them.
-      const targetH = h * (g.heightFrac ?? 0.16);
+      // Middle-ground gem size — consistent between scattered gems
+      // and reward burst gems (was 0.16 in scenes vs 0.10 in bursts).
+      const targetH = h * (g.heightFrac ?? 0.13);
       img.setScale(targetH / tex.height);
       img.setRotation(g.rotation ?? (Math.random() - 0.5) * 0.5);
       // CRITICAL: always render on top of every other sprite so they're
-      // never hidden behind a peep / portal / thing. Click goes to the
-      // gem; whatever's behind isn't reachable via that pixel until the
-      // gem is collected, but everything else stays clickable.
-      img.setDepth(9000 + (y / h));    // High base + tiny y modulation for stable order
+      // never hidden behind a peep / portal / thing.
+      img.setDepth(9000 + (y / h));
 
       // Subtle bob/twinkle so the gems read as collectible.
       if (!Accessibility.reducedMotion) {
@@ -499,6 +521,55 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Pick a random character/thing in the scene and play a tiny idle
+   *  reaction (wiggle / hop). Skips Amelia and any sprite that's
+   *  currently playing another animation. */
+  _randomIdleReaction() {
+    if (Accessibility.reducedMotion) return;
+    const candidates = [];
+    for (const [key, sprite] of this.spritesByKey.entries()) {
+      if (!sprite || !sprite.active) continue;
+      if (key === 'peep_Amelia_F_4') continue;
+      if (sprite._launching || sprite._flipping || sprite._buzzing || sprite._flitting || sprite._wiggling) continue;
+      candidates.push(sprite);
+    }
+    if (candidates.length === 0) return;
+    const sprite = candidates[Math.floor(Math.random() * candidates.length)];
+    sprite._wiggling = true;
+    const baseAngle = sprite.angle || 0;
+    const baseY = sprite.y;
+    this.tweens.chain({
+      targets: sprite,
+      tweens: [
+        { angle: baseAngle - 4, duration: 130, ease: 'Sine.easeInOut' },
+        { angle: baseAngle + 4, duration: 130, ease: 'Sine.easeInOut' },
+        { angle: baseAngle - 3, y: baseY - 8, duration: 130, ease: 'Sine.easeOut' },
+        { angle: baseAngle, y: baseY, duration: 130, ease: 'Sine.easeIn' }
+      ],
+      onComplete: () => { sprite._wiggling = false; }
+    });
+  }
+
+  _ambientSparkle() {
+    if (Accessibility.reducedMotion) return;
+    const { width, height } = this.scale;
+    const x = Math.random() * width;
+    const y = height * 0.1 + Math.random() * height * 0.4;
+    const colours = [0xfff2a8, 0xffd4f0, 0xc8e7ff, 0xfff8e7];
+    const colour = colours[Math.floor(Math.random() * colours.length)];
+    const dot = this.add.circle(x, y, 5, colour, 1).setDepth(7500);
+    this.tweens.add({
+      targets: dot,
+      x: x + (Math.random() - 0.5) * 80,
+      y: y + 60 + Math.random() * 40,
+      alpha: { from: 1, to: 0 },
+      scale: { from: 1.3, to: 0.4 },
+      duration: 1400 + Math.random() * 600,
+      ease: 'Quad.easeIn',
+      onComplete: () => dot.destroy()
+    });
+  }
+
   /**
    * Trigger a special animation for certain speakers — adds visual
    * delight without breaking the click-and-listen loop.
@@ -604,11 +675,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Burst of 1-3 random gems out of a sprite's head — used as a
-   * "reward" for talking to certain characters.
+   * Burst of 2-5 random gems out of a sprite's head — reward for
+   * talking to certain characters or correctly answering a quiz.
+   * Reward gems use the same size as scattered gems for consistency.
    */
   _spawnGemBurst(sourceSprite) {
-    const count = 1 + Math.floor(Math.random() * 3);
+    const count = 2 + Math.floor(Math.random() * 4); // 2..5
     const gemKeys = [];
     for (let i = 1; i <= 9; i++) {
       if (this.textures.exists(`gem_${i}`)) gemKeys.push(`gem_${i}`);
@@ -619,15 +691,16 @@ export class GameScene extends Phaser.Scene {
       const value = Number.parseInt(key.replace(/^gem_/, ''), 10) || 1;
       const startX = sourceSprite.x;
       const startY = sourceSprite.y - sourceSprite.displayHeight + 8;
-      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 1.4;
-      const dist = 50 + Math.random() * 80;
+      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 1.6;
+      const dist = 60 + Math.random() * 100;
       const restX = startX + Math.cos(angle) * dist;
       const restY = startY + Math.sin(angle) * dist;
       const gem = this.add.image(startX, startY, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
-      gem.setScale((this.scale.height * 0.10) / tex.height);
+      // Same size as scattered gems for visual consistency.
+      gem.setScale((this.scale.height * 0.13) / tex.height);
       gem.setRotation((Math.random() - 0.5) * 0.6);
-      gem.setDepth(startY + 1);
+      gem.setDepth(9000 + (startY / this.scale.height));
 
       this.tweens.add({
         targets: gem,
@@ -655,17 +728,28 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * On collect: tween the thing-sprite up to the inventory bag icon
+   * (top-left), shrinking + spinning slightly. Mirrors gems flying to
+   * the counter so collection always reads as "this just went into
+   * the bag".
+   */
   _popAndHide(sprite) {
     if (Accessibility.reducedMotion) {
       sprite.setVisible(false);
       return;
     }
+    // Inventory icon centre (matches Inventory.js ICON_X+ICON_SIZE/2).
+    const target = { x: 16 + 100 / 2, y: 12 + 100 / 2 };
     this.tweens.add({
       targets: sprite,
-      scale: sprite.scale * 0.1,
+      x: target.x,
+      y: target.y,
+      scale: sprite.scale * 0.35,
       alpha: 0,
-      duration: 280,
-      ease: 'Back.easeIn',
+      duration: 600,
+      ease: 'Cubic.easeIn',
+      onUpdate: () => sprite.setRotation(sprite.rotation + 0.1),
       onComplete: () => sprite.setVisible(false)
     });
   }

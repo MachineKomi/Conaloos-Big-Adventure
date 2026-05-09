@@ -32,7 +32,7 @@ function characterHotspot(id, character, bounds, opts = {}) {
     cursor: 'sparkle',
     speaker: character,
     bounds,
-    rewardGemChance: opts.rewardGemChance ?? 0.30,
+    rewardGemChance: opts.rewardGemChance ?? 0.45,
     responses
   };
 }
@@ -122,7 +122,8 @@ export const scenes = {
     ],
     things: [
       { sprite: 'thing_rocketship', x: 0.66, y: 0.85, heightFrac: 0.45 },
-      { sprite: 'thing_banana',     x: 0.45, y: 0.92, heightFrac: 0.10 }
+      { sprite: 'thing_banana',     x: 0.45, y: 0.92, heightFrac: 0.10 },
+      { sprite: 'thing_teddybear',  x: 0.92, y: 0.95, heightFrac: 0.18 }
     ],
     hotspots: [
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
@@ -149,15 +150,26 @@ export const scenes = {
         { x: 0.36, y: 0.48, w: 0.14, h: 0.14 },
         { theme: 'animals' }),
 
-      tinyMuseum('rocketship',
-        { x: 0.58, y: 0.55, w: 0.18, h: 0.35 },
-        [
-          "A rocket's a ship that has gone for a climb,\nIt borrows the sky for a chunk of its time.",
-          "It pushes the air from its nose to its tail --\nAnd the push is the thing that decides if you sail.",
-          "Out there, where it's quiet, the stars are quite near.\nThe trip is so long, you forget to feel fear.",
-          "And mostly, a rocket is parked, not in flight.\nA parked rocket counts. It's a *plan* that holds tight."
-        ],
-        'science'),
+      // Rocketship gets `speaker: 'thing_rocketship'` so the special
+      // launch animation hook in GameScene._maybeSpecialAnimation
+      // fires for this hotspot. Click sometimes makes it actually
+      // launch off-screen and bounce back. Always re-rendered fresh
+      // on revisit, so kids can launch it again and again.
+      {
+        id: 'rocketship',
+        type: 'reactor',
+        cursor: 'sparkle',
+        bounds: { x: 0.58, y: 0.55, w: 0.18, h: 0.35 },
+        speaker: 'thing_rocketship',
+        rewardGemChance: 0.35,
+        responses: [
+          { text: "A rocket's a ship that has gone for a climb,\nIt borrows the sky for a chunk of its time.", theme: 'science' },
+          { text: "It pushes the air from its nose to its tail --\nAnd the push is the thing that decides if you sail.", theme: 'science' },
+          { text: "Out there, where it's quiet, the stars are quite near.\nThe trip is so long, you forget to feel fear.", theme: 'science' },
+          { text: "And mostly, a rocket is parked, not in flight.\nA parked rocket counts. It's a *plan* that holds tight.", theme: 'science' },
+          { text: "Five! Four! Three! Two! One! ... and *off*.\nThe sky takes the rocket. The rocket takes off.", theme: 'numbers' }
+        ]
+      },
 
       tinyMuseum('countdown',
         { x: 0.50, y: 0.20, w: 0.16, h: 0.18 },
@@ -167,6 +179,16 @@ export const scenes = {
           "Five fingers, four toes-on-a-paw, three small bears,\nTwo eyes-on-a-Conaloo, one nose. (Then up there.)"
         ],
         'numbers'),
+
+      {
+        id: 'hub-teddy', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.86, y: 0.80, w: 0.12, h: 0.18 },
+        speaker: 'thing_teddybear',
+        collect: 'thing_teddybear',
+        responses: [
+          { text: "A teddy left out under the rocket's broad shadow --\nHe came to watch lift-off (he wasn't quite ready, though).", theme: 'emotions' }
+        ]
+      },
 
       tinyMuseum('trade',
         { x: 0.30, y: 0.78, w: 0.10, h: 0.12 },
@@ -213,12 +235,9 @@ export const scenes = {
     ],
     gems: [
       { key: 'gem_1', x: 0.06, y: 0.16 },
-      { key: 'gem_2', x: 0.92, y: 0.42 },
       { key: 'gem_4', x: 0.38, y: 0.20 },
       { key: 'gem_6', x: 0.55, y: 0.40 },
       { key: 'gem_8', x: 0.82, y: 0.22 },
-      { key: 'gem_3', x: 0.20, y: 0.50 },
-      { key: 'gem_7', x: 0.65, y: 0.10 },
       { key: 'gem_5', x: 0.94, y: 0.10 }
     ]
   },
@@ -322,10 +341,7 @@ export const scenes = {
       { key: 'gem_5', x: 0.92, y: 0.30 },
       { key: 'gem_2', x: 0.55, y: 0.18 },
       { key: 'gem_7', x: 0.30, y: 0.55 },
-      { key: 'gem_1', x: 0.65, y: 0.46 },
-      { key: 'gem_4', x: 0.20, y: 0.12 },
-      { key: 'gem_8', x: 0.78, y: 0.62 },
-      { key: 'gem_6', x: 0.42, y: 0.30 }
+      { key: 'gem_8', x: 0.78, y: 0.62 }
     ]
   },
 
@@ -424,12 +440,8 @@ export const scenes = {
       { key: 'gem_2', x: 0.08, y: 0.18 },
       { key: 'gem_6', x: 0.92, y: 0.78 },
       { key: 'gem_8', x: 0.40, y: 0.10 },
-      { key: 'gem_3', x: 0.20, y: 0.62 },
       { key: 'gem_5', x: 0.72, y: 0.20 },
-      { key: 'gem_9', x: 0.78, y: 0.62 },
-      { key: 'gem_1', x: 0.50, y: 0.10 },
-      { key: 'gem_4', x: 0.34, y: 0.46 },
-      { key: 'gem_7', x: 0.62, y: 0.46 }
+      { key: 'gem_9', x: 0.78, y: 0.62 }
     ]
   },
 
@@ -525,10 +537,7 @@ export const scenes = {
       { key: 'gem_4', x: 0.96, y: 0.18 },
       { key: 'gem_7', x: 0.40, y: 0.30 },
       { key: 'gem_5', x: 0.70, y: 0.40 },
-      { key: 'gem_9', x: 0.20, y: 0.40 },
-      { key: 'gem_2', x: 0.55, y: 0.62 },
-      { key: 'gem_3', x: 0.86, y: 0.42 },
-      { key: 'gem_6', x: 0.30, y: 0.20 }
+      { key: 'gem_2', x: 0.55, y: 0.62 }
     ]
   },
 
@@ -627,12 +636,8 @@ export const scenes = {
       { key: 'gem_3', x: 0.07, y: 0.16 },
       { key: 'gem_9', x: 0.95, y: 0.08 },
       { key: 'gem_5', x: 0.40, y: 0.70 },
-      { key: 'gem_2', x: 0.62, y: 0.30 },
       { key: 'gem_6', x: 0.30, y: 0.18 },
-      { key: 'gem_8', x: 0.72, y: 0.78 },
-      { key: 'gem_1', x: 0.50, y: 0.50 },
-      { key: 'gem_4', x: 0.86, y: 0.62 },
-      { key: 'gem_7', x: 0.18, y: 0.50 }
+      { key: 'gem_8', x: 0.72, y: 0.78 }
     ]
   },
 
@@ -651,7 +656,9 @@ export const scenes = {
       { sprite: 'peep_Wawoo_robo-snowman', x: 0.88, y: 0.95, heightFrac: 0.55, idle: 'bob'  }
     ],
     things: [
-      { sprite: 'thing_funky-house-glass-colourful', x: 0.46, y: 0.55, heightFrac: 0.40 }
+      { sprite: 'thing_funky-house-glass-colourful', x: 0.46, y: 0.55, heightFrac: 0.40 },
+      { sprite: 'thing_books',  x: 0.20, y: 0.95, heightFrac: 0.16 },
+      { sprite: 'thing_banana', x: 0.95, y: 0.95, heightFrac: 0.12 }
     ],
     hotspots: [
       characterHotspot('mommy', 'peep_mommy_F_30ish',
@@ -673,6 +680,26 @@ export const scenes = {
       characterHotspot('wawoo', 'peep_Wawoo_robo-snowman',
         { x: 0.80, y: 0.50, w: 0.16, h: 0.45 },
         { theme: 'science' }),
+
+      {
+        id: 'village-books', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.16, y: 0.83, w: 0.12, h: 0.18 },
+        speaker: 'thing_books',
+        collect: 'thing_books',
+        responses: [
+          { text: "A stack of village library books at the gate --\nReturned, perhaps. Or perhaps just *running late*.", theme: 'culture-history' }
+        ]
+      },
+
+      {
+        id: 'village-banana', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.91, y: 0.85, w: 0.10, h: 0.16 },
+        speaker: 'thing_banana',
+        collect: 'thing_banana',
+        responses: [
+          { text: "Daddy's banana, dropped by the village square --\nHe'll laugh when he finds it. (Bring it. We'll share.)", theme: 'language' }
+        ]
+      },
 
       tinyMuseum('glass-house',
         { x: 0.40, y: 0.20, w: 0.24, h: 0.40 },
@@ -710,12 +737,9 @@ export const scenes = {
     gems: [
       { key: 'gem_3', x: 0.10, y: 0.20 },
       { key: 'gem_8', x: 0.85, y: 0.30 },
-      { key: 'gem_2', x: 0.30, y: 0.55 },
       { key: 'gem_6', x: 0.70, y: 0.65 },
       { key: 'gem_4', x: 0.40, y: 0.10 },
-      { key: 'gem_5', x: 0.20, y: 0.32 },
-      { key: 'gem_7', x: 0.92, y: 0.62 },
-      { key: 'gem_1', x: 0.55, y: 0.30 }
+      { key: 'gem_5', x: 0.20, y: 0.32 }
     ]
   },
 
@@ -813,10 +837,7 @@ export const scenes = {
       { key: 'gem_7', x: 0.94, y: 0.78 },
       { key: 'gem_5', x: 0.42, y: 0.40 },
       { key: 'gem_3', x: 0.65, y: 0.18 },
-      { key: 'gem_9', x: 0.30, y: 0.78 },
-      { key: 'gem_4', x: 0.55, y: 0.62 },
-      { key: 'gem_6', x: 0.18, y: 0.50 },
-      { key: 'gem_1', x: 0.78, y: 0.40 }
+      { key: 'gem_9', x: 0.30, y: 0.78 }
     ]
   },
 
@@ -894,9 +915,6 @@ export const scenes = {
       { key: 'gem_1', x: 0.94, y: 0.18 },
       { key: 'gem_6', x: 0.40, y: 0.30 },
       { key: 'gem_3', x: 0.55, y: 0.62 },
-      { key: 'gem_8', x: 0.72, y: 0.50 },
-      { key: 'gem_2', x: 0.20, y: 0.50 },
-      { key: 'gem_7', x: 0.86, y: 0.62 },
       { key: 'gem_9', x: 0.30, y: 0.18 }
     ]
   },
@@ -983,10 +1001,7 @@ export const scenes = {
       { key: 'gem_4', x: 0.94, y: 0.10 },
       { key: 'gem_2', x: 0.45, y: 0.30 },
       { key: 'gem_6', x: 0.30, y: 0.55 },
-      { key: 'gem_9', x: 0.65, y: 0.40 },
-      { key: 'gem_1', x: 0.18, y: 0.10 },
-      { key: 'gem_5', x: 0.78, y: 0.62 },
-      { key: 'gem_3', x: 0.55, y: 0.55 }
+      { key: 'gem_9', x: 0.65, y: 0.40 }
     ]
   },
 
@@ -1042,10 +1057,7 @@ export const scenes = {
       { key: 'gem_2', x: 0.93, y: 0.20 },
       { key: 'gem_5', x: 0.62, y: 0.55 },
       { key: 'gem_7', x: 0.16, y: 0.30 },
-      { key: 'gem_3', x: 0.36, y: 0.48 },
-      { key: 'gem_4', x: 0.85, y: 0.62 },
-      { key: 'gem_6', x: 0.55, y: 0.30 },
-      { key: 'gem_8', x: 0.06, y: 0.18 }
+      { key: 'gem_4', x: 0.85, y: 0.62 }
     ]
   },
 
@@ -1117,12 +1129,8 @@ export const scenes = {
       { key: 'gem_6', x: 0.10, y: 0.50 },
       { key: 'gem_4', x: 0.50, y: 0.30 },
       { key: 'gem_8', x: 0.30, y: 0.18 },
-      { key: 'gem_2', x: 0.70, y: 0.12 },
       { key: 'gem_5', x: 0.86, y: 0.55 },
-      { key: 'gem_1', x: 0.45, y: 0.68 },
-      { key: 'gem_3', x: 0.20, y: 0.30 },
-      { key: 'gem_7', x: 0.62, y: 0.50 },
-      { key: 'gem_9', x: 0.92, y: 0.30 }
+      { key: 'gem_1', x: 0.45, y: 0.68 }
     ]
   }
 };

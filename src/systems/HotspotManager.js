@@ -26,6 +26,7 @@ import { QuizDialog } from './QuizDialog.js';
 
 const QUIZ_FIRE_CHANCE = 0.25;          // 25% chance a click fires a quiz
 const INVENTORY_REACTION_CHANCE = 0.4;  // 40% chance to pick an inventory-aware line if applicable
+const QUIZ_FREEZE_MS = 2500;            // Block other clicks for 2.5s after quiz opens
 
 const MIN_HIT_PX = 64;
 const HOVER_TINT = 0xfff5d0;
@@ -142,6 +143,13 @@ export class HotspotManager {
     });
 
     zone.on('pointerup', (pointer) => {
+      // Quiz-active grace period: ignore other clicks while a quiz is
+      // up so the kid (or accidental tap) can't dismiss it. The quiz
+      // dialog itself stays interactive.
+      if (this._quizFreezeUntil && Date.now() < this._quizFreezeUntil) {
+        return;
+      }
+
       const clickPos = pointer && pointer.worldX !== undefined
         ? { x: pointer.worldX, y: pointer.worldY }
         : { x: cx, y: cy };
@@ -149,8 +157,7 @@ export class HotspotManager {
       this._emitSparkle(clickPos.x, clickPos.y);
 
       // Walk Amelia toward the speaker (stopping a sprite-width away)
-      // before delivering the line. Falls through immediately if no
-      // protagonist is wired.
+      // before delivering the line.
       const protagonist = this.scene.services?.protagonist;
       if (protagonist && hotspot.type !== 'portal') {
         const approachX = sprite ? sprite.x : clickPos.x;
@@ -277,9 +284,17 @@ export class HotspotManager {
 
     this.audio?.playSfx('sfx_chime');
     const speakerSprite = this.spritesByKey.get(hotspot.speaker);
+    // Freeze hotspot clicks for 2.5s so the kid focuses on the quiz
+    // and doesn't accidentally dismiss it. The quiz answer buttons
+    // remain clickable since they're owned by QuizDialog (different
+    // event path).
+    this._quizFreezeUntil = Date.now() + QUIZ_FREEZE_MS;
     this.quizDialog.show(quiz, {
       speakerSprite,
-      onAnswer: (result) => this._onQuizAnswered(hotspot, quiz, result, pos)
+      onAnswer: (result) => {
+        this._quizFreezeUntil = 0;
+        this._onQuizAnswered(hotspot, quiz, result, pos);
+      }
     });
   }
 
