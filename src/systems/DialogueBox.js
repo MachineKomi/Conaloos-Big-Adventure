@@ -1,24 +1,34 @@
 /**
- * DialogueBox — translucent rounded text panel.
- * Auto-positions to avoid overlapping the speaking character.
- * Auto-dismisses based on word count; click anywhere to dismiss early.
+ * DialogueBox / SpeechBubble — translucent rounded text panel with a
+ * triangular tail pointing at the speaker.
+ *
+ * - If a `speakerSprite` is provided, the bubble anchors to that sprite
+ *   (above its head, or to the side if there's not enough room) with a
+ *   tail pointing at it.
+ * - If no speaker (e.g. a Tiny Museum or Question Stone hotspot whose
+ *   "speaker" is the narrator), the bubble appears as a soft top-of-
+ *   screen banner with no tail.
+ * - Auto-dismisses based on word count; click anywhere to dismiss early.
  */
 
 import { Accessibility } from './Accessibility.js';
 
-const PADDING_X = 28;
-const PADDING_Y = 22;
-const MAX_WIDTH_FRACTION = 0.85;
-const MARGIN_FROM_EDGE = 32;
-const CORNER_RADIUS = 24;
+const PADDING_X = 22;
+const PADDING_Y = 18;
+const MAX_WIDTH_FRACTION = 0.62;
+const MAX_NARRATOR_WIDTH_FRACTION = 0.78;
+const MARGIN_FROM_EDGE = 24;
+const CORNER_RADIUS = 22;
 const BG_COLOUR = 0xfff8e7;
-const BG_ALPHA = 0.94;
+const BG_ALPHA = 0.96;
 const STROKE_COLOUR = 0x4a3a1f;
 const STROKE_WIDTH = 4;
 const TEXT_COLOUR = '#2b2b2b';
 const READ_MS_PER_WORD = 280;
 const MIN_DISPLAY_MS = 2200;
 const TAIL_BUFFER_MS = 1200;
+const TAIL_HEIGHT = 16;
+const TAIL_WIDTH = 24;
 
 export class DialogueBox {
   constructor(scene) {
@@ -28,9 +38,7 @@ export class DialogueBox {
     this.activeTween = null;
   }
 
-  destroy() {
-    this._clear();
-  }
+  destroy() { this._clear(); }
 
   _clear() {
     if (this.dismissTimer) {
@@ -50,11 +58,14 @@ export class DialogueBox {
   /**
    * Show a multi-line block of text.
    *
-   *   show("Two lines\nof verse", { avoid: { x, y } })
+   *   show("Two lines\nof verse", { speakerSprite, avoid, onDismiss })
    *
    * @param {string} text         Newline-delimited dialogue.
    * @param {object} [opts]
-   * @param {{x:number,y:number}} [opts.avoid]   Speaker position to dodge.
+   * @param {Phaser.GameObjects.Image} [opts.speakerSprite]
+   *        Sprite to anchor + point the tail at. If omitted, bubble is
+   *        rendered as a narrator banner at the top of the screen.
+   * @param {{x:number,y:number}} [opts.avoid]   Click position fallback.
    * @param {function} [opts.onDismiss]
    */
   show(text, opts = {}) {
@@ -64,7 +75,9 @@ export class DialogueBox {
     const scene = this.scene;
     const { width, height } = scene.scale;
     const fontSize = Accessibility.textSizePx;
-    const maxTextWidth = Math.floor(width * MAX_WIDTH_FRACTION) - PADDING_X * 2;
+    const speakerSprite = opts.speakerSprite || null;
+    const maxFraction = speakerSprite ? MAX_WIDTH_FRACTION : MAX_NARRATOR_WIDTH_FRACTION;
+    const maxTextWidth = Math.floor(width * maxFraction) - PADDING_X * 2;
 
     const textObj = scene.add.text(0, 0, text, {
       fontFamily: '"Atkinson Hyperlegible", "Fredoka", system-ui, sans-serif',
@@ -73,8 +86,7 @@ export class DialogueBox {
       align: 'center',
       lineSpacing: Math.round(fontSize * 0.25),
       wordWrap: { width: maxTextWidth, useAdvancedWrap: true }
-    });
-    textObj.setOrigin(0.5, 0.5);
+    }).setOrigin(0.5, 0.5);
 
     const boxW = textObj.width + PADDING_X * 2;
     const boxH = textObj.height + PADDING_Y * 2;
@@ -85,33 +97,73 @@ export class DialogueBox {
     bg.fillRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
     bg.strokeRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
 
-    const container = scene.add.container(0, 0, [bg, textObj]);
-    container.setDepth(1000);
+    const items = [bg, textObj];
 
-    // Position: bottom by default, top if speaker is in the bottom half.
-    const placeBottom = !(opts.avoid && opts.avoid.y > height * 0.55);
-    const cx = Phaser_clamp(
-      opts.avoid?.x ?? width / 2,
-      boxW / 2 + MARGIN_FROM_EDGE,
-      width - boxW / 2 - MARGIN_FROM_EDGE
-    );
-    const cy = placeBottom
-      ? height - boxH / 2 - MARGIN_FROM_EDGE
-      : boxH / 2 + MARGIN_FROM_EDGE;
-    container.setPosition(cx, cy);
+    // -------- Anchored speech bubble ----------
+    let cx, cy, tailVertices = null;
+    if (speakerSprite) {
+      // Speaker centre and top-of-head in world coords.
+      const speakerCx = speakerSprite.x;
+      const speakerTop = speakerSprite.y - speakerSprite.displayHeight;
+      const placeAbove = speakerTop - boxH - 36 > MARGIN_FROM_EDGE;
 
+      cx = clamp(
+        speakerCx,
+        boxW / 2 + MARGIN_FROM_EDGE,
+        width - boxW / 2 - MARGIN_FROM_EDGE
+      );
+      cy = placeAbove
+        ? speakerTop - 28 - boxH / 2
+        : Math.min(speakerSprite.y + 24 + boxH / 2, height - boxH / 2 - MARGIN_FROM_EDGE);
+
+      // Tail points from the bubble edge toward the speaker.
+      const localTailAnchorX = clamp(speakerCx - cx, -boxW / 2 + 24, boxW / 2 - 24);
+      if (placeAbove) {
+        tailVertices = [
+          localTailAnchorX - TAIL_WIDTH / 2, boxH / 2,
+          localTailAnchorX + TAIL_WIDTH / 2, boxH / 2,
+          localTailAnchorX,                  boxH / 2 + TAIL_HEIGHT
+        ];
+      } else {
+        tailVertices = [
+          localTailAnchorX - TAIL_WIDTH / 2, -boxH / 2,
+          localTailAnchorX + TAIL_WIDTH / 2, -boxH / 2,
+          localTailAnchorX,                  -boxH / 2 - TAIL_HEIGHT
+        ];
+      }
+
+      // Draw tail on the same graphics object so stroke joins the body.
+      bg.fillStyle(BG_COLOUR, BG_ALPHA);
+      bg.fillTriangle(
+        tailVertices[0], tailVertices[1],
+        tailVertices[2], tailVertices[3],
+        tailVertices[4], tailVertices[5]
+      );
+      // Tail stroke: only the two outer edges (we don't want to redraw
+      // the body's edge).
+      bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+      bg.lineBetween(tailVertices[0], tailVertices[1], tailVertices[4], tailVertices[5]);
+      bg.lineBetween(tailVertices[2], tailVertices[3], tailVertices[4], tailVertices[5]);
+    } else {
+      // -------- Narrator banner (no tail) -----------
+      cx = width / 2;
+      cy = boxH / 2 + MARGIN_FROM_EDGE;
+    }
+
+    const container = scene.add.container(cx, cy, items);
+    container.setDepth(10000); // Always above gameplay sprites
     this.container = container;
 
     if (Accessibility.reducedMotion) {
       container.setAlpha(1);
     } else {
       container.setAlpha(0);
-      container.y += 12;
+      container.y += 8;
       this.activeTween = scene.tweens.add({
         targets: container,
         alpha: 1,
         y: cy,
-        duration: 260,
+        duration: 220,
         ease: 'Sine.easeOut'
       });
     }
@@ -141,8 +193,8 @@ export class DialogueBox {
     this.scene.tweens.add({
       targets: c,
       alpha: 0,
-      y: c.y + 10,
-      duration: 220,
+      y: c.y + 8,
+      duration: 200,
       ease: 'Sine.easeIn',
       onComplete: () => {
         c.destroy();
@@ -154,6 +206,6 @@ export class DialogueBox {
   isVisible() { return !!this.container; }
 }
 
-function Phaser_clamp(v, lo, hi) {
+function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }

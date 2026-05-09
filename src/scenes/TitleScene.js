@@ -13,10 +13,10 @@
 
 import Phaser from 'phaser';
 
-const TITLE_TEXT = "Conaloo's Big Adventure";
+const TITLE_TEXT = "Take the Long Way";
 const SUBTITLE_LINES = [
-  "A garden, a lake, and a friend on a path,",
-  "A bear with a butterly, also some math."
+  "A garden, a lake, a friend on a path,",
+  "A bear-butterly, and a smidgen of math."
 ];
 
 const PLAY_LABEL = "Let's go!";
@@ -138,17 +138,21 @@ export class TitleScene extends Phaser.Scene {
     const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
     zone.setInteractive({ useHandCursor: true });
 
+    // Hover effect: gentle glow via alpha lift on the bg only — no scale,
+    // so the text stays perfectly readable. Click effect: a tiny dip
+    // and back, very subtle.
+    bg.setAlpha(0.92);
     zone.on('pointerover', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 1.04, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: 1.0, duration: 120, ease: 'Sine.easeOut' });
     });
     zone.on('pointerout', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 1.0, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: 0.92, duration: 120, ease: 'Sine.easeOut' });
     });
     zone.on('pointerup', () => {
-      this.tweens.killTweensOf([bg, text]);
-      this.tweens.add({ targets: [bg, text], scale: 0.94, duration: 90, yoyo: true });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: { from: 0.7, to: 1.0 }, duration: 180, ease: 'Sine.easeOut' });
       onClick();
     });
 

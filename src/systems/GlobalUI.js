@@ -45,19 +45,20 @@ export class GlobalUIScene extends Phaser.Scene {
       const cur = Accessibility.reducedMotion;
       Accessibility.setReducedMotion(!cur);
     });
-    this._text = this._makeButton(`A${Accessibility.textSize}`, () => Accessibility.cycleTextSize());
+    this._text = this._makeButton(this._textIcon(), () => Accessibility.cycleTextSize());
 
     this.buttons = [this._home, this._mute, this._motion, this._text];
     this._reposition();
   }
 
-  _muteIcon() { return Accessibility.muted ? 'mute' : 'sound'; }
-  _motionIcon() { return Accessibility.reducedMotion ? 'still' : 'wind'; }
+  _muteIcon() { return Accessibility.muted ? 'sound\noff' : 'sound\non'; }
+  _motionIcon() { return Accessibility.reducedMotion ? 'still' : 'motion'; }
+  _textIcon() { return `text\n${Accessibility.textSize.toLowerCase()}`; }
 
   _refreshIcons() {
     this._setLabel(this._mute, this._muteIcon());
     this._setLabel(this._motion, this._motionIcon());
-    this._setLabel(this._text, `A${Accessibility.textSize}`);
+    this._setLabel(this._text, this._textIcon());
   }
 
   _setLabel(btn, label) {
@@ -73,9 +74,10 @@ export class GlobalUIScene extends Phaser.Scene {
     const bg = this.add.graphics();
     const label = this.add.text(0, 0, labelText, {
       fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: '16px',
+      fontSize: '13px',
       color: ICON_COLOUR,
-      align: 'center'
+      align: 'center',
+      lineSpacing: 0
     }).setOrigin(0.5);
 
     const zone = this.add.zone(0, 0, BUTTON_SIZE, BUTTON_SIZE).setOrigin(0, 0);
@@ -98,11 +100,19 @@ export class GlobalUIScene extends Phaser.Scene {
       zone.setPosition(x, y);
     };
 
-    zone.on('pointerover', () => label.setScale(1.10));
-    zone.on('pointerout',  () => label.setScale(1.00));
+    // Hover lifts the bg slightly (alpha) — no scale change so labels
+    // stay readable. Click pulses bg alpha briefly.
+    zone.on('pointerover', () => {
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: 1.0, duration: 100 });
+    });
+    zone.on('pointerout', () => {
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: BUTTON_BG_ALPHA, duration: 100 });
+    });
     zone.on('pointerup', () => {
-      this.tweens.killTweensOf(label);
-      this.tweens.add({ targets: label, scale: 0.85, duration: 80, yoyo: true });
+      this.tweens.killTweensOf(bg);
+      this.tweens.add({ targets: bg, alpha: { from: 0.6, to: BUTTON_BG_ALPHA }, duration: 200 });
       onClick();
     });
 
