@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-05-09 — v1.2.1: post-playtest fixes
+
+Same v1.2 branch — post-deploy playtest revealed several issues that
+broke or undermined the v1.2 pass. Fixed in one push.
+
+### Critical bug fixes
+
+- **Per-character SFX pools weren't actually wiring up.** The
+  `characterHotspot()` helper was baking `sfx: 'sfx_pop'` into every
+  response, and `pickClickSfx()` honours the response's explicit sfx
+  before falling back to the speaker pool. Result: every character
+  always made the same pop sound. Fix: removed the explicit sfx so
+  the speaker pool actually wins. Did the same for `tinyMuseum` /
+  `questionStone` (narrator pool now varies them).
+- **Speech bubble outline crossed the tail base.** The body's
+  `strokeRoundedRect` drew a line that the tail's fill couldn't cover,
+  so a horizontal line cut through where the tail joined the bubble.
+  Fix: combined body + tail into a single `Graphics` path
+  (`drawBubbleWithTail` helper) so the stroke wraps the full outer
+  outline as one shape.
+- **Amelia's movement felt jumpy.** The walk tween's MIN duration
+  was 220ms, giving short hops. Bumped to 380ms minimum and dropped
+  walk speed from 600 to 420 px/s. Movement now reads as a smooth
+  glide.
+
+### UX improvements (per Dad's playtest)
+
+- **Gem HUD redesigned + relocated.** Now top-CENTRE (was top-left),
+  bigger panel, always visible. Animates an **equation reveal** on
+  each pickup: shows "5", then " + 3", then " = 8", then settles on
+  "8" with a celebratory pop. The math itself is now part of the
+  feedback — edutainment hook landed.
+- **Gem fly-to-HUD reads better.** Click → swap to glowing variant →
+  pulse + bob in place for ~560ms before flying to the HUD with a
+  spinning trail. The "longer glow" Dad asked for.
+- **Inventory is a toggle now.** A backpack-icon button sits in the
+  top-LEFT corner; click it to open/close Amelia's bag (panel along
+  the bottom). Bag is hidden by default. When a new item is collected
+  while closed, the icon bumps to hint "you got something".
+- **Backpack is no longer collectable** (it's the inventory icon
+  now). Replaced in the school courtyard with a tyre.
+- **Amelia walks toward the character / thing she's interacting with**
+  before they speak — stops about a sprite-width away so she doesn't
+  stand on top of them.
+- **Amelia does an excited little hop** when she picks up a thing or
+  collects a gem.
+- **Sprites at the same depth route clicks to the visually-front
+  one.** Hotspot zones inherit speaker depth (already; reinforced).
+
+### Persistence + variety
+
+- **Collectables don't respawn on revisit.** Module-level
+  `worldCollected` Set tracks `${slug}:${hotspot.id}` and
+  `${slug}:gem:${key}:x:y` for the session. On re-render, those
+  hotspots/gems are skipped.
+- **More gems + varied placement.** Each scene now has 2–3 gems,
+  positioned in corners, edges, and tucked-away spots — not all
+  centred. ~25 gem placements across 11 scenes (worth ~120 stones if
+  you find them all).
+- **Peeps reward clicks with gems.** Each character hotspot has an
+  18% chance per click to spray 1–3 random gems out of the speaker's
+  head. Reward for talking; randomised so the kid doesn't expect it.
+
+### Out of scope (still — to be tackled in v1.3)
+
+- Mobile/tablet responsive scaling.
+- Sprite animations (rocketship launch, dog flip).
+- Inventory-aware character lines.
+
 ## 2026-05-09 — v1.2: Take the Long Way (rename + gem collectathon + maze + fixes)
 
 Branch `v1-2-take-the-long-way`. OpenSpec proposal in

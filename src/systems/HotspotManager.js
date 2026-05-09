@@ -133,10 +133,22 @@ export class HotspotManager {
     });
 
     zone.on('pointerup', (pointer) => {
-      const clickPos = { x: pointer.worldX, y: pointer.worldY };
+      const clickPos = pointer && pointer.worldX !== undefined
+        ? { x: pointer.worldX, y: pointer.worldY }
+        : { x: cx, y: cy };
       this._bounceSprite(sprite, savedScale);
       this._emitSparkle(clickPos.x, clickPos.y);
-      this._onClick(hotspot, clickPos.x === undefined ? { x: cx, y: cy } : clickPos);
+
+      // Walk Amelia toward the speaker (stopping a sprite-width away)
+      // before delivering the line. Falls through immediately if no
+      // protagonist is wired.
+      const protagonist = this.scene.services?.protagonist;
+      if (protagonist && hotspot.type !== 'portal') {
+        const approachX = sprite ? sprite.x : clickPos.x;
+        protagonist.walkTo(approachX, 0, () => this._onClick(hotspot, clickPos), { approach: true });
+      } else {
+        this._onClick(hotspot, clickPos);
+      }
     });
 
     this.zones.push(zone);

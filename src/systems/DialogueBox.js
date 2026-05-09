@@ -92,63 +92,35 @@ export class DialogueBox {
     const boxH = textObj.height + PADDING_Y * 2;
 
     const bg = scene.add.graphics();
-    bg.fillStyle(BG_COLOUR, BG_ALPHA);
-    bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
-    bg.fillRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
-    bg.strokeRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
 
     const items = [bg, textObj];
 
-    // -------- Anchored speech bubble ----------
-    let cx, cy, tailVertices = null;
+    // Compute position + tail data first, then draw bg + tail as a
+    // single combined path so the stroke goes around the OUTSIDE of
+    // the whole shape (no line crossing the tail base).
+    let cx, cy, tailAnchorX = null, tailAbove = false;
     if (speakerSprite) {
-      // Speaker centre and top-of-head in world coords.
       const speakerCx = speakerSprite.x;
       const speakerTop = speakerSprite.y - speakerSprite.displayHeight;
-      const placeAbove = speakerTop - boxH - 36 > MARGIN_FROM_EDGE;
+      tailAbove = speakerTop - boxH - 36 > MARGIN_FROM_EDGE;
 
       cx = clamp(
         speakerCx,
         boxW / 2 + MARGIN_FROM_EDGE,
         width - boxW / 2 - MARGIN_FROM_EDGE
       );
-      cy = placeAbove
+      cy = tailAbove
         ? speakerTop - 28 - boxH / 2
         : Math.min(speakerSprite.y + 24 + boxH / 2, height - boxH / 2 - MARGIN_FROM_EDGE);
 
-      // Tail points from the bubble edge toward the speaker.
-      const localTailAnchorX = clamp(speakerCx - cx, -boxW / 2 + 24, boxW / 2 - 24);
-      if (placeAbove) {
-        tailVertices = [
-          localTailAnchorX - TAIL_WIDTH / 2, boxH / 2,
-          localTailAnchorX + TAIL_WIDTH / 2, boxH / 2,
-          localTailAnchorX,                  boxH / 2 + TAIL_HEIGHT
-        ];
-      } else {
-        tailVertices = [
-          localTailAnchorX - TAIL_WIDTH / 2, -boxH / 2,
-          localTailAnchorX + TAIL_WIDTH / 2, -boxH / 2,
-          localTailAnchorX,                  -boxH / 2 - TAIL_HEIGHT
-        ];
-      }
-
-      // Draw tail on the same graphics object so stroke joins the body.
-      bg.fillStyle(BG_COLOUR, BG_ALPHA);
-      bg.fillTriangle(
-        tailVertices[0], tailVertices[1],
-        tailVertices[2], tailVertices[3],
-        tailVertices[4], tailVertices[5]
-      );
-      // Tail stroke: only the two outer edges (we don't want to redraw
-      // the body's edge).
-      bg.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
-      bg.lineBetween(tailVertices[0], tailVertices[1], tailVertices[4], tailVertices[5]);
-      bg.lineBetween(tailVertices[2], tailVertices[3], tailVertices[4], tailVertices[5]);
+      tailAnchorX = clamp(speakerCx - cx, -boxW / 2 + 30, boxW / 2 - 30);
     } else {
-      // -------- Narrator banner (no tail) -----------
+      // Narrator banner (no tail).
       cx = width / 2;
       cy = boxH / 2 + MARGIN_FROM_EDGE;
     }
+
+    drawBubbleWithTail(bg, boxW, boxH, CORNER_RADIUS, tailAnchorX, tailAbove);
 
     const container = scene.add.container(cx, cy, items);
     container.setDepth(10000); // Always above gameplay sprites
@@ -208,4 +180,61 @@ export class DialogueBox {
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
+}
+
+/**
+ * Draw a rounded rectangle with an optional triangular tail as ONE
+ * combined path. The stroke wraps the whole outline, so there's no
+ * line crossing the base of the tail.
+ *
+ *   tailAnchorX  — local x where the tail meets the bubble (or null)
+ *   tailAbove    — true if the tail points upward (bubble below speaker)
+ */
+function drawBubbleWithTail(g, w, h, radius, tailAnchorX, tailAbove) {
+  const r  = Math.min(radius, h / 2 - 1, w / 2 - 1);
+  const hx = w / 2;
+  const hy = h / 2;
+
+  // Build a path that traces the rounded rect, with the tail bulging
+  // out at one of the long edges.
+  g.beginPath();
+  // Top-left arc start
+  g.moveTo(-hx + r, -hy);
+
+  // Top edge (with optional tail going UP)
+  if (tailAnchorX !== null && !tailAbove) {
+    // tail points upward (bubble is BELOW speaker), so it sits on the top edge
+    const ax = tailAnchorX;
+    g.lineTo(ax - TAIL_WIDTH / 2, -hy);
+    g.lineTo(ax,                  -hy - TAIL_HEIGHT);
+    g.lineTo(ax + TAIL_WIDTH / 2, -hy);
+  }
+  g.lineTo(hx - r, -hy);
+  // Top-right corner
+  g.arc(hx - r, -hy + r, r, -Math.PI / 2, 0);
+  g.lineTo(hx, hy - r);
+  // Bottom-right corner
+  g.arc(hx - r, hy - r, r, 0, Math.PI / 2);
+
+  // Bottom edge (with optional tail going DOWN)
+  if (tailAnchorX !== null && tailAbove) {
+    // tail points downward (bubble is ABOVE speaker), so it sits on bottom edge
+    const ax = tailAnchorX;
+    g.lineTo(ax + TAIL_WIDTH / 2, hy);
+    g.lineTo(ax,                  hy + TAIL_HEIGHT);
+    g.lineTo(ax - TAIL_WIDTH / 2, hy);
+  }
+  g.lineTo(-hx + r, hy);
+  // Bottom-left corner
+  g.arc(-hx + r, hy - r, r, Math.PI / 2, Math.PI);
+  g.lineTo(-hx, -hy + r);
+  // Top-left corner
+  g.arc(-hx + r, -hy + r, r, Math.PI, -Math.PI / 2);
+
+  g.closePath();
+
+  g.fillStyle(BG_COLOUR, BG_ALPHA);
+  g.fillPath();
+  g.lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+  g.strokePath();
 }

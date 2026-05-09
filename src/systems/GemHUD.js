@@ -1,29 +1,31 @@
 /**
- * GemHUDScene — top-left panel showing the player's running gem total.
+ * GemHUDScene — top-CENTRE panel showing the player's running gem total
+ * with an animated equation reveal on each pickup:
  *
- * Subscribes to GemBag change events. On each collection, animates a
- * little math reveal: "+3 → 12" floats up next to the counter, the
- * counter ticks up to the new total, then the math fades.
+ *   "5"  →  "5 + 3"  →  "5 + 3 = 8"  →  "8"
  *
- * The panel sits above gameplay scenes (depth-wise) and below the
- * GlobalUI corner buttons (we render inventory in another scene which
- * sits at the bottom).
+ * Each step is added to the panel one at a time over ~1.6s so a child
+ * watching can see the addition happen, character by character. The
+ * gems flying in from gameplay scenes target this panel's icon area.
+ *
+ * Always visible (per Dad's request) so the running total is part of
+ * the constant world state.
  */
 
 import Phaser from 'phaser';
 
-const PANEL_X = 16;
-const PANEL_Y = 16;
-const PANEL_W = 168;
-const PANEL_H = 56;
-const PANEL_RADIUS = 18;
+const PANEL_W = 280;
+const PANEL_H = 64;
+const PANEL_TOP = 12;
+const PANEL_RADIUS = 22;
 const PANEL_BG = 0xfff8e7;
-const PANEL_BG_ALPHA = 0.92;
+const PANEL_BG_ALPHA = 0.94;
 const PANEL_STROKE = 0x4a3a1f;
-const PANEL_STROKE_W = 3;
+const PANEL_STROKE_W = 4;
 
-const ICON_GEM_KEY = 'gem_5'; // fallback icon (any gem will do)
+const ICON_GEM_KEY = 'gem_5';
 const TEXT_COLOUR = '#4a3a1f';
+const REVEAL_STEP_MS = 460;
 
 export class GemHUDScene extends Phaser.Scene {
   constructor() {
@@ -37,88 +39,93 @@ export class GemHUDScene extends Phaser.Scene {
   create() {
     this._unsubscribe = this.gemBag.onChange((evt) => this._onChange(evt));
     this._build();
+    this.scale.on('resize', () => this._reposition());
     this.events.on('shutdown', () => this._unsubscribe?.());
   }
 
   _build() {
     this._panel = this.add.graphics();
-    this._panel.fillStyle(PANEL_BG, PANEL_BG_ALPHA);
-    this._panel.lineStyle(PANEL_STROKE_W, PANEL_STROKE, 1);
-    this._panel.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_RADIUS);
-    this._panel.strokeRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, PANEL_RADIUS);
     this._panel.setDepth(8000);
 
-    // Gem icon — a small, crisp gem sprite if available.
     const iconKey = this.textures.exists(ICON_GEM_KEY) ? ICON_GEM_KEY : null;
     if (iconKey) {
-      this._icon = this.add.image(PANEL_X + 30, PANEL_Y + PANEL_H / 2, iconKey)
-        .setOrigin(0.5)
-        .setDepth(8001);
-      const tex = this.textures.get(iconKey).getSourceImage();
-      const targetH = PANEL_H - 16;
-      this._icon.setScale(targetH / tex.height);
+      this._icon = this.add.image(0, 0, iconKey).setOrigin(0.5).setDepth(8001);
     }
 
-    this._totalText = this.add.text(
-      PANEL_X + 60,
-      PANEL_Y + PANEL_H / 2,
-      `${this.gemBag.total}`,
-      {
-        fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-        fontSize: '28px',
-        color: TEXT_COLOUR
-      }
-    ).setOrigin(0, 0.5).setDepth(8001);
+    this._totalText = this.add.text(0, 0, `${this.gemBag.total}`, {
+      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
+      fontSize: '32px',
+      color: TEXT_COLOUR
+    }).setOrigin(0, 0.5).setDepth(8001);
+
+    this._reposition();
+  }
+
+  _reposition() {
+    const { width } = this.scale;
+    const cx = width / 2;
+    const x = cx - PANEL_W / 2;
+    const y = PANEL_TOP;
+
+    this._panel.clear();
+    this._panel.fillStyle(PANEL_BG, PANEL_BG_ALPHA);
+    this._panel.lineStyle(PANEL_STROKE_W, PANEL_STROKE, 1);
+    this._panel.fillRoundedRect(x, y, PANEL_W, PANEL_H, PANEL_RADIUS);
+    this._panel.strokeRoundedRect(x, y, PANEL_W, PANEL_H, PANEL_RADIUS);
+
+    if (this._icon) {
+      this._icon.setPosition(x + 36, y + PANEL_H / 2);
+      const tex = this.textures.get(ICON_GEM_KEY).getSourceImage();
+      this._icon.setScale((PANEL_H - 16) / tex.height);
+    }
+    this._totalText.setPosition(x + 70, y + PANEL_H / 2);
   }
 
   _onChange({ delta, previousTotal, newTotal }) {
     if (!this._totalText) return;
+    if (this._revealRunning) {
+      // Skip animation; just snap to new total.
+      this._totalText.setText(`${newTotal}`);
+      return;
+    }
+    this._revealRunning = true;
 
-    // Pop the math reveal: "+3 → 14"
-    const popX = PANEL_X + PANEL_W + 12;
-    const popY = PANEL_Y + PANEL_H / 2;
-    const pop = this.add.text(popX, popY, `+${delta} → ${newTotal}`, {
-      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: '22px',
-      color: '#c98c2e',
-      stroke: '#ffffff',
-      strokeThickness: 4
-    }).setOrigin(0, 0.5).setDepth(8002);
+    // Hide running total during reveal; we'll re-show at the end.
+    this._totalText.setText('');
 
-    this.tweens.add({
-      targets: pop,
-      x: popX + 30,
-      alpha: { from: 1, to: 0 },
-      duration: 1300,
-      ease: 'Sine.easeOut',
-      onComplete: () => pop.destroy()
-    });
+    const equationParts = [
+      `${previousTotal}`,
+      ` + ${delta}`,
+      ` = ${newTotal}`
+    ];
 
-    // Counter tick: count up from previousTotal to newTotal.
-    const start = previousTotal;
-    const end = newTotal;
-    const duration = 500;
-    const startedAt = this.time.now;
-    const tickFn = () => {
-      const elapsed = this.time.now - startedAt;
-      const t = Math.min(1, elapsed / duration);
-      const value = Math.round(start + (end - start) * easeOut(t));
-      this._totalText.setText(`${value}`);
-      if (t < 1) {
-        this.time.delayedCall(16, tickFn);
-      } else {
-        this._totalText.setText(`${end}`);
-        // Quick scale pop on the total.
-        this.tweens.add({
-          targets: this._totalText,
-          scale: { from: 1.2, to: 1.0 },
-          duration: 220,
-          ease: 'Back.easeOut'
+    const showStep = (i) => {
+      if (i >= equationParts.length) {
+        // Final: replace with just the new total, with a celebratory pop.
+        this.time.delayedCall(REVEAL_STEP_MS, () => {
+          this._totalText.setText(`${newTotal}`);
+          this.tweens.add({
+            targets: this._totalText,
+            scale: { from: 1.4, to: 1.0 },
+            duration: 280,
+            ease: 'Back.easeOut',
+            onComplete: () => { this._revealRunning = false; }
+          });
         });
+        return;
       }
+      const partial = equationParts.slice(0, i + 1).join('');
+      this._totalText.setText(partial);
+      // Tiny scale pop on each new chunk.
+      this.tweens.add({
+        targets: this._totalText,
+        scale: { from: 1.15, to: 1.0 },
+        duration: 200,
+        ease: 'Sine.easeOut'
+      });
+      this.time.delayedCall(REVEAL_STEP_MS, () => showStep(i + 1));
     };
-    tickFn();
+
+    showStep(0);
   }
 }
-
-function easeOut(t) { return 1 - Math.pow(1 - t, 3); }

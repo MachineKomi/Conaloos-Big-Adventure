@@ -12,12 +12,17 @@ import { themedLines, genericLines, portalLines } from './lines.js';
 
 /** Build a hotspot whose responses are pulled from a character's bio lines.
  *  All bio lines go into the response pool — HotspotManager exhausts the
- *  whole pool (in shuffled order) before any line repeats. */
+ *  whole pool (in shuffled order) before any line repeats.
+ *
+ *  IMPORTANT: we do NOT bake `sfx` into responses any more — the
+ *  HotspotManager picks from the speaker's per-character pool defined
+ *  in `src/content/sfxPools.js`, so each character's clicks vary. The
+ *  v1.2 version baked sfx='sfx_pop' here which always overrode the
+ *  pool — every character ended up making the same sound. */
 function characterHotspot(id, character, bounds, opts = {}) {
   const lines = bios[character]?.lines || genericLines.character;
   const responses = lines.map((text) => ({
     text,
-    sfx: 'sfx_pop',
     speaker: character,
     theme: opts.theme
   }));
@@ -27,6 +32,7 @@ function characterHotspot(id, character, bounds, opts = {}) {
     cursor: 'sparkle',
     speaker: character,
     bounds,
+    rewardGemChance: opts.rewardGemChance ?? 0.18,
     responses
   };
 }
@@ -38,7 +44,8 @@ function questionStone(id, bounds, questions, theme = 'philosophy') {
     type: 'reactor',
     cursor: 'sparkle',
     bounds,
-    responses: questions.map((text) => ({ text, sfx: 'sfx_chime', theme }))
+    // No sfx field — let HotspotManager pick from the narrator pool.
+    responses: questions.map((text) => ({ text, theme }))
   };
 }
 
@@ -49,7 +56,7 @@ function tinyMuseum(id, bounds, facts, theme) {
     type: 'reactor',
     cursor: 'sparkle',
     bounds,
-    responses: facts.map((text) => ({ text, sfx: 'sfx_chime', theme }))
+    responses: facts.map((text) => ({ text, theme }))
   };
 }
 
@@ -194,7 +201,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_1', x: 0.40, y: 0.30 }
+      { key: 'gem_1', x: 0.06, y: 0.18 },
+      { key: 'gem_2', x: 0.93, y: 0.50 },
+      { key: 'gem_4', x: 0.36, y: 0.68 }
     ]
   },
 
@@ -270,7 +279,8 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_2', x: 0.50, y: 0.40 }
+      { key: 'gem_3', x: 0.10, y: 0.30 },
+      { key: 'gem_5', x: 0.92, y: 0.55 }
     ]
   },
 
@@ -343,8 +353,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_4', x: 0.40, y: 0.78 },
-      { key: 'gem_3', x: 0.65, y: 0.50 }
+      { key: 'gem_2', x: 0.08, y: 0.22 },
+      { key: 'gem_6', x: 0.93, y: 0.85 },
+      { key: 'gem_8', x: 0.42, y: 0.10 }
     ]
   },
 
@@ -436,7 +447,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_6', x: 0.30, y: 0.40 }
+      { key: 'gem_1', x: 0.06, y: 0.22 },
+      { key: 'gem_4', x: 0.95, y: 0.18 },
+      { key: 'gem_7', x: 0.50, y: 0.60 }
     ]
   },
 
@@ -509,7 +522,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_9', x: 0.50, y: 0.50 }
+      { key: 'gem_3', x: 0.07, y: 0.20 },
+      { key: 'gem_9', x: 0.95, y: 0.10 },
+      { key: 'gem_5', x: 0.45, y: 0.78 }
     ]
   },
 
@@ -583,6 +598,10 @@ export const scenes = {
         sprite: 'portal_door',     x: 0.94, y: 0.93, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the seaside'
       })
+    ],
+    gems: [
+      { key: 'gem_3', x: 0.10, y: 0.20 },
+      { key: 'gem_8', x: 0.85, y: 0.45 }
     ]
   },
 
@@ -653,7 +672,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_7', x: 0.55, y: 0.55 }
+      { key: 'gem_2', x: 0.08, y: 0.18 },
+      { key: 'gem_7', x: 0.94, y: 0.40 },
+      { key: 'gem_5', x: 0.42, y: 0.70 }
     ]
   },
 
@@ -727,7 +748,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_5', x: 0.50, y: 0.40 }
+      { key: 'gem_5', x: 0.10, y: 0.30 },
+      { key: 'gem_1', x: 0.92, y: 0.20 },
+      { key: 'gem_6', x: 0.40, y: 0.62 }
     ]
   },
 
@@ -744,7 +767,8 @@ export const scenes = {
     things: [
       { sprite: 'thing_microscope', x: 0.50, y: 0.95, heightFrac: 0.18 },
       { sprite: 'thing_globe',      x: 0.85, y: 0.95, heightFrac: 0.22 },
-      { sprite: 'thing_backpack',   x: 0.15, y: 0.95, heightFrac: 0.20 }
+      // backpack is now the inventory toggle icon — replaced with a tyre.
+      { sprite: 'thing_tyre',       x: 0.15, y: 0.95, heightFrac: 0.18 }
     ],
     hotspots: [
       characterHotspot('cosenae', 'peep_Cosenae_M_5',
@@ -778,13 +802,13 @@ export const scenes = {
       },
 
       {
-        id: 'backpack', type: 'reactor', cursor: 'sparkle',
+        id: 'tyre', type: 'reactor', cursor: 'sparkle',
         bounds: { x: 0.07, y: 0.80, w: 0.16, h: 0.18 },
-        speaker: 'thing_backpack',
-        collect: 'thing_backpack',
+        speaker: 'thing_tyre',
+        collect: 'thing_tyre',
         responses: [
-          { text: "A backpack's the house that you carry along --\nWith all of your favourite small things, in a throng.", theme: 'language' },
-          { text: "Pencil and snack and a notebook, you see --\nThe day's a long story; you'll need them, all three.", theme: 'language' }
+          { text: "A tyre's a circle, of rubber and tread --\nIt rolls, and it bounces, and goes where you've said.", theme: 'science' },
+          { text: "Round things, round things -- the world is full plenty:\nA wheel, a planet, a coin (or twenty).", theme: 'numbers' }
         ]
       },
 
@@ -808,7 +832,9 @@ export const scenes = {
       })
     ],
     gems: [
-      { key: 'gem_8', x: 0.50, y: 0.45 }
+      { key: 'gem_8', x: 0.07, y: 0.25 },
+      { key: 'gem_4', x: 0.94, y: 0.12 },
+      { key: 'gem_2', x: 0.45, y: 0.58 }
     ]
   },
 

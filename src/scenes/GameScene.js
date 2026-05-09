@@ -35,6 +35,14 @@ const COLLECTABLE_THINGS = new Set([
   // The rocketship and trees stay decorative; only collectables go here.
 ]);
 
+/**
+ * Module-level set of "scene:slug:hotspot.id" or
+ * "scene:slug:gem:key:x:y" entries that have been collected this session.
+ * Persists across scene revisits within a single playthrough; cleared on
+ * page reload.
+ */
+const worldCollected = new Set();
+
 export class GameScene extends Phaser.Scene {
   /**
    * @param {string} slug
@@ -95,7 +103,12 @@ export class GameScene extends Phaser.Scene {
       onResponse: (h, response) => this._afterResponse(h, response),
       spritesByKey: this.spritesByKey
     });
-    this.hotspots.createAll(this.def.hotspots || [], { w: width, h: height });
+    // Skip hotspots for things Amelia has already collected this session.
+    const liveHotspots = (this.def.hotspots || []).filter((h) => {
+      if (!h.collect) return true;
+      return !worldCollected.has(`${this.slug}:${h.id}`);
+    });
+    this.hotspots.createAll(liveHotspots, { w: width, h: height });
 
     // Override the manager's portal click — we want to walk Amelia to the
     // portal sprite before transitioning.
@@ -151,8 +164,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   _renderThings(w, h) {
+    // Find all hotspot ids whose `collect` matches a thing sprite —
+    // used to skip rendering collected things by checking if any
+    // hotspot for the same scene+sprite was already collected.
+    const collectedSpriteKeys = new Set();
+    for (const h of this.def.hotspots || []) {
+      if (h.collect && worldCollected.has(`${this.slug}:${h.id}`)) {
+        collectedSpriteKeys.add(h.collect);
+      }
+    }
+
     for (const t of this.def.things || []) {
       if (!this.textures.exists(t.sprite)) continue;
+      if (collectedSpriteKeys.has(t.sprite)) continue;  // already picked up
       const img = this.add
         .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
         .setOrigin(0.5, 1);
@@ -212,6 +236,10 @@ export class GameScene extends Phaser.Scene {
       if (!this.textures.exists(key)) continue;
       const x = (g.x ?? 0.5) * w;
       const y = (g.y ?? 0.5) * h;
+
+      // Skip if this exact placement was already collected this session.
+      const placementId = `${this.slug}:gem:${key}:${Math.round(x)}:${Math.round(y)}`;
+      if (worldCollected.has(placementId)) continue;
       const img = this.add.image(x, y, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
       const targetH = h * (g.heightFrac ?? 0.10);
@@ -239,32 +267,55 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Click → swap to glowing variant → fly to GemHUD top-left → on
-   * arrival add to GemBag (which ticks the math reveal in the HUD).
+   * Click → swap to glowing variant → glow + bob in place for a beat →
+   * fly toward the top-centre GemHUD → on arrival, GemBag.add fires
+   * the equation reveal in the HUD. Amelia hops in celebration.
    */
   _collectGem(img, key, value) {
     if (img._collected) return;
     img._collected = true;
+    // Persist this gem placement so it doesn't respawn on revisit.
+    worldCollected.add(`${this.slug}:gem:${key}:${Math.round(img.x)}:${Math.round(img.y)}`);
 
-    // Swap to glowing variant if available.
+    // Swap to glowing variant.
     const glowKey = `${key}_glowing`;
     if (this.textures.exists(glowKey)) img.setTexture(glowKey);
 
-    this.services.audio?.playSfx?.('sfx_coin');
+    this.services.audio?.playSfx?.('sfx_twinkle');
+    this.services.protagonist?.jumpCelebrate?.();
 
-    const target = { x: 60, y: 44 }; // GemHUD's icon roughly
     if (Accessibility.reducedMotion) {
       img.destroy();
       this.services.gemBag?.add(key, value);
       return;
     }
+
+    // Step 1: glow longer in place — pulse + slight scale up.
+    const glowTween = this.tweens.add({
+      targets: img,
+      scale: { from: img.scale, to: img.scale * 1.4 },
+      alpha: { from: 1, to: 0.85 },
+      duration: 280,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Sine.easeInOut',
+      onComplete: () => this._flyGemToHud(img, key, value)
+    });
+    img._glowTween = glowTween;
+  }
+
+  _flyGemToHud(img, key, value) {
+    // Target = top-centre HUD icon position.
+    const target = { x: this.scale.width / 2 - 12, y: 56 };
+    this.services.audio?.playSfx?.('sfx_coin');
     this.tweens.add({
       targets: img,
       x: target.x,
       y: target.y,
-      scale: img.scale * 0.5,
-      duration: 600,
+      scale: img.scale * 0.4,
+      duration: 700,
       ease: 'Cubic.easeIn',
+      onUpdate: () => img.setRotation(img.rotation + 0.18),
       onComplete: () => {
         img.destroy();
         this.services.gemBag?.add(key, value);
@@ -378,15 +429,79 @@ export class GameScene extends Phaser.Scene {
 
   _afterResponse(hotspot, response) {
     this._applyRemix(response);
-    // Inventory pickup: collect on first click, then the thing-sprite
-    // pops and hides so it visibly "moves into" Amelia's pouch.
+    // Inventory pickup: collect on first click, the thing-sprite pops
+    // and hides, Amelia hops in celebration, and the placement is
+    // persisted so the item doesn't respawn on a scene revisit.
     if (hotspot?.collect && this.services.protagonist) {
-      const newlyCollected = this.services.protagonist.collect(hotspot.collect);
-      if (newlyCollected) {
-        const thingSprite = this.spritesByKey.get(hotspot.collect);
-        if (thingSprite) this._popAndHide(thingSprite);
-        this.services.audio?.playSfx?.('sfx_coin');
+      const placementKey = `${this.slug}:${hotspot.id}`;
+      // Mark the placement collected; render-time skip will hide it next visit.
+      worldCollected.add(placementKey);
+
+      this.services.protagonist.collect(hotspot.collect);
+      const thingSprite = this.spritesByKey.get(hotspot.collect);
+      if (thingSprite) this._popAndHide(thingSprite);
+      this.services.audio?.playSfx?.('sfx_coin');
+      this.services.protagonist.jumpCelebrate?.();
+    }
+
+    // Some character clicks reward the player with a gem spray.
+    if (hotspot?.speaker && hotspot.type === 'reactor' && hotspot.rewardGemChance) {
+      if (Math.random() < hotspot.rewardGemChance) {
+        const sourceSprite = this.spritesByKey.get(hotspot.speaker);
+        if (sourceSprite) this._spawnGemBurst(sourceSprite);
       }
+    }
+  }
+
+  /**
+   * Burst of 1-3 random gems out of a sprite's head — used as a
+   * "reward" for talking to certain characters.
+   */
+  _spawnGemBurst(sourceSprite) {
+    const count = 1 + Math.floor(Math.random() * 3);
+    const gemKeys = [];
+    for (let i = 1; i <= 9; i++) {
+      if (this.textures.exists(`gem_${i}`)) gemKeys.push(`gem_${i}`);
+    }
+    if (gemKeys.length === 0) return;
+    for (let i = 0; i < count; i++) {
+      const key = gemKeys[Math.floor(Math.random() * gemKeys.length)];
+      const value = Number.parseInt(key.replace(/^gem_/, ''), 10) || 1;
+      const startX = sourceSprite.x;
+      const startY = sourceSprite.y - sourceSprite.displayHeight + 8;
+      const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 1.4;
+      const dist = 50 + Math.random() * 80;
+      const restX = startX + Math.cos(angle) * dist;
+      const restY = startY + Math.sin(angle) * dist;
+      const gem = this.add.image(startX, startY, key).setOrigin(0.5);
+      const tex = this.textures.get(key).getSourceImage();
+      gem.setScale((this.scale.height * 0.10) / tex.height);
+      gem.setRotation((Math.random() - 0.5) * 0.6);
+      gem.setDepth(startY + 1);
+
+      this.tweens.add({
+        targets: gem,
+        x: restX,
+        y: restY,
+        duration: 400 + Math.random() * 200,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          gem.setInteractive({ useHandCursor: true });
+          if (!Accessibility.reducedMotion) {
+            this.tweens.add({
+              targets: gem,
+              y: gem.y - 6,
+              duration: 1100 + Math.random() * 500,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut'
+            });
+          }
+          gem.on('pointerover', () => gem.setTint(0xfff5d0));
+          gem.on('pointerout', () => gem.clearTint());
+          gem.on('pointerup', () => this._collectGem(gem, key, value));
+        }
+      });
     }
   }
 

@@ -16,13 +16,14 @@
 import { Accessibility } from './Accessibility.js';
 
 const FLOOR_Y_FRAC = 0.95;
-const WALK_SPEED_PX_PER_SEC = 600;
-const MIN_WALK_MS = 220;
-const MAX_WALK_MS = 900;
-const REDUCED_MOTION_MS = 0;
+const WALK_SPEED_PX_PER_SEC = 420;
+const MIN_WALK_MS = 380;
+const MAX_WALK_MS = 1400;
 const HEIGHT_FRAC = 0.55;
 const SPRITE_KEY = 'peep_Amelia_F_4';
 const Z_DEPTH = 800;
+const APPROACH_GAP_PX = 90;          // stop this far before a hotspot target
+const COLLECT_JUMP_HEIGHT = 32;      // excited little hop on collect
 
 export class Protagonist {
   constructor() {
@@ -135,15 +136,33 @@ export class Protagonist {
    * Walk Amelia toward a click point, then call onArrive.
    * `targetX` is clamped to the visible scene; targetY is clamped to floor.
    */
-  walkTo(targetX, _targetYIgnored, onArrive) {
+  /**
+   * Walk Amelia toward an absolute target X.
+   *
+   * @param {number}   targetX
+   * @param {*}        _ignored        (kept for API compat)
+   * @param {Function} [onArrive]
+   * @param {object}   [opts]
+   * @param {boolean}  [opts.approach=false]
+   *        If true, stop ~APPROACH_GAP_PX before targetX (so she doesn't
+   *        walk INTO a character/object — she walks toward and stops).
+   */
+  walkTo(targetX, _ignored, onArrive, opts = {}) {
     if (!this.sprite || !this.scene) {
       onArrive?.();
       return;
     }
     const { width, height } = this.scene.scale;
-    const tx = clamp(targetX, width * 0.05, width * 0.95);
+    let tx = clamp(targetX, width * 0.05, width * 0.95);
     const ty = height * FLOOR_Y_FRAC;
     const fromX = this.sprite.x;
+
+    // If approaching, halt before reaching the target.
+    if (opts.approach) {
+      if (tx > fromX)      tx = Math.max(fromX, tx - APPROACH_GAP_PX);
+      else if (tx < fromX) tx = Math.min(fromX, tx + APPROACH_GAP_PX);
+    }
+
     this._lastDirection = tx >= fromX ? 'right' : 'left';
     this.sprite.flipX = (this._lastDirection === 'left');
 
@@ -156,6 +175,29 @@ export class Protagonist {
 
     const ms = this._durationFor(fromX, tx);
     this._tweenTo(tx, ty, ms, onArrive);
+  }
+
+  /**
+   * Excited little hop in place — used on gem/thing collect.
+   * No-op under reduced-motion.
+   */
+  jumpCelebrate() {
+    if (!this.sprite || !this.scene) return;
+    if (Accessibility.reducedMotion) return;
+    const sprite = this.sprite;
+    const baseY = sprite.y;
+    this.scene.tweens.killTweensOf(sprite);
+    this.scene.tweens.add({
+      targets: sprite,
+      y: baseY - COLLECT_JUMP_HEIGHT,
+      duration: 180,
+      ease: 'Sine.easeOut',
+      yoyo: true,
+      onComplete: () => {
+        sprite.y = baseY;
+        sprite.setDepth(baseY);
+      }
+    });
   }
 
   _collectPortalCenters(scene) {
