@@ -3,7 +3,12 @@
  * Persists to localStorage. Honours OS-level prefers-reduced-motion on first run.
  */
 
-const KEY = 'conaloo.a11y.v1';
+// Bumped from v1 to v2 in v1.2.3 because some users had `reducedMotion: true`
+// saved from earlier testing, which caused Amelia to teleport instead of
+// glide even after we changed the default. Bumping the key resets to
+// defaults for everyone — the trade-off is users who explicitly enabled
+// reduced motion will need to re-enable it from the corner button.
+const KEY = 'conaloo.a11y.v2';
 
 const DEFAULTS = {
   muted: false,

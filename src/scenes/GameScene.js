@@ -164,25 +164,40 @@ export class GameScene extends Phaser.Scene {
   }
 
   _renderThings(w, h) {
-    // Find all hotspot ids whose `collect` matches a thing sprite —
-    // used to skip rendering collected things by checking if any
-    // hotspot for the same scene+sprite was already collected.
+    // Find which thing-sprites are part of a collectable hotspot AND
+    // which have already been collected this session.
+    const collectableSprites = new Set();
     const collectedSpriteKeys = new Set();
     for (const h of this.def.hotspots || []) {
-      if (h.collect && worldCollected.has(`${this.slug}:${h.id}`)) {
-        collectedSpriteKeys.add(h.collect);
+      if (h.collect) {
+        collectableSprites.add(h.collect);
+        if (worldCollected.has(`${this.slug}:${h.id}`)) {
+          collectedSpriteKeys.add(h.collect);
+        }
       }
     }
 
     for (const t of this.def.things || []) {
       if (!this.textures.exists(t.sprite)) continue;
-      if (collectedSpriteKeys.has(t.sprite)) continue;  // already picked up
+      if (collectedSpriteKeys.has(t.sprite)) continue;
+      const isCollectable = collectableSprites.has(t.sprite);
       const img = this.add
         .image((t.x ?? 0.5) * w, (t.y ?? 0.5) * h, t.sprite)
         .setOrigin(0.5, 1);
-      applyDisplaySize(img, t, h, 0.22);
-      // Depth = y so things lower on screen appear in front.
-      img.setDepth(img.y);
+      // Bigger collectables (50% larger), keep decorative things at default.
+      const defaultFrac = isCollectable ? 0.30 : 0.22;
+      applyDisplaySize(img, t, h, defaultFrac);
+
+      // Collectable things render on a HIGH depth so a peep can never
+      // hide them — Dad's feedback was "some collectables can't be
+      // clicked because they're behind sprites". Decorative things
+      // (rocketship / trees / glass-house) keep y-based depth so they
+      // layer naturally with characters.
+      if (isCollectable) {
+        img.setDepth(8500 + (img.y / h));
+      } else {
+        img.setDepth(img.y);
+      }
       this.spritesByKey.set(t.sprite, img);
     }
   }
@@ -242,10 +257,15 @@ export class GameScene extends Phaser.Scene {
       if (worldCollected.has(placementId)) continue;
       const img = this.add.image(x, y, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
-      const targetH = h * (g.heightFrac ?? 0.10);
+      // Bigger gems (60% larger than v1.2.2 default) so kids can find them.
+      const targetH = h * (g.heightFrac ?? 0.16);
       img.setScale(targetH / tex.height);
       img.setRotation(g.rotation ?? (Math.random() - 0.5) * 0.5);
-      img.setDepth(y + 1);
+      // CRITICAL: always render on top of every other sprite so they're
+      // never hidden behind a peep / portal / thing. Click goes to the
+      // gem; whatever's behind isn't reachable via that pixel until the
+      // gem is collected, but everything else stays clickable.
+      img.setDepth(9000 + (y / h));    // High base + tiny y modulation for stable order
 
       // Subtle bob/twinkle so the gems read as collectible.
       if (!Accessibility.reducedMotion) {
@@ -305,8 +325,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   _flyGemToHud(img, key, value) {
-    // Target = top-centre HUD icon position.
-    const target = { x: this.scale.width / 2 - 12, y: 56 };
+    // Ask the HUD scene for its icon position — adapts to scene size
+    // and dynamic panel width.
+    const hud = this.scene.manager.getScene('global:gemhud');
+    const target = hud?.getIconPosition?.() || { x: this.scale.width / 2, y: 56 };
     this.services.audio?.playSfx?.('sfx_coin');
     this.tweens.add({
       targets: img,

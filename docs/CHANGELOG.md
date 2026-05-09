@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-05-09 — v1.2.3: walk fix (for real), bigger HUD, auto-show inventory, more gems
+
+### Critical bug fixes
+
+- **Amelia teleporting (third time, with extra prejudice).** The
+  v1.2.2 default of `reducedMotion: false` only applied to NEW
+  installs — anyone whose `localStorage.conaloo.a11y.v1` was already
+  set with `reducedMotion: true` (left over from earlier testing)
+  kept teleporting. Bumped the storage key to `v2` so everyone gets
+  fresh defaults. ALSO, walk movement now ignores reduced-motion
+  entirely — it tweens regardless. Reduced-motion still suppresses
+  the celebratory hop, sparkle particles, and idle bobbing. But
+  walking IS the protagonist mechanic; the kid is supposed to see
+  Amelia move.
+
+### GemHUD
+
+- **Bigger gem icon.** 36px → 56px square (~55% larger).
+- **Dynamic panel width.** Resizes itself to fit "5", "23", "1234" —
+  no more stretched-to-look-like-a-banner panel.
+- **Last-collected gem as the icon.** When you pick up gem_3, the
+  HUD icon switches to gem_3. Picks up gem_7? Icon becomes gem_7.
+  No more "always shows gem_5".
+
+### Inventory
+
+- **Auto-shows on pickup, hides 3s later.** Previously the bag only
+  opened via the corner button. Now: collect a thing → bag pops open
+  → a moment later it tucks itself away again. If you've manually
+  toggled it open, the auto-hide leaves it alone.
+- **Bigger slots.** 80px → 120px (50% larger). Icons inside grew
+  proportionally. Title and badge font also bumped.
+- **Bigger backpack toggle.** 64px → 80px square.
+
+### Pickups (gems + collectables) on the world
+
+- **Always on top so they're never hidden.** Gems render at depth
+  9000+; collectable things render at depth 8500+. Decorative things
+  (rocketship, trees, glass-house) keep y-based depth so they layer
+  naturally with characters. Net effect: every gem and collectable
+  is clickable no matter what's "behind" it visually.
+- **Bigger.** Gem default heightFrac 0.10 → 0.16 (60% larger).
+  Collectable thing default 0.22 → 0.30 (~36% larger).
+
+### Content fill (more this time)
+
+- **~88 gem placements** across 11 scenes (up from ~55). 7–9 per
+  scene now. Total gem value if all collected: ~440 stones.
+- Character gem-spray reward chance bumped 18% → 30% per click — a
+  more reliable way to gather gems by talking to peeps.
+
 ## 2026-05-09 — v1.2.2: HUD visibility + smoother walk + content fill
 
 Dad ran the v1.2.1 deploy and found the gem counter was still

@@ -166,13 +166,11 @@ export class Protagonist {
     this._lastDirection = tx >= fromX ? 'right' : 'left';
     this.sprite.flipX = (this._lastDirection === 'left');
 
-    if (Accessibility.reducedMotion) {
-      this.sprite.setPosition(tx, ty);
-      this.sprite.setDepth(ty);
-      onArrive?.();
-      return;
-    }
-
+    // We always tween Amelia's walk — even under reduced-motion.
+    // Movement IS the core mechanic; if she teleports, the game becomes
+    // a static click-then-pop screen and the protagonist mechanic is lost.
+    // Reduced-motion still suppresses the celebratory hop, the sparkle
+    // particles, and various idle animations — just not the walk itself.
     const ms = this._durationFor(fromX, tx);
     this._tweenTo(tx, ty, ms, onArrive);
   }

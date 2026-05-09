@@ -32,7 +32,7 @@ function characterHotspot(id, character, bounds, opts = {}) {
     cursor: 'sparkle',
     speaker: character,
     bounds,
-    rewardGemChance: opts.rewardGemChance ?? 0.18,
+    rewardGemChance: opts.rewardGemChance ?? 0.30,
     responses
   };
 }
@@ -216,7 +216,10 @@ export const scenes = {
       { key: 'gem_2', x: 0.92, y: 0.42 },
       { key: 'gem_4', x: 0.38, y: 0.20 },
       { key: 'gem_6', x: 0.55, y: 0.40 },
-      { key: 'gem_8', x: 0.82, y: 0.22 }
+      { key: 'gem_8', x: 0.82, y: 0.22 },
+      { key: 'gem_3', x: 0.20, y: 0.50 },
+      { key: 'gem_7', x: 0.65, y: 0.10 },
+      { key: 'gem_5', x: 0.94, y: 0.10 }
     ]
   },
 
@@ -319,7 +322,10 @@ export const scenes = {
       { key: 'gem_5', x: 0.92, y: 0.30 },
       { key: 'gem_2', x: 0.55, y: 0.18 },
       { key: 'gem_7', x: 0.30, y: 0.55 },
-      { key: 'gem_1', x: 0.65, y: 0.46 }
+      { key: 'gem_1', x: 0.65, y: 0.46 },
+      { key: 'gem_4', x: 0.20, y: 0.12 },
+      { key: 'gem_8', x: 0.78, y: 0.62 },
+      { key: 'gem_6', x: 0.42, y: 0.30 }
     ]
   },
 
@@ -420,7 +426,10 @@ export const scenes = {
       { key: 'gem_8', x: 0.40, y: 0.10 },
       { key: 'gem_3', x: 0.20, y: 0.62 },
       { key: 'gem_5', x: 0.72, y: 0.20 },
-      { key: 'gem_9', x: 0.78, y: 0.62 }
+      { key: 'gem_9', x: 0.78, y: 0.62 },
+      { key: 'gem_1', x: 0.50, y: 0.10 },
+      { key: 'gem_4', x: 0.34, y: 0.46 },
+      { key: 'gem_7', x: 0.62, y: 0.46 }
     ]
   },
 
@@ -516,7 +525,10 @@ export const scenes = {
       { key: 'gem_4', x: 0.96, y: 0.18 },
       { key: 'gem_7', x: 0.40, y: 0.30 },
       { key: 'gem_5', x: 0.70, y: 0.40 },
-      { key: 'gem_9', x: 0.20, y: 0.40 }
+      { key: 'gem_9', x: 0.20, y: 0.40 },
+      { key: 'gem_2', x: 0.55, y: 0.62 },
+      { key: 'gem_3', x: 0.86, y: 0.42 },
+      { key: 'gem_6', x: 0.30, y: 0.20 }
     ]
   },
 
@@ -617,7 +629,10 @@ export const scenes = {
       { key: 'gem_5', x: 0.40, y: 0.70 },
       { key: 'gem_2', x: 0.62, y: 0.30 },
       { key: 'gem_6', x: 0.30, y: 0.18 },
-      { key: 'gem_8', x: 0.72, y: 0.78 }
+      { key: 'gem_8', x: 0.72, y: 0.78 },
+      { key: 'gem_1', x: 0.50, y: 0.50 },
+      { key: 'gem_4', x: 0.86, y: 0.62 },
+      { key: 'gem_7', x: 0.18, y: 0.50 }
     ]
   },
 
@@ -697,7 +712,10 @@ export const scenes = {
       { key: 'gem_8', x: 0.85, y: 0.30 },
       { key: 'gem_2', x: 0.30, y: 0.55 },
       { key: 'gem_6', x: 0.70, y: 0.65 },
-      { key: 'gem_4', x: 0.40, y: 0.10 }
+      { key: 'gem_4', x: 0.40, y: 0.10 },
+      { key: 'gem_5', x: 0.20, y: 0.32 },
+      { key: 'gem_7', x: 0.92, y: 0.62 },
+      { key: 'gem_1', x: 0.55, y: 0.30 }
     ]
   },
 
@@ -795,7 +813,10 @@ export const scenes = {
       { key: 'gem_7', x: 0.94, y: 0.78 },
       { key: 'gem_5', x: 0.42, y: 0.40 },
       { key: 'gem_3', x: 0.65, y: 0.18 },
-      { key: 'gem_9', x: 0.30, y: 0.78 }
+      { key: 'gem_9', x: 0.30, y: 0.78 },
+      { key: 'gem_4', x: 0.55, y: 0.62 },
+      { key: 'gem_6', x: 0.18, y: 0.50 },
+      { key: 'gem_1', x: 0.78, y: 0.40 }
     ]
   },
 
@@ -873,7 +894,10 @@ export const scenes = {
       { key: 'gem_1', x: 0.94, y: 0.18 },
       { key: 'gem_6', x: 0.40, y: 0.30 },
       { key: 'gem_3', x: 0.55, y: 0.62 },
-      { key: 'gem_8', x: 0.72, y: 0.50 }
+      { key: 'gem_8', x: 0.72, y: 0.50 },
+      { key: 'gem_2', x: 0.20, y: 0.50 },
+      { key: 'gem_7', x: 0.86, y: 0.62 },
+      { key: 'gem_9', x: 0.30, y: 0.18 }
     ]
   },
 
@@ -959,7 +983,10 @@ export const scenes = {
       { key: 'gem_4', x: 0.94, y: 0.10 },
       { key: 'gem_2', x: 0.45, y: 0.30 },
       { key: 'gem_6', x: 0.30, y: 0.55 },
-      { key: 'gem_9', x: 0.65, y: 0.40 }
+      { key: 'gem_9', x: 0.65, y: 0.40 },
+      { key: 'gem_1', x: 0.18, y: 0.10 },
+      { key: 'gem_5', x: 0.78, y: 0.62 },
+      { key: 'gem_3', x: 0.55, y: 0.55 }
     ]
   },
 
@@ -1015,7 +1042,10 @@ export const scenes = {
       { key: 'gem_2', x: 0.93, y: 0.20 },
       { key: 'gem_5', x: 0.62, y: 0.55 },
       { key: 'gem_7', x: 0.16, y: 0.30 },
-      { key: 'gem_3', x: 0.36, y: 0.48 }
+      { key: 'gem_3', x: 0.36, y: 0.48 },
+      { key: 'gem_4', x: 0.85, y: 0.62 },
+      { key: 'gem_6', x: 0.55, y: 0.30 },
+      { key: 'gem_8', x: 0.06, y: 0.18 }
     ]
   },
 
@@ -1089,7 +1119,10 @@ export const scenes = {
       { key: 'gem_8', x: 0.30, y: 0.18 },
       { key: 'gem_2', x: 0.70, y: 0.12 },
       { key: 'gem_5', x: 0.86, y: 0.55 },
-      { key: 'gem_1', x: 0.45, y: 0.68 }
+      { key: 'gem_1', x: 0.45, y: 0.68 },
+      { key: 'gem_3', x: 0.20, y: 0.30 },
+      { key: 'gem_7', x: 0.62, y: 0.50 },
+      { key: 'gem_9', x: 0.92, y: 0.30 }
     ]
   }
 };
