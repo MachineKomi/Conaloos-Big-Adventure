@@ -461,7 +461,11 @@ export const scenes = {
     things: [
       { sprite: 'thing_colourful_tree_A',          x: 0.08, y: 0.85, heightFrac: 0.55 },
       { sprite: 'thing_colourful_tree_B',          x: 0.92, y: 0.85, heightFrac: 0.55 },
-      { sprite: 'thing_birthday-cake-with-one-candle', x: 0.78, y: 0.92, heightFrac: 0.16 }
+      { sprite: 'thing_birthday-cake-with-one-candle', x: 0.78, y: 0.92, heightFrac: 0.16 },
+      // A second rocketship in the playground — there's a rocket in
+      // the background art, so it fits. Launches when clicked
+      // (special animation in GameScene). Re-renders fresh each visit.
+      { sprite: 'thing_rocketship',                x: 0.46, y: 0.92, heightFrac: 0.36 }
     ],
     hotspots: [
       characterHotspot('loosa', 'peep_Loosa_cactus',
@@ -483,6 +487,21 @@ export const scenes = {
       characterHotspot('seesa', 'animal_Seesa_pink-bee',
         { x: 0.70, y: 0.24, w: 0.16, h: 0.16 },
         { theme: 'animals' }),
+
+      {
+        id: 'playground-rocket',
+        type: 'reactor',
+        cursor: 'sparkle',
+        bounds: { x: 0.38, y: 0.55, w: 0.18, h: 0.40 },
+        speaker: 'thing_rocketship',
+        rewardGemChance: 0.40,
+        responses: [
+          { text: "*Five! Four! Three! Two! One!* -- let's go for a ride!\nA mini-rocket here at the playground side.", theme: 'numbers' },
+          { text: "Even a small rocket can carry a *huge* idea --\nIt only needs sky, and the sky is right here-a.", theme: 'science' },
+          { text: "Push the air down, and the rocket goes UP --\nThat's how it works. Like an upside-down cup.", theme: 'science' },
+          { text: "Where would you fly to, given the chance?\nA cloud? A planet? Somewhere small, like France?", theme: 'philosophy' }
+        ]
+      },
 
       {
         id: 'cake',

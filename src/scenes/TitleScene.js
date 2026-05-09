@@ -123,6 +123,13 @@ export class TitleScene extends Phaser.Scene {
     const bgX = cx - w / 2;
     const bgY = cy - h / 2;
 
+    // A glow halo BEHIND the button. Hidden by default, fades in on hover.
+    const glow = this.add.graphics();
+    const glowPad = 10;
+    glow.fillStyle(0xfff2a8, 1);
+    glow.fillRoundedRect(bgX - glowPad, bgY - glowPad, w + glowPad * 2, h + glowPad * 2, 30);
+    glow.setAlpha(0);
+
     const bg = this.add.graphics();
     bg.fillStyle(Phaser.Display.Color.HexStringToColor(fillColour).color, 1);
     bg.lineStyle(4, 0x4a3a1f, 1);
@@ -138,25 +145,26 @@ export class TitleScene extends Phaser.Scene {
     const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
     zone.setInteractive({ useHandCursor: true });
 
-    // Hover effect: gentle glow via alpha lift on the bg only — no scale,
-    // so the text stays perfectly readable. Click effect: a tiny dip
-    // and back, very subtle.
-    bg.setAlpha(0.92);
+    // Hover: visible warm glow halo behind the button + slight bg
+    // brightness lift. Text stays the same size for legibility.
     zone.on('pointerover', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: 1.0, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf([glow, bg]);
+      this.tweens.add({ targets: glow, alpha: { from: 0, to: 0.85 }, duration: 160, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: bg, alpha: { from: bg.alpha, to: 1 }, duration: 160 });
     });
     zone.on('pointerout', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: 0.92, duration: 120, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf([glow, bg]);
+      this.tweens.add({ targets: glow, alpha: 0, duration: 160, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: bg, alpha: 1, duration: 160 });
     });
     zone.on('pointerup', () => {
-      this.tweens.killTweensOf(bg);
-      this.tweens.add({ targets: bg, alpha: { from: 0.7, to: 1.0 }, duration: 180, ease: 'Sine.easeOut' });
+      this.tweens.killTweensOf([glow, bg]);
+      this.tweens.add({ targets: glow, alpha: { from: 1, to: 0 }, duration: 260, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: bg,   alpha: { from: 0.6, to: 1 }, duration: 200 });
       onClick();
     });
 
-    return { bg, text, zone };
+    return { bg, glow, text, zone };
   }
 
   _unlockAudio() {
@@ -175,14 +183,23 @@ export class TitleScene extends Phaser.Scene {
   _showTutorial() {
     this._unlockAudio();
     this.audio?.playSfx?.('sfx_chime');
-    // Push tutorial; it will route back to title on Continue.
-    this.scene.start('scene:tutorial', {
+
+    // Sleep the title scene (don't destroy it) and run tutorial as
+    // an overlay. When the user closes the tutorial, we wake the
+    // title back up so onStart still has the correct closure.
+    //
+    // This was the v1.3.1 bug Dad reported: the previous
+    // `scene.start` cycle (title → tutorial → start title again →
+    // wrap onStart) ended up calling a destroyed scene's onStart
+    // and the game stalled. scene.sleep keeps title alive.
+    this.scene.sleep('scene:title');
+    this.scene.run('scene:tutorial', {
       audio: this.audio,
       fromTitle: true,
-      onContinue: () => this.scene.start('scene:title', {
-        audio: this.audio,
-        onStart: () => this.onStart?.()
-      })
+      onContinue: () => {
+        this.scene.stop('scene:tutorial');
+        this.scene.wake('scene:title');
+      }
     });
   }
 }

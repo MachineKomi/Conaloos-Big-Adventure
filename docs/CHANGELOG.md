@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-05-09 — v1.3.2: tutorial glitch + title hover + warp-back rename + playground rocket
+
+### Bug fixes
+
+- **Tutorial-from-title glitch.** Previously: clicking "How to play"
+  on the title would `scene.start('scene:tutorial', …)` which
+  STOPPED the title. Tutorial's "Off we go!" then `scene.start`-ed
+  a fresh title with a wrapped `onStart`, but that closure
+  referenced a destroyed scene's state and "Let's go" stalled (only
+  the warp-back/burger button worked). Fix: tutorial now opens via
+  `scene.sleep('scene:title') + scene.run('scene:tutorial')` so the
+  title is preserved, not destroyed. "Off we go!" stops tutorial
+  and wakes title. Title's "Let's go" works exactly as before.
+
+### UI polish
+
+- **Title-button hover** is much more visible: a soft yellow glow
+  halo fades in behind the button when you hover. The button itself
+  still doesn't scale (so the text stays readable) but you can now
+  clearly tell what's hover-active.
+- **Burger-menu "home" renamed to "warp back".** The button warps
+  the player back to the hub scene from anywhere — calling it
+  "home" implied it returned to the title screen. "Warp back" is
+  honest about what it does.
+
+### Content
+
+- **Playground rocketship added.** Second `thing_rocketship` placed
+  at x=0.46 in the playground (the bg art already shows a rocket
+  silhouette, so it visually fits). Has a 4-line dialogue pool plus
+  the special `_rocketLaunch` animation hook. Re-renders fresh on
+  every visit so kids can launch it again and again.
+
 ## 2026-05-09 — v1.3.1: final polish
 
 ### Polish

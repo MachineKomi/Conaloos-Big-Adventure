@@ -117,7 +117,10 @@ export class GlobalUIScene extends Phaser.Scene {
     let y = PADDING + BURGER_SIZE + ITEM_GAP;
 
     const buttons = [
-      { label: 'home',                      onClick: () => this.router?.goHome?.() },
+      // "warp back" = jump back to the hub scene from anywhere. We
+      // call it warp-back rather than 'home' because it doesn't
+      // exit to the title screen — it teleports inside the world.
+      { label: 'warp back',                 onClick: () => this.router?.goHome?.() },
       { label: this._soundLabel(),          onClick: () => Accessibility.toggleMuted() },
       { label: this._textLabel(),           onClick: () => Accessibility.cycleTextSize() }
     ];
