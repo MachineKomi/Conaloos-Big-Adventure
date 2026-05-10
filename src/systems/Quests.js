@@ -77,29 +77,29 @@ export const QUEST_DEFS = [
   // ─────────────────── stone collectors ───────────────────
   {
     id: 'gem-rookie',
-    title: "A handful of stones",
-    desc: "Add 25 stones to the bag.",
+    title: "A handful of gems",
+    desc: "Add 25 gems to the bag.",
     target: 25, reward: 8,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
   {
     id: 'gem-hoarder',
     title: "Properly-good hoarder",
-    desc: "Get the bag up to 100 stones.",
+    desc: "Get the bag up to 100 gems.",
     target: 100, reward: 20,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
   {
     id: 'gem-tycoon',
     title: "Pockets full of *quite* a lot",
-    desc: "Reach a hoard of 250 stones.",
+    desc: "Reach a hoard of 250 gems.",
     target: 250, reward: 35,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
   {
     id: 'gem-emperor',
-    title: "The five-hundred-stone friend",
-    desc: "Reach 500 stones — quite a lot of pockets.",
+    title: "The five-hundred-gem friend",
+    desc: "Reach 500 gems — quite a lot of pockets.",
     target: 500, reward: 60,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
@@ -424,9 +424,9 @@ export const QUEST_DEFS = [
     matches: (evt) => (evt.type === 'scene-visited' && !evt.firstScene ? 1 : 0)
   },
   {
-    id: 'scholar-and-stones',
+    id: 'scholar-and-stones',  // historical id — kept so v1.9 saves don't lose this one
     title: "A *scholarly* hoard",
-    desc: "Hold 100 stones AND find the microscope.",
+    desc: "Hold 100 gems AND find the microscope.",
     target: 1, reward: 12,
     matches: function (evt) {
       // We need both conditions met. We track them via a hidden state.

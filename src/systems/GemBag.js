@@ -1,6 +1,7 @@
 /**
- * GemBag — tracks how many "stones" (the in-game currency made of gems
- * 1..9) the player has gathered, plus per-gem counts.
+ * GemBag — tracks how many gems (values 1..9) the player has gathered,
+ * plus per-gem-key counts. (Earlier versions called the running total
+ * "stones"; the in-game wording is now consistently "gems".)
  *
  * v1.8: optionally backed by SaveGame. If a `saveGame` is passed in,
  * the bag rehydrates from it on construction and persists on every

@@ -26,7 +26,7 @@ const VERSE = [
   "just click it -- and I'll happily go for a ride.",
   "",
   "And the *star* up there? Quests! For when you've done deeds --",
-  "you'll find them inside it, with stones for your needs."
+  "you'll find them inside it, with gems for your needs."
 ];
 
 const CONTINUE_LABEL = "Off we go!";

@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-05-10 — v1.9.1: queued toasts, gems-not-stones
+
+### Quest-complete toasts queue, not stack
+
+When two quests completed in quick succession, both toasts rendered
+at the centre of the screen at the same time and the text became a
+jumble. Now toasts queue: one at a time, each held 3.5s plus a
+320ms gap, so each is fully readable. The gem-grant still happens
+the moment each quest completes (so the math reveal in the gem HUD
+is still synchronised with quest completion timing) — only the
+*celebration toast* is delayed.
+
+### "Stones" → "Gems"
+
+The reward unit is now called "gems" everywhere it's user-facing:
+
+- Quest-complete toast: "+N gems" (was "+N stones")
+- Quest panel completed-row chip: "(+N gems — collected)"
+- Quest titles + descriptions: "A handful of gems", "Add 25 gems
+  to the bag", "Reach 500 gems", "Hold 100 gems AND find the
+  microscope", "The five-hundred-gem friend", etc.
+- Tutorial verse line: "you'll find them inside it, with gems
+  for your needs" (the rhyme is on deeds/needs, so swapping the
+  noun preserved the couplet).
+
+The narrative *"Question Stones"* / *"fact-stones"* / *Tiny Museum*
+hotspot types keep their names — those are literal stones in the
+world that ask questions, not the gem currency. Cofeenie's
+hedgerow-and-stone-walls line also kept (it's about literal
+kingdom walls).
+
+The `scholar-and-stones` quest *id* was kept (with a comment) so
+v1.9 saves don't lose the completed flag.
+
+### Touched
+
+- **Updated:** `src/systems/QuestHUD.js` (toast queue + label),
+  `src/systems/Quests.js` (titles + descs), `src/systems/GemBag.js`
+  (comment), `src/scenes/TutorialScene.js` (verse).
+
 ## 2026-05-10 — v1.9: rockets fixed, big quest pack, scrollable log, Pooh warmth
 
 A pass on the rocketry, the quest log, and the prose.

@@ -25,7 +25,7 @@ const ROW_PADDING_X = 18;
 
 const TOAST_W = 720;
 const TOAST_H = 280;
-const TOAST_GEM_KEY = 'gem_5';   // visual icon for "+N stones"
+const TOAST_GEM_KEY = 'gem_5';   // visual icon for "+N gems"
 
 export class QuestHUDScene extends Phaser.Scene {
   constructor() {
@@ -111,11 +111,16 @@ export class QuestHUDScene extends Phaser.Scene {
     this._buildIcon(); // refresh badge count
     if (this.open) this._renderPanel();
 
-    // For each newly completed quest, fire a toast and auto-grant
-    // the gem reward (so the kid sees gems fly into the counter).
+    // For each newly completed quest, enqueue a toast and auto-grant
+    // the gem reward (so the kid sees gems fly into the counter
+    // immediately — the math reveal and the toast share the moment).
+    // Toasts QUEUE (one at a time): two quests completing in quick
+    // succession used to draw their toasts on top of each other and
+    // the text became a jumble. Now they appear in order, each
+    // clearly readable, with a small gap between.
     if (evt.newlyCompleted?.length) {
       for (const entry of evt.newlyCompleted) {
-        this._showToast(entry.def);
+        this._enqueueToast(entry.def);
         // Auto-claim — credit gems via gemBag (uses a fake gem key
         // so the icon updates).
         const reward = entry.def.reward || 0;
@@ -128,7 +133,25 @@ export class QuestHUDScene extends Phaser.Scene {
     }
   }
 
-  _showToast(def) {
+  /** Push a quest-complete toast onto the queue. If nothing's
+   *  currently showing, also kick off the next toast immediately. */
+  _enqueueToast(def) {
+    if (!this._toastQueue) this._toastQueue = [];
+    this._toastQueue.push(def);
+    if (!this._toastActive) this._processToastQueue();
+  }
+
+  _processToastQueue() {
+    if (!this._toastQueue || this._toastQueue.length === 0) {
+      this._toastActive = false;
+      return;
+    }
+    this._toastActive = true;
+    const def = this._toastQueue.shift();
+    this._renderToast(def);
+  }
+
+  _renderToast(def) {
     const { width, height } = this.scale;
     // Center of the screen, not under the gem HUD — that way the
     // kid can SEE the gem counter ticking up while the toast holds.
@@ -180,10 +203,10 @@ export class QuestHUDScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(8801);
     items.push(title);
 
-    // 5. Reward row — gem icon + "+N stones" rendered as a chip so
+    // 5. Reward row — gem icon + "+N gems" rendered as a chip so
     //    the kid clearly *sees* what they get.
     const rewardRowY = yResting + TOAST_H - 78;
-    const rewardLabel = this.add.text(0, 0, `+${def.reward} stones`, {
+    const rewardLabel = this.add.text(0, 0, `+${def.reward} gems`, {
       fontFamily: TYPE.family,
       fontSize: '32px',
       color: '#ffffff',
@@ -284,7 +307,10 @@ export class QuestHUDScene extends Phaser.Scene {
     }
 
     // 10. Hold longer than before (3.5s) — there's more to read, and
-    //     the kid needs time to spot the gem reward.
+    //     the kid needs time to spot the gem reward. After the fade,
+    //     a small gap (320ms) before the next toast plays so two
+    //     pop-ups don't bleed into each other when several quests
+    //     complete back-to-back.
     this.time.delayedCall(3500, () => {
       this.tweens.add({
         targets: items,
@@ -292,7 +318,10 @@ export class QuestHUDScene extends Phaser.Scene {
         y: '-=12',
         duration: ANIM.toast,
         ease: 'Sine.easeIn',
-        onComplete: () => items.forEach((o) => o.destroy())
+        onComplete: () => {
+          items.forEach((o) => o.destroy());
+          this.time.delayedCall(320, () => this._processToastQueue());
+        }
       });
     });
   }
@@ -397,7 +426,7 @@ export class QuestHUDScene extends Phaser.Scene {
     container.add(t);
 
     const descText = entry.completed
-      ? `(+${def.reward} stones — collected)`
+      ? `(+${def.reward} gems — collected)`
       : def.desc;
     const p = this.add.text(rowX + 12, rowY + 36, descText, {
       fontFamily: TYPE.bodyFamily,
