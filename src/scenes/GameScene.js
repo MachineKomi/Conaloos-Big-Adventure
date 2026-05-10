@@ -210,10 +210,7 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5, 1);
 
       if (isCollectable) {
-        // Over-scale (no crop) so the visible content reads big
-        // without ever cutting off the corners of teddy bears /
-        // books / etc. Some transparent margin renders past the
-        // ground line, which is invisible anyway.
+        // Over-scale (no crop) so the visible content reads big.
         const overscale = 1.45;
         const defaultFrac = 0.32;
         const heightFrac = (typeof t.heightFrac === 'number') ? t.heightFrac : defaultFrac;
@@ -222,6 +219,9 @@ export class GameScene extends Phaser.Scene {
       } else {
         applyDisplaySize(img, t, h, 0.22);
       }
+
+      // Lock in baseScale so hover/click tweens revert correctly.
+      img._baseScale = img.scale;
 
       if (isCollectable) {
         img.setDepth(8500 + (img.y / h));
@@ -242,9 +242,12 @@ export class GameScene extends Phaser.Scene {
         .image((c.x ?? 0.5) * w, (c.y ?? 0.5) * h, c.sprite)
         .setOrigin(0.5, 1);
       applyDisplaySize(img, c, h, 0.45);
-      // Depth = y so character lower on screen appears in front of one
-      // higher up. Avoids "Amelia walks behind a peep that's visually
-      // in front of her" weirdness.
+      // Lock in the base scale RIGHT NOW so hover/click tweens
+      // always go back to the same value. Without this, repeated
+      // clicks left the sprite slightly larger each time (race
+      // between competing tweens) and characters slowly grew until
+      // they walked off the screen.
+      img._baseScale = img.scale;
       img.setDepth(img.y);
       this.spritesByKey.set(c.sprite, img);
 
@@ -309,20 +312,41 @@ export class GameScene extends Phaser.Scene {
       }
 
       img.setInteractive({ useHandCursor: true });
-      img.on('pointerover', () => img.setTint(0xfff5d0));
+      // Hover tint when not collecting.
+      img.on('pointerover', (pointer) => {
+        // Drag-to-collect: if the user is already holding the
+        // pointer down, this hover counts as a pickup. Lets the kid
+        // sweep their finger across a row of gems and grab them all.
+        if (pointer && pointer.isDown) {
+          this._collectGem(img, key, value);
+        } else {
+          img.setTint(0xfff5d0);
+        }
+      });
       img.on('pointerout', () => img.clearTint());
-      img.on('pointerup', () => this._collectGem(img, key, value));
+      // pointerdown fires before pointerup — picking up on the press
+      // (not release) means stacked / overlapping gems can be tapped
+      // in rapid succession without waiting for the previous tap to
+      // resolve.
+      img.on('pointerdown', () => this._collectGem(img, key, value));
     }
   }
 
   /**
    * Click → swap to glowing variant → glow + bob in place for a beat →
    * fly toward the top-centre GemHUD → on arrival, GemBag.add fires
-   * the equation reveal in the HUD. Amelia hops in celebration.
+   * the equation reveal in the HUD.
+   *
+   * Important: hit-detection is disabled the instant we mark the gem
+   * collected so that any gem rendered behind / overlapping this one
+   * becomes instantly tappable. Without this, the kid's second tap
+   * would still hit the (now glowing, but still-interactive) first
+   * gem, and the pickup felt sticky.
    */
   _collectGem(img, key, value) {
     if (img._collected) return;
     img._collected = true;
+    img.disableInteractive(); // pass clicks straight through immediately
     // Persist this gem placement so it doesn't respawn on revisit.
     worldCollected.add(`${this.slug}:gem:${key}:${Math.round(img.x)}:${Math.round(img.y)}`);
 
@@ -443,21 +467,33 @@ export class GameScene extends Phaser.Scene {
 
   _enterPortal(portalDef, portalSprite) {
     if (this._isTransitioning) return;
-    this._isTransitioning = true;
 
     const protagonist = this.services.protagonist;
     const arriveX = portalSprite.x;
     const targetKey = `scene:${portalDef.target}`;
     const enterEdge = portalDef.enterEdge || 'left';
 
+    // Defensive: if the target scene was removed (e.g. its background
+    // got deleted between content edits), don't lock the player by
+    // walking to a portal that goes nowhere.
+    if (!this.scene.manager.getScene(targetKey)) {
+      console.warn(`[portal] target scene missing: ${portalDef.target}`);
+      return;
+    }
+
     const doFade = () => {
+      // Set the lock NOW (not before the walk). If the user clicks
+      // a different hotspot mid-walk, the walk's onArrive (this
+      // function) is orphaned by Protagonist.walkTo overwriting the
+      // tween — and we never reach this point. With the lock here,
+      // _isTransitioning stays false, and the next portal click
+      // works correctly. (Bug v1.3.x: clicks were getting stuck.)
+      if (this._isTransitioning) return;
+      this._isTransitioning = true;
+
       this.services.audio?.playSfx('sfx_swoosh');
       this.cameras.main.fadeOut(SCENE_FADE_MS, 255, 248, 231);
       this.cameras.main.once('camerafadeoutcomplete', () => {
-        // Be explicit: stop ourselves, then start the destination. Phaser's
-        // `this.scene.start` should do this via its op queue, but in some
-        // configurations the calling scene stays running in the background,
-        // which leaves two scenes ticking and a frozen-feeling transition.
         const mgr = this.scene.manager;
         const myKey = this.scene.key;
         mgr.start(targetKey, { enterEdge });
@@ -767,9 +803,15 @@ export class GameScene extends Phaser.Scene {
               ease: 'Sine.easeInOut'
             });
           }
-          gem.on('pointerover', () => gem.setTint(0xfff5d0));
+          gem.on('pointerover', (pointer) => {
+            if (pointer && pointer.isDown) {
+              this._collectGem(gem, key, value);
+            } else {
+              gem.setTint(0xfff5d0);
+            }
+          });
           gem.on('pointerout', () => gem.clearTint());
-          gem.on('pointerup', () => this._collectGem(gem, key, value));
+          gem.on('pointerdown', () => this._collectGem(gem, key, value));
         }
       });
     }

@@ -1,5 +1,54 @@
 # Changelog
 
+## 2026-05-09 — v1.4: critical bug fixes + gem QoL
+
+### Two critical bugs fixed
+
+- **Portals could get permanently stuck.** Repro: tap a portal,
+  then tap something else before Amelia arrives. Cause: portal
+  click set `_isTransitioning = true` BEFORE the walk. The
+  walk's onArrive (the actual fade + scene-change) was orphaned
+  by the next click overwriting Amelia's tween, but the lock
+  flag stayed true forever — so subsequent portal clicks were
+  blocked by `if (this._isTransitioning) return;`. Fix: only set
+  the lock INSIDE doFade() (the walk-arrival callback), so an
+  interrupted portal walk leaves the lock false and the next
+  portal click works.
+- **Peep grows on repeat clicks.** Race between hover/out tweens
+  and the click bounce: each hover captured `sprite.scale`
+  fresh, but if scale was already inflated mid-bounce, the
+  capture grew. Fix: every sprite's `_baseScale` is now locked
+  in once at render time, and ALL hover/click tweens use that
+  as the anchor — they can never drift.
+
+### Gem pickup quality of life
+
+- **Pickup on `pointerdown`** instead of `pointerup`. Feels
+  instantaneous — kid taps and the gem is already collected
+  before they lift their finger.
+- **`disableInteractive` immediately on collect** so the still-
+  glowing first gem doesn't block taps on a gem behind it. Tap
+  a stack of overlapping gems and they all register.
+- **Drag-to-collect.** While the pointer is held down, hovering
+  over any gem auto-collects it. Sweep a finger or click+drag
+  the mouse across a row to grab them all.
+- **Batch equation reveal.** Rapid pickups used to skip the math
+  reveal because the first reveal was still animating. Now:
+  - A "running batch" panel appears UNDER the total,
+    accumulating each addition: `+3` → `+3  +5` → `+3  +5  +1`.
+  - The total counter ticks up immediately for every pickup so
+    the kid sees the bag fill.
+  - After ~1.4s of no new pickups, the batch resolves on the
+    panel: `previousTotal + sum = newTotal` revealed step-by-step,
+    then fades. Every batch produces a math beat regardless of
+    tap speed.
+
+### Asset-robustness defensive
+
+- `_enterPortal` checks the target scene exists before
+  navigating; logs a console warning instead of locking up if
+  the destination's background was removed.
+
 ## 2026-05-09 — v1.3.3: rocket actually launches + no crop on things
 
 ### Rocketship launch is now satisfying

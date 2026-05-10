@@ -104,22 +104,26 @@ export class HotspotManager {
     // input with topOnly=true picks the highest-depth interactive hit.
     if (sprite) zone.setDepth(sprite.depth + 0.5);
     else zone.setDepth(ay);
-    let savedScale = sprite ? sprite.scale : 1;
+
+    // Use the LOCKED-IN _baseScale set when the sprite was rendered.
+    // Hover/click tweens always anchor to this — without it, races
+    // between competing tweens drifted scale upward each click and
+    // peeps grew until they walked off the screen (v1.3.x bug).
+    const baseScale = sprite ? (sprite._baseScale ?? sprite.scale) : 1;
     let hoverTween = null;
-    let clickTween = null;
 
     zone.on('pointerover', () => {
       if (!sprite) return;
-      savedScale = sprite.scale;
       sprite.setTint(HOVER_TINT);
       if (Accessibility.reducedMotion) {
-        sprite.setScale(savedScale * HOVER_SCALE_FACTOR);
+        sprite.setScale(baseScale * HOVER_SCALE_FACTOR);
         return;
       }
       hoverTween?.remove();
+      scene.tweens.killTweensOf(sprite);
       hoverTween = scene.tweens.add({
         targets: sprite,
-        scale: savedScale * HOVER_SCALE_FACTOR,
+        scale: baseScale * HOVER_SCALE_FACTOR,
         duration: HOVER_TWEEN_MS,
         ease: 'Sine.easeOut'
       });
@@ -130,13 +134,14 @@ export class HotspotManager {
       sprite.clearTint();
       hoverTween?.remove();
       hoverTween = null;
+      scene.tweens.killTweensOf(sprite);
       if (Accessibility.reducedMotion) {
-        sprite.setScale(savedScale);
+        sprite.setScale(baseScale);
         return;
       }
       scene.tweens.add({
         targets: sprite,
-        scale: savedScale,
+        scale: baseScale,
         duration: HOVER_TWEEN_MS,
         ease: 'Sine.easeOut'
       });
@@ -153,7 +158,7 @@ export class HotspotManager {
       const clickPos = pointer && pointer.worldX !== undefined
         ? { x: pointer.worldX, y: pointer.worldY }
         : { x: cx, y: cy };
-      this._bounceSprite(sprite, savedScale);
+      this._bounceSprite(sprite, baseScale);
       this._emitSparkle(clickPos.x, clickPos.y);
 
       // Walk Amelia toward the speaker (stopping a sprite-width away)
@@ -177,12 +182,23 @@ export class HotspotManager {
       this.scene.time.delayedCall(120, () => sprite.clearTint());
       return;
     }
+    // Kill any pending hover-tween so this bounce doesn't fight it,
+    // then explicitly set the start scale so the yoyo returns to it.
+    this.scene.tweens.killTweensOf(sprite);
+    sprite.setScale(baseScale * HOVER_SCALE_FACTOR); // start state
     this.scene.tweens.add({
       targets: sprite,
       scale: baseScale * CLICK_SCALE_FACTOR,
       duration: CLICK_TWEEN_MS,
       ease: 'Back.easeOut',
-      yoyo: true
+      yoyo: true,
+      onComplete: () => {
+        // Snap to a deterministic value when bounce ends, regardless
+        // of whether we're still hovered.
+        if (sprite && sprite.active) {
+          sprite.setScale(baseScale * HOVER_SCALE_FACTOR);
+        }
+      }
     });
   }
 
