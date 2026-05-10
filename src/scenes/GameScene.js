@@ -21,6 +21,7 @@ import Phaser from 'phaser';
 import { HotspotManager } from '../systems/HotspotManager.js';
 import { DialogueBox } from '../systems/DialogueBox.js';
 import { Accessibility } from '../systems/Accessibility.js';
+import { growsOnClick, GROW_FACTOR, GROW_CAP } from '../content/growsOnClick.js';
 
 const IDLE_BOB_AMPL = 8;
 const IDLE_BOB_MS = 1900;
@@ -118,6 +119,9 @@ export class GameScene extends Phaser.Scene {
     if (this.def.music) {
       this.services.audio.playMusic(this.def.music, this);
     }
+
+    // Tell the quest tracker we visited this scene.
+    this.services.quests?.report?.({ type: 'scene-visited', slug: this.slug });
 
     // Random tiny idle reactions — every 6-14 seconds, a random
     // character does a small wiggle / tiny hop. Adds a sense the
@@ -404,9 +408,17 @@ export class GameScene extends Phaser.Scene {
       if (!this.textures.exists(p.sprite)) continue;
 
       const x = (p.x ?? 0.5) * w;
-      const y = (p.y ?? 0.95) * h;
+      let y = (p.y ?? 0.95) * h;
       const img = this.add.image(x, y, p.sprite).setOrigin(0.5, 1);
       applyDisplaySize(img, { heightFrac: p.heightFrac ?? 0.30 }, h, 0.30);
+      // Ensure the portal's TOP doesn't go above the HUD reserved
+      // zone, otherwise its label gets clipped. Clamp y down if the
+      // sprite would extend above ~y=120.
+      const minTopY = 120;
+      if (y - img.displayHeight < minTopY) {
+        y = minTopY + img.displayHeight;
+        img.y = y;
+      }
       // Same y-based depth as characters so they sort naturally.
       img.setDepth(y);
       this.spritesByKey.set(p.sprite, img);
@@ -426,19 +438,29 @@ export class GameScene extends Phaser.Scene {
         });
       }
 
-      // Floating label always sits above its portal sprite (depth+1).
+      // Floating label sits above the portal sprite by default. If
+      // that would push it into the reserved-top area (gem HUD), put
+      // it BELOW the portal instead so it never gets clipped.
       if (p.label) {
-        const labelY = y - img.displayHeight - 8;
+        const HUD_RESERVED_TOP = 110;
+        const portalTop = y - img.displayHeight;
+        const labelGoesAbove = portalTop - 28 > HUD_RESERVED_TOP;
         const label = this.add
-          .text(x, labelY, p.label, {
+          .text(x, 0, p.label, {
             fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
             fontSize: `${PORTAL_LABEL_FONT_PX}px`,
             color: '#2b2b2b',
             backgroundColor: 'rgba(255,248,231,0.85)',
             padding: { left: 10, right: 10, top: 4, bottom: 4 }
           })
-          .setOrigin(0.5, 1)
           .setDepth(y + 1);
+        if (labelGoesAbove) {
+          label.setOrigin(0.5, 1);
+          label.y = portalTop - 8;
+        } else {
+          label.setOrigin(0.5, 0);
+          label.y = y + 6;
+        }
         this._portalSprites.push(label);
       }
     }
@@ -517,14 +539,32 @@ export class GameScene extends Phaser.Scene {
   _afterResponse(hotspot, response) {
     this._applyRemix(response);
 
-    // Rocketship: launch on the 1st, 2nd, or 3rd click (random target
-    // per visit). Once launched, it's gone for this visit and only
-    // respawns on re-entering the scene. Anything else: 30% chance of
-    // a small special animation.
+    // Rocketship: launch on first tap, every time. Otherwise: chance
+    // of a small special animation.
     if (hotspot?.speaker === 'thing_rocketship') {
       this._rocketTick(hotspot);
     } else if (Math.random() < 0.30) {
       this._maybeSpecialAnimation(hotspot);
+    }
+
+    // Buddy growth: certain characters puff up a bit with each tap,
+    // capped at 3x their original size. Resets per scene visit.
+    if (hotspot?.speaker && growsOnClick.has(hotspot.speaker)) {
+      const sprite = this.spritesByKey.get(hotspot.speaker);
+      if (sprite && sprite._baseScale) {
+        const original = sprite._originalBaseScale ?? sprite._baseScale;
+        if (!sprite._originalBaseScale) sprite._originalBaseScale = original;
+        const cap = original * GROW_CAP;
+        const next = Math.min(sprite._baseScale * GROW_FACTOR, cap);
+        sprite._baseScale = next;
+        // Quick puff tween up to the new base scale.
+        this.tweens.add({
+          targets: sprite,
+          scale: next,
+          duration: 220,
+          ease: 'Back.easeOut'
+        });
+      }
     }
 
     // Inventory pickup: collect on first click, the thing-sprite pops
@@ -620,33 +660,14 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Track click count on each rocketship sprite. On its (random)
-   *  trigger click, fully launch off the top of the screen — gone
-   *  for the rest of this scene visit. The kid leaves and comes
-   *  back to find it ready to launch again. */
+  /** Rocketship: launch on the very first tap, every time. Reliable
+   *  because there's no random count or extra dialogue to skip. The
+   *  rocket leaves the screen and stays gone until the scene is
+   *  re-entered. */
   _rocketTick(hotspot) {
     const sprite = this.spritesByKey.get(hotspot.speaker);
     if (!sprite || !sprite.active || sprite._launched) return;
-    sprite._clickCount = (sprite._clickCount || 0) + 1;
-    // Pick a random launch trigger (1, 2, or 3) the first time we
-    // see this sprite this visit.
-    if (!sprite._launchOnClick) {
-      sprite._launchOnClick = 1 + Math.floor(Math.random() * 3);
-    }
-    if (sprite._clickCount >= sprite._launchOnClick) {
-      this._rocketLaunch(sprite);
-    } else {
-      // Pre-launch: a small wiggle/preheat shake to hint a launch is
-      // coming.
-      this.tweens.add({
-        targets: sprite,
-        angle: { from: -3, to: 3 },
-        duration: 80,
-        yoyo: true,
-        repeat: 3,
-        onComplete: () => { sprite.angle = 0; }
-      });
-    }
+    this._rocketLaunch(sprite);
   }
 
   _rocketLaunch(sprite) {

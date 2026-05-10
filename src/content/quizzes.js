@@ -31,8 +31,8 @@ export const quizzes = {
         { text: "A tiger",     isCorrect: true },
         { text: "A daisy",     isCorrect: false }
       ],
-      onCorrect: "A *tiger*! Yes! Tigers are gigantic — they have stripes\nand teeth and a tail as long as a chair.",
-      onWrong:   "Hmm — a tiger is the biggest. They live in forests far away\nand have stripes that look like sunlight on the leaves."
+      onCorrect: "A *tiger*! Yes! Tigers are gigantic -- they have stripes\nand teeth and a tail as long as a chair.",
+      onWrong:   "Hmm -- a tiger is the biggest. They live in forests far away\nand have stripes that look like sunlight on the leaves."
     },
     {
       question: "Which one is a number?",
@@ -42,7 +42,7 @@ export const quizzes = {
         { text: "Carrot", isCorrect: false }
       ],
       onCorrect: "Seven! Right. Tuesday's a *day* and a carrot's a *snack*.\nNumbers tell us how MANY of a thing.",
-      onWrong:   "Tuesday's a day, carrot's a snack — but seven\nis a *number*, like 1, 2, 3 ...up to seven!"
+      onWrong:   "Tuesday's a day, carrot's a snack -- but seven\nis a *number*, like 1, 2, 3 ...up to seven!"
     },
     {
       question: "How many legs does a spider have?",
@@ -51,8 +51,58 @@ export const quizzes = {
         { text: "Six",    isCorrect: false },
         { text: "Eight",  isCorrect: true }
       ],
-      onCorrect: "EIGHT! Spiders have eight legs — that's *two more*\nthan an insect, which only has six.",
-      onWrong:   "Spiders have eight! Insects have six legs, but spiders\nare different — they're called *arachnids*."
+      onCorrect: "EIGHT! Spiders have eight legs -- that's *two more*\nthan an insect, which only has six.",
+      onWrong:   "Spiders have eight! Insects have six legs, but spiders\nare different -- they're called *arachnids*."
+    },
+    {
+      question: "What's 2 plus 2?",
+      options: [
+        { text: "Three",  isCorrect: false },
+        { text: "Four",   isCorrect: true },
+        { text: "Five",   isCorrect: false }
+      ],
+      onCorrect: "FOUR! Two pebbles + two pebbles = four pebbles.\nThat's how addition works.",
+      onWrong:   "Two and two makes *four*. Try counting on your fingers:\none-two ... three-four. See?"
+    },
+    {
+      question: "Where does the SUN go at night?",
+      options: [
+        { text: "It hides behind the moon", isCorrect: false },
+        { text: "It shines on the other side of the world", isCorrect: true },
+        { text: "It goes to bed", isCorrect: false }
+      ],
+      onCorrect: "Yes! The Earth is spinning, so the sun is on the\nOTHER side. Right now somewhere it's morning.",
+      onWrong:   "Actually -- the Earth spins! When it's night here,\nthe sun is shining somewhere else. It never sleeps."
+    },
+    {
+      question: "Which animal lays eggs?",
+      options: [
+        { text: "A cat",     isCorrect: false },
+        { text: "A chicken", isCorrect: true },
+        { text: "A horse",   isCorrect: false }
+      ],
+      onCorrect: "Chickens! Yes. Birds lay eggs. Cats and horses\nhave babies that grow inside their tummies.",
+      onWrong:   "Chickens lay eggs. So do most birds, fish, frogs, and lizards.\nCats and horses are *mammals* -- their babies grow inside."
+    },
+    {
+      question: "What do plants need to grow?",
+      options: [
+        { text: "Cake",          isCorrect: false },
+        { text: "Sun and water", isCorrect: true },
+        { text: "Wifi",          isCorrect: false }
+      ],
+      onCorrect: "Sun and water! Plants drink water through their roots\nand eat sunlight through their leaves. (How clever!)",
+      onWrong:   "Sun and water! Plants are amazing -- they make their\nfood from sunshine. They don't need cake. Or wifi."
+    },
+    {
+      question: "Which is the SMALLEST?",
+      options: [
+        { text: "An ant",     isCorrect: true },
+        { text: "A puppy",    isCorrect: false },
+        { text: "A car",      isCorrect: false }
+      ],
+      onCorrect: "An ant! Tiny but *mighty* -- they can carry things\nway bigger than themselves.",
+      onWrong:   "Ants are the smallest of those. They're so small you can\nfit hundreds of them on your hand."
     }
   ],
 
@@ -64,8 +114,8 @@ export const quizzes = {
         { text: "Tree",   isCorrect: false },
         { text: "Cat",    isCorrect: false }
       ],
-      onCorrect: "Yes! Spoon rhymes with moon — they end with the same sound.\n*Spoon, moon, tune, balloon* — try saying them aloud.",
-      onWrong:   "Spoon rhymes with moon — they share an *oon* sound at the end.\nTry saying them: spoon-moon, spoon-moon."
+      onCorrect: "Yes! Spoon rhymes with moon -- they end with the same sound.\n*Spoon, moon, tune, balloon* -- try saying them aloud.",
+      onWrong:   "Spoon rhymes with moon -- they share an *oon* sound at the end.\nTry saying them: spoon-moon, spoon-moon."
     },
     {
       question: "Which season has snow?",
@@ -76,6 +126,46 @@ export const quizzes = {
       ],
       onCorrect: "Winter! Yes. The cold months when frost paints the windows\nand snow turns the world into a quiet white page.",
       onWrong:   "It's winter! Summer is hot, spring is when flowers wake up,\nand winter is the cold one with snow."
+    },
+    {
+      question: "Which colour comes from yellow + blue?",
+      options: [
+        { text: "Pink",   isCorrect: false },
+        { text: "Green",  isCorrect: true },
+        { text: "Purple", isCorrect: false }
+      ],
+      onCorrect: "Green! Yellow and blue make green -- like grass\nor leaves. Mix them in your head: it really works.",
+      onWrong:   "Green! Yellow + blue = green. Try it with paints sometime.\n(Yellow + red = orange. Red + blue = purple.)"
+    },
+    {
+      question: "How many sides does a triangle have?",
+      options: [
+        { text: "Two",   isCorrect: false },
+        { text: "Three", isCorrect: true },
+        { text: "Four",  isCorrect: false }
+      ],
+      onCorrect: "Three! *Tri* means three. Triangles have three sides\nand three corners. Always.",
+      onWrong:   "Three! The word *triangle* even has 'tri' for three.\nA shape with four sides is a square or rectangle."
+    },
+    {
+      question: "What letter does APPLE start with?",
+      options: [
+        { text: "A", isCorrect: true },
+        { text: "P", isCorrect: false },
+        { text: "B", isCorrect: false }
+      ],
+      onCorrect: "A! *A* is for *Apple* -- and for ant, alligator,\nand of course Amelia.",
+      onWrong:   "Apple starts with A. Try saying it slowly:\n*Aaa-pple*. The first sound is the letter A."
+    },
+    {
+      question: "Which one is a SHAPE?",
+      options: [
+        { text: "Circle", isCorrect: true },
+        { text: "Tuesday",isCorrect: false },
+        { text: "Yellow", isCorrect: false }
+      ],
+      onCorrect: "Circle! Round, like a coin or a wheel.\nShapes are how things look. Tuesday's a day, yellow's a colour.",
+      onWrong:   "Circle is a shape -- round, like the moon or a coin.\nTuesday is a day. Yellow is a colour. Different categories!"
     }
   ],
 

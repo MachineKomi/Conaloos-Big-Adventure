@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-05-09 — v1.5: math reveal polish + dialogue stays + quests + buddy growth
+
+### Gem math display
+
+- **First number is bare; subsequent get +.** Live-batch text now
+  reads "3" → "3 + 5" → "3 + 5 + 1" instead of the old "+3 +5 +1".
+- **Two-stage settle reveal.** When the burst quiets:
+  1. The current expression gets a `= subtotal` appended:
+     "3 + 5 + 1 = 9".
+  2. After a beat, the panel transitions to the running-total math:
+     "12 + 9" → "12 + 9 = 21". Each part appears in turn so the
+     kid sees the full chain — every gem → subtotal → new total.
+
+### Dialogue boxes
+
+- **Stay until tap.** Removed the auto-dismiss timer. Bubbles
+  remain visible until the player taps the bubble itself, the
+  background, or another hotspot. No more disappearing mid-read.
+
+### Rocketship reliability
+
+- **First tap launches.** Removed dialogue and the random 1-3 click
+  trigger. Tap the rocketship once, it always launches. The
+  scattered "sometimes nothing happens" bug is gone.
+
+### Portal labels
+
+- **Auto-flips above/below the portal sprite** based on whether
+  there's room above (without crashing into the gem HUD's reserved
+  zone). Portals high on the screen now show their label BELOW.
+- **Min top clamp** on portal sprites so the sprite itself never
+  extends above y=120 (preserves space for the HUD).
+
+### Buddy growth (opt-in delight)
+
+- New `src/content/growsOnClick.js` — a small set of characters
+  (Conaloo, Pepsi, Seesa, Monaloo, Tootsie) get a tiny +7% per
+  click, capped at **3× their original size**. Cap prevents the
+  v1.3 "infinite growth → walks off-screen" bug; deliberate growth
+  for a small cast preserves the delight Amelia missed.
+- Hover/click tweens now look up `_baseScale` dynamically each
+  event, so the growth doesn't fight the hover anchor.
+
+### More quizzes
+
+- Cosenae's pool: 3 → 8 (added math, day-night, eggs, plants,
+  size compare).
+- Lulumi's pool: 2 → 6 (added colour mixing, triangle sides,
+  letters, shapes).
+
+### Quest / achievement system (NEW)
+
+- New `src/systems/Quests.js` (`QuestManager`) tracks progress
+  against ~12 quest definitions: count quests (collect N gems /
+  things / right answers), specific item quests (find the cake /
+  the teddybear), and exploration quests (visit N scenes / every
+  scene).
+- Game systems emit events (`gem-collected`, `thing-collected`,
+  `quiz-correct`, `scene-visited`) → `QuestManager.report()` updates
+  matching quests.
+- New `src/systems/QuestHUD.js` (`QuestHUDScene`):
+  - A "★" button next to the inventory bag (top-left).
+  - Shows a tiny "n/total" badge.
+  - Tap to open a panel listing every quest with its progress
+    bar / DONE state and reward.
+  - On completion, a celebratory toast pops in for ~3s and the gem
+    reward is auto-credited (visible flying-gems via the existing
+    GemBag → GemHUD pipeline).
+
 ## 2026-05-09 — v1.4: critical bug fixes + gem QoL
 
 ### Two critical bugs fixed

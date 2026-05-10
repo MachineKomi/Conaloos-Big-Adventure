@@ -105,16 +105,19 @@ export class HotspotManager {
     if (sprite) zone.setDepth(sprite.depth + 0.5);
     else zone.setDepth(ay);
 
-    // Use the LOCKED-IN _baseScale set when the sprite was rendered.
-    // Hover/click tweens always anchor to this — without it, races
-    // between competing tweens drifted scale upward each click and
-    // peeps grew until they walked off the screen (v1.3.x bug).
-    const baseScale = sprite ? (sprite._baseScale ?? sprite.scale) : 1;
+    // Resolve baseScale dynamically per event (NOT captured once),
+    // because some characters opt-in to "buddy growth" — their
+    // _baseScale increases with each click, capped. If we captured
+    // the value at zone-creation time, hover tweens would always
+    // shrink them back to the original size, which would fight the
+    // growth feature.
+    const getBase = () => (sprite ? (sprite._baseScale ?? sprite.scale) : 1);
     let hoverTween = null;
 
     zone.on('pointerover', () => {
       if (!sprite) return;
       sprite.setTint(HOVER_TINT);
+      const baseScale = getBase();
       if (Accessibility.reducedMotion) {
         sprite.setScale(baseScale * HOVER_SCALE_FACTOR);
         return;
@@ -134,6 +137,7 @@ export class HotspotManager {
       sprite.clearTint();
       hoverTween?.remove();
       hoverTween = null;
+      const baseScale = getBase();
       scene.tweens.killTweensOf(sprite);
       if (Accessibility.reducedMotion) {
         sprite.setScale(baseScale);
@@ -158,7 +162,7 @@ export class HotspotManager {
       const clickPos = pointer && pointer.worldX !== undefined
         ? { x: pointer.worldX, y: pointer.worldY }
         : { x: cx, y: cy };
-      this._bounceSprite(sprite, baseScale);
+      this._bounceSprite(sprite, getBase());
       this._emitSparkle(clickPos.x, clickPos.y);
 
       // Walk Amelia toward the speaker (stopping a sprite-width away)
@@ -331,6 +335,11 @@ export class HotspotManager {
       if (this.scene._spawnGemBurst && speakerSprite) {
         this.scene._spawnGemBurst(speakerSprite);
       }
+      // Quest tracking: a correct answer counts.
+      this.scene.services?.quests?.report?.({
+        type: 'quiz-correct',
+        speaker: hotspot.speaker
+      });
     } else {
       this.audio?.playSfx('sfx_descend');
     }

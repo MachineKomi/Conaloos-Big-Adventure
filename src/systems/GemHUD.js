@@ -176,8 +176,16 @@ export class GemHUDScene extends Phaser.Scene {
       this._hideBatchPanel();
       return;
     }
-    // Build the running text: "+3 +5 +1"
-    const text = this._batchPickups.map((v) => `+${v}`).join('  ');
+    // Build the running expression. The FIRST number is bare so the
+    // panel reads as a real sum, not "+3 +5 +1". Subsequent numbers
+    // get a "+" prefix.
+    //
+    //   pickups [3]         → "3"
+    //   pickups [3, 5]      → "3 + 5"
+    //   pickups [3, 5, 1]   → "3 + 5 + 1"
+    const pickups = this._batchPickups;
+    let text = `${pickups[0]}`;
+    for (let i = 1; i < pickups.length; i++) text += ` + ${pickups[i]}`;
     this._batchText.setText(text);
 
     const { width } = this.scale;
@@ -221,28 +229,31 @@ export class GemHUDScene extends Phaser.Scene {
   }
 
   /**
-   * After the batch settles (no new pickups for ~1.4s), animate an
-   * equation reveal that turns the running additions into the new
-   * total, then fade the batch panel.
+   * After the batch settles (~1.4s of quiet), reveal the math in
+   * two stages so the kid sees the full chain:
+   *
+   *   Stage 1 (subtotal):  "3 + 5 + 1"          → "3 + 5 + 1 = 9"
+   *   pause...
+   *   Stage 2 (total):     "12 + 9"             → "12 + 9 = 21"
+   *
+   * That way every gem in the burst contributes visibly to the
+   * subtotal, and the subtotal contributes visibly to the new total.
    */
   _settleBatch() {
     if (!this._batchActive) return;
     const startTotal = this._batchStartTotal;
     const subtotal = this._batchSubtotal;
     const newTotal = startTotal + subtotal;
+    const pickups = this._batchPickups.slice();
 
-    // Build the equation step-by-step.
-    const equationParts = [
-      `${startTotal}`,
-      ` + ${subtotal}`,
-      ` = ${newTotal}`
-    ];
+    // The current text is already "n1 + n2 + n3" from live updates.
+    // Step 1: append " = subtotal".
+    const subtotalExpr = pickups[0]
+      + pickups.slice(1).map((v) => ` + ${v}`).join('')
+      + ` = ${subtotal}`;
 
-    let i = 0;
-    const showStep = () => {
-      if (!this._batchActive) return;
-      const partial = equationParts.slice(0, i + 1).join('');
-      this._batchText.setText(partial);
+    const showAndPop = (text) => {
+      this._batchText.setText(text);
       this._renderBatchPanelLayout();
       this.tweens.add({
         targets: this._batchText,
@@ -250,28 +261,49 @@ export class GemHUDScene extends Phaser.Scene {
         duration: 200,
         ease: 'Sine.easeOut'
       });
-      if (i < equationParts.length - 1) {
-        i++;
-        this.time.delayedCall(REVEAL_STEP_MS, showStep);
-      } else {
-        // Final hold, then fade out.
-        this.time.delayedCall(REVEAL_STEP_MS + 300, () => {
-          this.tweens.add({
-            targets: [this._batchPanelG, this._batchText],
-            alpha: 0,
-            duration: 320,
-            ease: 'Sine.easeOut',
-            onComplete: () => {
-              this._batchActive = false;
-              this._batchSubtotal = 0;
-              this._batchPickups = [];
-              this._batchPanelG.clear();
-            }
-          });
-        });
-      }
     };
-    showStep();
+
+    // Stage 1: subtotal reveal.
+    showAndPop(subtotalExpr);
+
+    // Stage 2: build the parts of "startTotal + subtotal = newTotal"
+    // and reveal them one by one after a beat.
+    this.time.delayedCall(REVEAL_STEP_MS + 600, () => {
+      if (!this._batchActive) return;
+      // Wipe to the new equation (clean transition rather than a
+      // confusing one-line "subtotal expr + total expr").
+      const totalParts = [
+        `${startTotal}`,
+        ` + ${subtotal}`,
+        ` = ${newTotal}`
+      ];
+      let i = 0;
+      const stepTotal = () => {
+        if (!this._batchActive) return;
+        showAndPop(totalParts.slice(0, i + 1).join(''));
+        if (i < totalParts.length - 1) {
+          i++;
+          this.time.delayedCall(REVEAL_STEP_MS, stepTotal);
+        } else {
+          // Hold the final equation, then fade.
+          this.time.delayedCall(REVEAL_STEP_MS + 400, () => {
+            this.tweens.add({
+              targets: [this._batchPanelG, this._batchText],
+              alpha: 0,
+              duration: 360,
+              ease: 'Sine.easeOut',
+              onComplete: () => {
+                this._batchActive = false;
+                this._batchSubtotal = 0;
+                this._batchPickups = [];
+                this._batchPanelG.clear();
+              }
+            });
+          });
+        }
+      };
+      stepTotal();
+    });
   }
 
   /** Re-fit the batch panel to whatever text is in it right now. */

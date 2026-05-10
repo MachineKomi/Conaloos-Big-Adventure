@@ -131,6 +131,7 @@ export class DialogueBox {
     const container = scene.add.container(cx, cy, items);
     container.setDepth(10000); // Always above gameplay sprites
     this.container = container;
+    this._onDismiss = opts.onDismiss || null;
 
     if (Accessibility.reducedMotion) {
       container.setAlpha(1);
@@ -146,14 +147,19 @@ export class DialogueBox {
       });
     }
 
-    const wordCount = text.trim().split(/\s+/).length;
-    const dismissAfter = Math.max(
-      MIN_DISPLAY_MS,
-      wordCount * READ_MS_PER_WORD + TAIL_BUFFER_MS
-    );
-    this.dismissTimer = scene.time.delayedCall(dismissAfter, () => {
-      this.dismiss(opts.onDismiss);
-    });
+    // No auto-dismiss timer: dialogue stays until the user taps
+    // anywhere — the bubble itself, the background, or another
+    // hotspot. Ensures the kid (or grown-up reading aloud) has all
+    // the time they need. (v1.5: previous timer-based dismissal
+    // disappeared mid-read, which was annoying.)
+    //
+    // Tap on the bubble itself dismisses (transparent zone on top).
+    // Tap on the background is handled by GameScene's pointerup.
+    const hitH = boxH + (tailAnchorX !== null ? TAIL_HEIGHT : 0) + 8;
+    const tapZone = scene.add.zone(0, 0, boxW + 8, hitH).setOrigin(0.5);
+    tapZone.setInteractive({ useHandCursor: true });
+    tapZone.on('pointerup', () => this.dismiss(this._onDismiss));
+    container.add(tapZone);
   }
 
   dismiss(onDismiss) {

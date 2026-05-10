@@ -150,25 +150,17 @@ export const scenes = {
         { x: 0.36, y: 0.48, w: 0.14, h: 0.14 },
         { theme: 'animals' }),
 
-      // Rocketship gets `speaker: 'thing_rocketship'` so the special
-      // launch animation hook in GameScene._maybeSpecialAnimation
-      // fires for this hotspot. Click sometimes makes it actually
-      // launch off-screen and bounce back. Always re-rendered fresh
-      // on revisit, so kids can launch it again and again.
+      // Rocketship: ALWAYS launches on first tap, no dialogue. The
+      // launch IS the response. Far more reliable + satisfying than
+      // the previous click-counter approach.
       {
         id: 'rocketship',
         type: 'reactor',
         cursor: 'sparkle',
         bounds: { x: 0.58, y: 0.55, w: 0.18, h: 0.35 },
         speaker: 'thing_rocketship',
-        rewardGemChance: 0.35,
-        responses: [
-          { text: "A rocket's a ship that has gone for a climb,\nIt borrows the sky for a chunk of its time.", theme: 'science' },
-          { text: "It pushes the air from its nose to its tail --\nAnd the push is the thing that decides if you sail.", theme: 'science' },
-          { text: "Out there, where it's quiet, the stars are quite near.\nThe trip is so long, you forget to feel fear.", theme: 'science' },
-          { text: "And mostly, a rocket is parked, not in flight.\nA parked rocket counts. It's a *plan* that holds tight.", theme: 'science' },
-          { text: "Five! Four! Three! Two! One! ... and *off*.\nThe sky takes the rocket. The rocket takes off.", theme: 'numbers' }
-        ]
+        rewardGemChance: 0,
+        responses: []
       },
 
       tinyMuseum('countdown',
@@ -494,13 +486,8 @@ export const scenes = {
         cursor: 'sparkle',
         bounds: { x: 0.38, y: 0.55, w: 0.18, h: 0.40 },
         speaker: 'thing_rocketship',
-        rewardGemChance: 0.40,
-        responses: [
-          { text: "*Five! Four! Three! Two! One!* -- let's go for a ride!\nA mini-rocket here at the playground side.", theme: 'numbers' },
-          { text: "Even a small rocket can carry a *huge* idea --\nIt only needs sky, and the sky is right here-a.", theme: 'science' },
-          { text: "Push the air down, and the rocket goes UP --\nThat's how it works. Like an upside-down cup.", theme: 'science' },
-          { text: "Where would you fly to, given the chance?\nA cloud? A planet? Somewhere small, like France?", theme: 'philosophy' }
-        ]
+        rewardGemChance: 0,
+        responses: []
       },
 
       {

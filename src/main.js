@@ -23,6 +23,8 @@ import { GlobalUIScene } from './systems/GlobalUI.js';
 import { InventoryScene } from './systems/Inventory.js';
 import { GemHUDScene } from './systems/GemHUD.js';
 import { GemBag } from './systems/GemBag.js';
+import { QuestManager } from './systems/Quests.js';
+import { QuestHUDScene } from './systems/QuestHUD.js';
 import { Protagonist } from './systems/Protagonist.js';
 import { AudioManager } from './systems/AudioManager.js';
 import { SceneRouter } from './systems/SceneRouter.js';
@@ -67,9 +69,18 @@ function start() {
   const router = new SceneRouter(game);
   const protagonist = new Protagonist();
   const gemBag = new GemBag();
+  const quests = new QuestManager();
   // Session-wide set so a quiz isn't asked twice — even after a scene
   // transition. Cleared on page reload (no localStorage).
   const seenQuizzes = new Set();
+
+  // Wire game-system events into the quest tracker.
+  gemBag.onChange(({ delta }) => {
+    quests.report({ type: 'gem-collected', value: delta });
+  });
+  protagonist.onCollectChange((thingKey) => {
+    quests.report({ type: 'thing-collected', key: thingKey });
+  });
 
   // Expose for dev-time debugging only.
   if (import.meta.env?.DEV) {
@@ -77,17 +88,18 @@ function start() {
     window.__router = router;
     window.__protagonist = protagonist;
     window.__gemBag = gemBag;
+    window.__quests = quests;
   }
 
   // Phaser calls scene.init(data) when it starts a scene, so pass
   // onReady through the start-data hand-off (init() would be clobbered).
   game.scene.add('boot', BootScene, true, {
-    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes)
+    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests)
   });
   console.log('[main] game created, boot scene queued');
 }
 
-function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes) {
+function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests) {
   if (!loader.hasAnyBackground) {
     game.scene.add('scene:waiting', new WaitingScene(), true);
     game.scene.stop('boot');
@@ -104,7 +116,7 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
   // every game scene).
   for (const slug of Object.keys(catalog.scenes)) {
     const def = catalog.scenes[slug];
-    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag, seenQuizzes });
+    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag, seenQuizzes, quests });
     game.scene.add(`scene:${slug}`, scene, false);
   }
   game.scene.add('scene:title', new TitleScene(), false);
@@ -122,6 +134,10 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
   const gemHud = new GemHUDScene();
   gemHud.init({ gemBag });
   game.scene.add('global:gemhud', gemHud, true);
+
+  const questHud = new QuestHUDScene();
+  questHud.init({ questManager: quests, gemBag });
+  game.scene.add('global:questhud', questHud, true);
 
   const firstLaunch = !localStorage.getItem(FIRST_LAUNCH_KEY);
   console.log('[main] firstLaunch =', firstLaunch);
