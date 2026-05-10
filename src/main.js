@@ -16,7 +16,7 @@ import Phaser from 'phaser';
 
 import { BootScene } from './scenes/BootScene.js';
 import { WaitingScene } from './scenes/WaitingScene.js';
-import { GameScene } from './scenes/GameScene.js';
+import { GameScene, setWorldCollectedSave, resetWorldCollected } from './scenes/GameScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { TutorialScene } from './scenes/TutorialScene.js';
 import { GlobalUIScene } from './systems/GlobalUI.js';
@@ -28,6 +28,7 @@ import { QuestHUDScene } from './systems/QuestHUD.js';
 import { Protagonist } from './systems/Protagonist.js';
 import { AudioManager } from './systems/AudioManager.js';
 import { SceneRouter } from './systems/SceneRouter.js';
+import { SaveGame } from './systems/SaveGame.js';
 import { buildSceneCatalog } from './content/sceneCatalog.js';
 
 // Fixed design resolution. Phaser scales the canvas to fit the
@@ -67,20 +68,40 @@ function start() {
   const game = makeGame();
   const audio = new AudioManager(game);
   const router = new SceneRouter(game);
-  const protagonist = new Protagonist();
-  const gemBag = new GemBag();
-  const quests = new QuestManager();
+  const saveGame = new SaveGame();
+  const protagonist = new Protagonist({ saveGame });
+  const gemBag = new GemBag({ saveGame });
+  const quests = new QuestManager({ saveGame });
+  setWorldCollectedSave(saveGame);
   // Session-wide set so a quiz isn't asked twice — even after a scene
-  // transition. Cleared on page reload (no localStorage).
+  // transition. Cleared on page reload (intentionally not persisted —
+  // a kid who's been away for a day would enjoy seeing the quizzes
+  // again).
   const seenQuizzes = new Set();
 
   // Wire game-system events into the quest tracker.
   gemBag.onChange(({ delta }) => {
-    quests.report({ type: 'gem-collected', value: delta });
+    if (delta > 0) quests.report({ type: 'gem-collected', value: delta });
   });
   protagonist.onCollectChange((thingKey) => {
-    quests.report({ type: 'thing-collected', key: thingKey });
+    if (thingKey) quests.report({ type: 'thing-collected', key: thingKey });
   });
+
+  // Replay persisted inventory + gem total into quest progress, so a
+  // kid who left mid-quest (3/5 things, 17/25 gems) sees the right
+  // progress bars on resume. This is safe: completed-flag quests have
+  // already been hydrated and report() skips completed entries, so no
+  // duplicate celebrations. No HUDs are listening yet at this point.
+  if (saveGame.hasSave()) {
+    if (gemBag.total > 0) {
+      quests.report({ type: 'gem-collected', value: gemBag.total });
+    }
+    for (const it of protagonist.inventory()) {
+      for (let i = 0; i < it.count; i++) {
+        quests.report({ type: 'thing-collected', key: it.key });
+      }
+    }
+  }
 
   // Expose for dev-time debugging only.
   if (import.meta.env?.DEV) {
@@ -89,17 +110,18 @@ function start() {
     window.__protagonist = protagonist;
     window.__gemBag = gemBag;
     window.__quests = quests;
+    window.__save = saveGame;
   }
 
   // Phaser calls scene.init(data) when it starts a scene, so pass
   // onReady through the start-data hand-off (init() would be clobbered).
   game.scene.add('boot', BootScene, true, {
-    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests)
+    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame)
   });
   console.log('[main] game created, boot scene queued');
 }
 
-function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests) {
+function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame) {
   if (!loader.hasAnyBackground) {
     game.scene.add('scene:waiting', new WaitingScene(), true);
     game.scene.stop('boot');
@@ -140,39 +162,65 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
   game.scene.add('global:questhud', questHud, true);
 
   const firstLaunch = !localStorage.getItem(FIRST_LAUNCH_KEY);
-  console.log('[main] firstLaunch =', firstLaunch);
+  console.log('[main] firstLaunch =', firstLaunch, ' hasSave =', saveGame.hasSave());
+
+  /**
+   * Both "Let's go" (start fresh) and "Continue" route through here.
+   * `mode` is 'new' or 'continue'. The HUDs read live from the
+   * services we already constructed, so resetting state on 'new'
+   * means clearing those services in place — no scene rebuild
+   * required (the services are wired into all the HUDs).
+   */
+  const beginGame = (mode) => {
+    if (mode === 'new') {
+      saveGame.clear();
+      // Clear in-memory state too. Each system was hydrated from the
+      // (now-cleared) save at construction time.
+      gemBag.total = 0;
+      gemBag.byGem.clear();
+      // Inform listeners (gem HUD) so the counter resets visually.
+      for (const fn of gemBag._listeners) {
+        fn({ gemKey: null, delta: 0, previousTotal: 0, newTotal: 0 });
+      }
+      protagonist._collected.clear();
+      for (const fn of protagonist._collectListeners) fn(null, protagonist.inventory());
+      for (const entry of quests.state.values()) {
+        entry.progress = 0;
+        entry.completed = false;
+        entry.claimed = false;
+        // Per-quest seen Sets (thing-collector, wanderer) — wipe so a
+        // fresh game can re-earn them.
+        if (entry.def._seen) entry.def._seen.clear();
+      }
+      quests._sceneCount = 0;
+      for (const fn of quests._listeners) fn({ updated: true, newlyCompleted: [] });
+      resetWorldCollected();
+      seenQuizzes.clear();
+    }
+
+    const showTutorial = mode === 'new' && firstLaunch;
+    try { localStorage.setItem(FIRST_LAUNCH_KEY, '1'); } catch { /* ignore */ }
+
+    if (showTutorial) {
+      game.scene.stop('scene:title');
+      game.scene.start('scene:tutorial', {
+        audio,
+        onContinue: () => {
+          game.scene.stop('scene:tutorial');
+          router.goToScene(catalog.hubSlug);
+        }
+      });
+    } else {
+      // Use the router so the destination has a normal scene fade-in.
+      router.goToScene(catalog.hubSlug);
+    }
+  };
 
   game.scene.start('scene:title', {
     audio,
-    onStart: () => {
-      console.log('[main] onStart fired, firstLaunch=', firstLaunch);
-      try { localStorage.setItem(FIRST_LAUNCH_KEY, '1'); } catch { /* ignore */ }
-
-      // Whichever next scene we start, we need the title to stop. Fade
-      // the title's camera, and only after fade-out do the swap.
-      const titleScene = game.scene.getScene('scene:title');
-      const after = () => {
-        console.log('[main] fading complete, switching to next scene');
-        if (firstLaunch) {
-          game.scene.stop('scene:title');
-          game.scene.start('scene:tutorial', {
-            audio,
-            onContinue: () => {
-              game.scene.stop('scene:tutorial');
-              router.goToScene(catalog.hubSlug);
-            }
-          });
-        } else {
-          // Use the router so the destination has a normal scene fade-in.
-          // The router checks for an active scene with key starting "scene:"
-          // — title qualifies — and handles the fade-out + stop itself.
-          router.goToScene(catalog.hubSlug);
-        }
-      };
-      // Title hand-off: skip the camera fade here because router/start will
-      // handle their own. Just go.
-      after();
-    }
+    hasSave: saveGame.hasSave(),
+    onStart:    () => beginGame('new'),
+    onContinue: () => beginGame('continue')
   });
   game.scene.stop('boot');
 }

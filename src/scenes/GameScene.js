@@ -38,11 +38,35 @@ const COLLECTABLE_THINGS = new Set([
 
 /**
  * Module-level set of "scene:slug:hotspot.id" or
- * "scene:slug:gem:key:x:y" entries that have been collected this session.
- * Persists across scene revisits within a single playthrough; cleared on
- * page reload.
+ * "scene:slug:gem:key:x:y" entries that have already been collected.
+ * Persists across scene revisits within a single playthrough — and,
+ * if a SaveGame is registered via `setWorldCollectedSave()`, also
+ * across page reloads (so things don't respawn after the kid comes
+ * back the next morning).
  */
 const worldCollected = new Set();
+let _wcSaveGame = null;
+
+/** Wire the world-collected persistence to a SaveGame. Called once
+ *  in main.js after the SaveGame is built. Hydrates the Set from the
+ *  save's existing entries. */
+export function setWorldCollectedSave(saveGame) {
+  _wcSaveGame = saveGame;
+  if (saveGame) {
+    for (const key of saveGame.getWorldCollected()) worldCollected.add(key);
+  }
+}
+
+/** Wipe the in-memory set. Used by "start a fresh adventure". The
+ *  SaveGame.clear() handles its own copy. */
+export function resetWorldCollected() {
+  worldCollected.clear();
+}
+
+function rememberCollected(key) {
+  worldCollected.add(key);
+  _wcSaveGame?.addWorldCollected(key);
+}
 
 export class GameScene extends Phaser.Scene {
   /**
@@ -353,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     img._collected = true;
     img.disableInteractive(); // pass clicks straight through immediately
     // Persist this gem placement so it doesn't respawn on revisit.
-    worldCollected.add(`${this.slug}:gem:${key}:${Math.round(img.x)}:${Math.round(img.y)}`);
+    rememberCollected(`${this.slug}:gem:${key}:${Math.round(img.x)}:${Math.round(img.y)}`);
 
     // Swap to glowing variant.
     const glowKey = `${key}_glowing`;
@@ -574,7 +598,7 @@ export class GameScene extends Phaser.Scene {
     if (hotspot?.collect && this.services.protagonist) {
       const placementKey = `${this.slug}:${hotspot.id}`;
       // Mark the placement collected; render-time skip will hide it next visit.
-      worldCollected.add(placementKey);
+      rememberCollected(placementKey);
 
       this.services.protagonist.collect(hotspot.collect);
       const thingSprite = this.spritesByKey.get(hotspot.collect);

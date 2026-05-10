@@ -136,21 +136,39 @@ export class GemHUDScene extends Phaser.Scene {
     if (!this._totalText) return;
     if (gemKey) this._setIconKey(gemKey);
 
+    // delta=0 with no key means "state was reset externally" (a new
+    // game from the title screen). Snap the counter to whatever the
+    // bag now says without animating an equation.
+    if (!gemKey && delta === 0) {
+      this._batchActive = false;
+      this._batchSubtotal = 0;
+      this._batchPickups = [];
+      this._batchSettleTimer?.remove(false);
+      this._batchSettleTimer = null;
+      this._totalText.setText(`${newTotal}`);
+      this._reposition();
+      this._hideBatchPanel();
+      return;
+    }
+
     if (!this._batchActive) {
       this._batchActive = true;
       this._batchStartTotal = previousTotal;
       this._batchSubtotal = 0;
       this._batchPickups = [];
+      // Lock the top counter to the start total until the equation
+      // resolves. This is the v1.8 fix: the counter used to advance
+      // immediately on every pickup, which made the eventual
+      // "previousTotal + subtotal = newTotal" equation feel wrong
+      // because previousTotal didn't match the number above it.
+      this._totalText.setText(`${this._batchStartTotal}`);
+      this._reposition();
     }
     this._batchSubtotal += delta;
     this._batchPickups.push(delta);
 
-    // The total counter always tracks the bag's authoritative total
-    // immediately, so the kid can see it ticking up too.
-    this._totalText.setText(`${newTotal}`);
-    this._reposition();
-    this._popTotalCounter();
-
+    // Pickup feedback lives on the BATCH panel only (not the total
+    // counter) — see _renderBatchPanel for the running "+3 +5 +1".
     this._renderBatchPanel();
 
     // Reset settle timer.
@@ -219,6 +237,26 @@ export class GemHUDScene extends Phaser.Scene {
   }
 
   /**
+   * Snap the counter to the new total with an extra-celebratory
+   * pop + colour flash. Called from _settleBatch when the equation
+   * reveals "= newTotal" — that's the moment the new value
+   * "becomes" the total in the kid's eyes.
+   */
+  _flashTotalCounterTo(newTotal) {
+    this.tweens.killTweensOf(this._totalText);
+    this._totalText.setText(`${newTotal}`);
+    this._reposition();
+    this._totalText.setColor(COL.orangeHex);
+    this.tweens.add({
+      targets: this._totalText,
+      scale: { from: 1.35, to: 1.0 },
+      duration: 320,
+      ease: 'Back.easeOut',
+      onComplete: () => this._totalText.setColor(COL.inkHex)
+    });
+  }
+
+  /**
    * After the batch settles (~1.4s of quiet), reveal the math in
    * two stages so the kid sees the full chain:
    *
@@ -271,6 +309,11 @@ export class GemHUDScene extends Phaser.Scene {
       const stepTotal = () => {
         if (!this._batchActive) return;
         showAndPop(totalParts.slice(0, i + 1).join(''));
+        // The third step — index 2 — is when "= newTotal" appears.
+        // That's the moment the top counter should jump from
+        // startTotal to newTotal with a celebratory flash, so the
+        // kid sees the equation actually *become* the new total.
+        if (i === totalParts.length - 1) this._flashTotalCounterTo(newTotal);
         if (i < totalParts.length - 1) {
           i++;
           this.time.delayedCall(REVEAL_STEP_MS, stepTotal);

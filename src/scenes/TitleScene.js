@@ -1,14 +1,19 @@
 /**
  * TitleScene — the first thing a child sees.
  *
- * Renders a title card with the game name and two big buttons: "Let's go!"
- * (which routes to the tutorial on first launch, or straight to the hub
- * after that) and "How to play" (which always routes to the tutorial).
+ * Two routes into the game:
+ *   - "Continue adventure" (yellow, primary, only when a save exists)
+ *     — picks up where the kid left off (gem total, inventory,
+ *     completed quests, things-she-already-collected).
+ *   - "Let's go!" — starts a fresh adventure (clears the save). On
+ *     first launch, also runs the tutorial; otherwise skips it.
+ *   - "How to play" — always shown, opens the tutorial overlay.
  *
  * IMPORTANT: this scene is the user's first gesture. Browsers block
- * audio playback until a user gesture, so the Start button click is the
- * thing that unlocks our AudioContext. We resume() the WebAudio context
- * here so music starts cleanly when the next scene asks to play.
+ * audio playback until a user gesture, so the Start button click is
+ * the thing that unlocks our AudioContext. We resume() the WebAudio
+ * context here so music starts cleanly when the next scene asks
+ * to play.
  */
 
 import Phaser from 'phaser';
@@ -19,6 +24,7 @@ const SUBTITLE_LINES = [
   "a bear-butterly, and the smallest of math."
 ];
 
+const CONTINUE_LABEL = "Continue adventure";
 const PLAY_LABEL = "Let's go!";
 const HOW_TO_LABEL = "How to play";
 
@@ -27,7 +33,8 @@ const PALETTE = {
   ink:    '#2b2b2b',
   warm:   '#4a3a1f',
   pink:   '#ffd1d1',
-  yellow: '#fff2a8'
+  yellow: '#fff2a8',
+  gold:   '#ffe066'
 };
 
 export class TitleScene extends Phaser.Scene {
@@ -36,6 +43,8 @@ export class TitleScene extends Phaser.Scene {
   init(data) {
     this.audio = data?.audio || this.audio;
     this.onStart = data?.onStart || (() => {});
+    this.onContinue = data?.onContinue || (() => {});
+    this.hasSave = !!data?.hasSave;
   }
 
   create() {
@@ -60,7 +69,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Title — size for whichever dimension is more constraining.
     const titleSize = Math.round(Math.min(width * 0.075, height * 0.10));
-    const title = this.add.text(width / 2, height * 0.18, TITLE_TEXT, {
+    const title = this.add.text(width / 2, height * 0.16, TITLE_TEXT, {
       fontFamily: '"Fredoka", system-ui, sans-serif',
       fontSize: `${titleSize}px`,
       color: PALETTE.warm,
@@ -69,7 +78,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Subtitle (rhyming couplet).
     const subSize = Math.round(Math.min(width * 0.035, height * 0.04));
-    this.add.text(width / 2, height * 0.32, SUBTITLE_LINES.join('\n'), {
+    this.add.text(width / 2, height * 0.28, SUBTITLE_LINES.join('\n'), {
       fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
       fontSize: `${subSize}px`,
       color: PALETTE.warm,
@@ -93,9 +102,19 @@ export class TitleScene extends Phaser.Scene {
       });
     }
 
-    // Buttons.
-    this._makeButton(width * 0.65, height * 0.55, PLAY_LABEL, PALETTE.yellow, () => this._startGame());
-    this._makeButton(width * 0.65, height * 0.72, HOW_TO_LABEL, PALETTE.pink, () => this._showTutorial());
+    // Buttons. Layout depends on whether we have a save:
+    //   - With save: Continue (primary, gold), Let's go (secondary,
+    //     yellow), How to play (pink).
+    //   - Without save: Let's go (primary, yellow), How to play (pink).
+    const buttonX = width * 0.65;
+    if (this.hasSave) {
+      this._makeButton(buttonX, height * 0.46, CONTINUE_LABEL, PALETTE.gold,   () => this._continueGame(), { primary: true });
+      this._makeButton(buttonX, height * 0.62, PLAY_LABEL,     PALETTE.yellow, () => this._startGame());
+      this._makeButton(buttonX, height * 0.78, HOW_TO_LABEL,   PALETTE.pink,   () => this._showTutorial());
+    } else {
+      this._makeButton(buttonX, height * 0.55, PLAY_LABEL,    PALETTE.yellow, () => this._startGame(), { primary: true });
+      this._makeButton(buttonX, height * 0.72, HOW_TO_LABEL,  PALETTE.pink,   () => this._showTutorial());
+    }
 
     // Mute / motion toggles are still in GlobalUI; nothing extra needed here.
 
@@ -115,8 +134,12 @@ export class TitleScene extends Phaser.Scene {
    * detection. The visible bg/text are separate; an invisible Zone the
    * exact size of the button catches the click. (Container-based hit
    * areas were producing offset/missed clicks in v1.0.)
+   *
+   * `primary` buttons get an always-on subtle pulse so the kid's eye
+   * lands on the right "main" action without us having to teach her
+   * which one matters.
    */
-  _makeButton(cx, cy, label, fillColour, onClick) {
+  _makeButton(cx, cy, label, fillColour, onClick, { primary = false } = {}) {
     const w = Math.round(Math.min(this.scale.width * 0.32, 320));
     const h = Math.round(Math.min(this.scale.height * 0.10, 80));
 
@@ -145,17 +168,44 @@ export class TitleScene extends Phaser.Scene {
     const zone = this.add.zone(cx, cy, w, h).setOrigin(0.5);
     zone.setInteractive({ useHandCursor: true });
 
+    // Primary buttons (Let's go on first launch, Continue on resume)
+    // get a soft idle pulse on the glow halo to draw the eye.
+    if (primary) {
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.25, to: 0.55 },
+        duration: 1200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
     // Hover: visible warm glow halo behind the button + slight bg
     // brightness lift. Text stays the same size for legibility.
     zone.on('pointerover', () => {
       this.tweens.killTweensOf([glow, bg]);
-      this.tweens.add({ targets: glow, alpha: { from: 0, to: 0.85 }, duration: 160, ease: 'Sine.easeOut' });
+      this.tweens.add({ targets: glow, alpha: { from: glow.alpha, to: 0.95 }, duration: 160, ease: 'Sine.easeOut' });
       this.tweens.add({ targets: bg, alpha: { from: bg.alpha, to: 1 }, duration: 160 });
     });
     zone.on('pointerout', () => {
       this.tweens.killTweensOf([glow, bg]);
-      this.tweens.add({ targets: glow, alpha: 0, duration: 160, ease: 'Sine.easeOut' });
+      // Primary buttons return to their idle pulse range, others to 0.
+      const restAlpha = primary ? 0.4 : 0;
+      this.tweens.add({ targets: glow, alpha: restAlpha, duration: 160, ease: 'Sine.easeOut' });
       this.tweens.add({ targets: bg, alpha: 1, duration: 160 });
+      // Re-arm idle pulse for primary.
+      if (primary) {
+        this.tweens.add({
+          targets: glow,
+          alpha: { from: 0.25, to: 0.55 },
+          duration: 1200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          delay: 400
+        });
+      }
     });
     zone.on('pointerup', () => {
       this.tweens.killTweensOf([glow, bg]);
@@ -178,6 +228,12 @@ export class TitleScene extends Phaser.Scene {
     this._unlockAudio();
     this.audio?.playSfx?.('sfx_powerup');
     this.onStart?.();
+  }
+
+  _continueGame() {
+    this._unlockAudio();
+    this.audio?.playSfx?.('sfx_chime');
+    this.onContinue?.();
   }
 
   _showTutorial() {

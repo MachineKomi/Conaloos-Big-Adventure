@@ -23,8 +23,9 @@ const ROW_H = 72;
 const ROW_GAP = 8;
 const ROW_PADDING_X = 18;
 
-const TOAST_W = 480;
-const TOAST_H = 120;
+const TOAST_W = 720;
+const TOAST_H = 280;
+const TOAST_GEM_KEY = 'gem_5';   // visual icon for "+N stones"
 
 export class QuestHUDScene extends Phaser.Scene {
   constructor() {
@@ -128,48 +129,163 @@ export class QuestHUDScene extends Phaser.Scene {
   }
 
   _showToast(def) {
-    const { width } = this.scale;
-    const x = (width - TOAST_W) / 2;
-    const yResting = 120;
+    const { width, height } = this.scale;
+    // Center of the screen, not under the gem HUD — that way the
+    // kid can SEE the gem counter ticking up while the toast holds.
+    const cx = width / 2;
+    const cy = height / 2;
+    const x = cx - TOAST_W / 2;
+    const yResting = cy - TOAST_H / 2;
 
+    const items = [];
+
+    // 1. Bursting starburst halo BEHIND the panel — golden glow that
+    //    expands and fades. First fanfare beat.
+    const halo = this.add.graphics().setDepth(8780);
+    halo.fillStyle(COL.gold, 0.9);
+    halo.fillCircle(cx, cy, 60);
+    items.push(halo);
+    this.tweens.add({
+      targets: halo,
+      scale: { from: 0.4, to: 6 },
+      alpha: { from: 0.85, to: 0 },
+      duration: 900,
+      ease: 'Sine.easeOut'
+    });
+
+    // 2. The toast panel itself (drop shadow + warm gold fill).
     const bg = this.add.graphics().setDepth(8800);
     drawPanel(bg, x, yResting, TOAST_W, TOAST_H, {
       radius: RADIUS.panel,
       fill: COL.gold,
-      fillAlpha: 0.97
+      fillAlpha: 0.98
     });
+    items.push(bg);
 
-    const headline = this.add.text(x + TOAST_W / 2, yResting + 22, '★ Quest done!', {
+    // 3. Headline: "★ Quest done! ★"
+    const headline = this.add.text(cx, yResting + 28, '★  Quest done!  ★', {
       fontFamily: TYPE.family,
-      fontSize: `${TYPE.heading}px`,
+      fontSize: '38px',
       color: COL.orangeHex
     }).setOrigin(0.5, 0).setDepth(8801);
+    items.push(headline);
 
-    const title = this.add.text(x + TOAST_W / 2, yResting + 58, `"${def.title}"`, {
+    // 4. Quest title.
+    const title = this.add.text(cx, yResting + 86, `"${def.title}"`, {
       fontFamily: TYPE.family,
-      fontSize: '22px',
-      color: COL.inkHex
+      fontSize: '26px',
+      color: COL.inkHex,
+      align: 'center',
+      wordWrap: { width: TOAST_W - 60 }
     }).setOrigin(0.5, 0).setDepth(8801);
+    items.push(title);
 
-    const reward = this.add.text(x + TOAST_W / 2, yResting + 90, `+${def.reward} stones`, {
-      fontFamily: TYPE.bodyFamily,
-      fontSize: `${TYPE.body}px`,
-      color: COL.inkHex
-    }).setOrigin(0.5, 0).setDepth(8801);
+    // 5. Reward row — gem icon + "+N stones" rendered as a chip so
+    //    the kid clearly *sees* what they get.
+    const rewardRowY = yResting + TOAST_H - 78;
+    const rewardLabel = this.add.text(0, 0, `+${def.reward} stones`, {
+      fontFamily: TYPE.family,
+      fontSize: '32px',
+      color: '#ffffff',
+      stroke: COL.inkHex,
+      strokeThickness: 4
+    }).setOrigin(0, 0.5).setDepth(8802);
 
-    const items = [bg, headline, title, reward];
+    let gemIcon = null;
+    let gemNaturalScale = 1;
+    let rowW = rewardLabel.width;
+    if (this.textures.exists(TOAST_GEM_KEY)) {
+      gemIcon = this.add.image(0, rewardRowY, TOAST_GEM_KEY).setOrigin(0.5).setDepth(8802);
+      const tex = this.textures.get(TOAST_GEM_KEY).getSourceImage();
+      gemNaturalScale = 56 / tex.height;
+      gemIcon.setScale(gemNaturalScale);
+      rowW = gemIcon.displayWidth + 14 + rewardLabel.width;
+    }
+    const rowStartX = cx - rowW / 2;
+    if (gemIcon) {
+      gemIcon.setX(rowStartX + gemIcon.displayWidth / 2);
+      rewardLabel.setX(rowStartX + gemIcon.displayWidth + 14);
+    } else {
+      rewardLabel.setX(rowStartX);
+    }
+    rewardLabel.setY(rewardRowY);
+    if (gemIcon) items.push(gemIcon);
+    items.push(rewardLabel);
 
-    // Drop in from above.
-    items.forEach((o) => { o.alpha = 0; o.y = (o.y ?? 0) - 16; });
-    this.tweens.add({
-      targets: items,
-      alpha: 1,
-      y: '+=16',
-      duration: ANIM.toast,
-      ease: 'Back.easeOut'
+    // 6. Drop-in fanfare. The panel bg fades in flat (it's drawn
+    //    in absolute coords, so scaling would mis-position it).
+    //    Headline + title + reward scale-pop in for celebration.
+    bg.alpha = 0;
+    this.tweens.add({ targets: bg, alpha: 1, duration: 320, ease: 'Sine.easeOut' });
+
+    const popItems = [
+      { obj: headline,    base: 1 },
+      { obj: title,       base: 1 },
+      { obj: rewardLabel, base: 1 }
+    ];
+    if (gemIcon) popItems.push({ obj: gemIcon, base: gemNaturalScale });
+    popItems.forEach(({ obj, base }) => {
+      obj.alpha = 0;
+      obj.setScale(base * 0.7);
+      this.tweens.add({
+        targets: obj,
+        alpha: 1,
+        scale: base,
+        duration: 480,
+        ease: 'Back.easeOut'
+      });
     });
 
-    this.time.delayedCall(2800, () => {
+    // 7. Confetti — small coloured circles bursting from the centre.
+    const confettiColours = [COL.orange, COL.pink, COL.gold, COL.green, 0xc8e7ff];
+    const confettiPieces = [];
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = 200 + Math.random() * 160;
+      const colour = confettiColours[i % confettiColours.length];
+      const piece = this.add.circle(cx, cy, 6 + Math.random() * 4, colour, 1).setDepth(8803);
+      confettiPieces.push(piece);
+      this.tweens.add({
+        targets: piece,
+        x: cx + Math.cos(angle) * dist,
+        y: cy + Math.sin(angle) * dist + 60, // gentle gravity
+        alpha: { from: 1, to: 0 },
+        scale: { from: 1, to: 0.4 },
+        duration: 1100 + Math.random() * 400,
+        ease: 'Quad.easeOut',
+        onComplete: () => piece.destroy()
+      });
+    }
+
+    // 8. Gentle bobble on the headline while it holds — keeps the
+    //    moment feeling alive.
+    this.tweens.add({
+      targets: headline,
+      y: headline.y - 6,
+      duration: 700,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Sine.easeInOut',
+      delay: 480
+    });
+
+    // 9. Small star sparkle pulse on the gem icon to draw the eye to
+    //    the reward — the *thing the kid is getting*.
+    if (gemIcon) {
+      this.tweens.add({
+        targets: gemIcon,
+        scale: { from: gemNaturalScale, to: gemNaturalScale * 1.18 },
+        duration: 360,
+        yoyo: true,
+        repeat: 3,
+        ease: 'Sine.easeInOut',
+        delay: 600
+      });
+    }
+
+    // 10. Hold longer than before (3.5s) — there's more to read, and
+    //     the kid needs time to spot the gem reward.
+    this.time.delayedCall(3500, () => {
       this.tweens.add({
         targets: items,
         alpha: 0,

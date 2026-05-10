@@ -150,7 +150,7 @@ export const QUEST_DEFS = [
 ];
 
 export class QuestManager {
-  constructor() {
+  constructor({ saveGame = null } = {}) {
     /** Map<questId, { progress, completed, claimed, def }> */
     this.state = new Map();
     for (const def of QUEST_DEFS) {
@@ -158,6 +158,24 @@ export class QuestManager {
     }
     this._listeners = new Set();
     this._sceneCount = 0;
+    this._saveGame = saveGame;
+
+    // Hydrate completed flags from save. We deliberately *don't*
+    // persist progress, so a fresh launch starts fresh — except for
+    // the binary "this quest is done" flag. Means a kid who's already
+    // earned "first gem" doesn't see the celebration twice on reload.
+    // Quests that are completed are also pre-claimed (the gems were
+    // already credited last session).
+    if (saveGame) {
+      for (const id of saveGame.getQuestsCompleted()) {
+        const entry = this.state.get(id);
+        if (entry) {
+          entry.completed = true;
+          entry.claimed = true;
+          entry.progress = entry.def.target;
+        }
+      }
+    }
   }
 
   /**
@@ -183,8 +201,18 @@ export class QuestManager {
         newlyCompleted.push(entry);
       }
     }
+    if (newlyCompleted.length) this._persist();
     for (const fn of this._listeners) fn({ updated: true, newlyCompleted });
     return newlyCompleted;
+  }
+
+  _persist() {
+    if (!this._saveGame) return;
+    const completedIds = [];
+    for (const entry of this.state.values()) {
+      if (entry.completed) completedIds.push(entry.def.id);
+    }
+    this._saveGame.setQuestsCompleted(completedIds);
   }
 
   /** Mark a completed quest's reward as claimed. */

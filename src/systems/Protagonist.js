@@ -26,7 +26,7 @@ const APPROACH_GAP_PX = 90;          // stop this far before a hotspot target
 const COLLECT_JUMP_HEIGHT = 32;      // excited little hop on collect
 
 export class Protagonist {
-  constructor() {
+  constructor({ saveGame = null } = {}) {
     this.scene = null;
     this.sprite = null;
     this._walkTween = null;
@@ -34,6 +34,13 @@ export class Protagonist {
     this._collected = new Map();
     this._collectListeners = new Set();
     this._lastDirection = 'right';
+    this._saveGame = saveGame;
+
+    if (saveGame) {
+      for (const it of saveGame.getInventory()) {
+        if (it.count > 0) this._collected.set(it.key, it.count);
+      }
+    }
   }
 
   /**
@@ -253,6 +260,7 @@ export class Protagonist {
   collect(thingKey) {
     const next = (this._collected.get(thingKey) ?? 0) + 1;
     this._collected.set(thingKey, next);
+    this._persist();
     for (const fn of this._collectListeners) fn(thingKey, this.inventory());
     return next;
   }
@@ -263,8 +271,14 @@ export class Protagonist {
     if (cur <= 0) return 0;
     if (cur === 1) this._collected.delete(thingKey);
     else this._collected.set(thingKey, cur - 1);
+    this._persist();
     for (const fn of this._collectListeners) fn(thingKey, this.inventory());
     return Math.max(0, cur - 1);
+  }
+
+  _persist() {
+    if (!this._saveGame) return;
+    this._saveGame.setInventory(this.inventory());
   }
 
   onCollectChange(fn) {

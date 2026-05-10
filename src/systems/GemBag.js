@@ -1,18 +1,30 @@
 /**
  * GemBag — tracks how many "stones" (the in-game currency made of gems
- * 1..9) the player has gathered, plus per-gem counts. Persists for the
- * session; not saved to localStorage in this MVP — if the page reloads,
- * the bag empties (we want a child to be able to play again from zero).
+ * 1..9) the player has gathered, plus per-gem counts.
  *
- * The bag also emits change events so the GemHUDScene can animate
+ * v1.8: optionally backed by SaveGame. If a `saveGame` is passed in,
+ * the bag rehydrates from it on construction and persists on every
+ * change. With no saveGame, behaves session-only as before.
+ *
+ * The bag emits change events so the GemHUDScene can animate
  * "+N → total" math reveals each time a gem is collected.
  */
 
 export class GemBag {
-  constructor() {
+  constructor({ saveGame = null } = {}) {
     this.total = 0;
     this.byGem = new Map(); // gemKey -> times collected
     this._listeners = new Set();
+    this._saveGame = saveGame;
+
+    if (saveGame) {
+      this.total = saveGame.getGemTotal();
+      const byGem = saveGame.getGemByGem();
+      for (const [k, v] of Object.entries(byGem)) {
+        const n = Number(v) || 0;
+        if (n > 0) this.byGem.set(k, n);
+      }
+    }
   }
 
   /**
@@ -25,6 +37,7 @@ export class GemBag {
     const v = Math.max(0, Math.floor(value || 0));
     this.total += v;
     this.byGem.set(gemKey, (this.byGem.get(gemKey) ?? 0) + 1);
+    this._persist();
     for (const fn of this._listeners) {
       fn({
         gemKey,
@@ -40,5 +53,12 @@ export class GemBag {
   onChange(fn) {
     this._listeners.add(fn);
     return () => this._listeners.delete(fn);
+  }
+
+  _persist() {
+    if (!this._saveGame) return;
+    const byGem = {};
+    for (const [k, v] of this.byGem) byGem[k] = v;
+    this._saveGame.setGems(this.total, byGem);
   }
 }

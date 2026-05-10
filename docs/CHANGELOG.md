@@ -1,5 +1,84 @@
 # Changelog
 
+## 2026-05-10 — v1.8: save game, fanfare, and clean math
+
+A pass on persistence + the quest-completion moment + a clear-up of
+the gem math so the equation reads correctly.
+
+### Saves (flexible-by-design)
+
+New `src/systems/SaveGame.js` persists to localStorage:
+- gem total + per-gem counts
+- inventory (key + count for each thing carried)
+- *flags* of which quests are completed
+- world-collected placements (so gems and things don't respawn)
+
+Schema is intentionally minimal: every field is optional and has a
+sane default, so future versions of the game won't break old saves.
+Quest progress for *incomplete* quests recomputes on hydrate by
+replaying the persisted gem total and inventory through
+`quests.report()` — half-finished quests pick up where they left off
+without needing extra state in the save format.
+
+### Title screen — Continue Adventure
+
+The title now has three buttons when a save exists:
+- **Continue adventure** (gold, primary, soft idle pulse) — picks up
+  where the kid left off.
+- **Let's go!** — starts a fresh adventure (clears the save).
+- **How to play** — unchanged.
+
+If no save exists, only "Let's go!" + "How to play" appear.
+"Let's go!" remains the primary, with the same idle pulse.
+
+### Quest-complete fanfare
+
+The quest-done toast was small, top-of-screen, and sat on top of the
+gem counter so the kid couldn't see the gems coming in. Now:
+
+- **Centered** on screen, well clear of the gem HUD.
+- **Bigger** (720 × 280) so the gem reward is unmissable.
+- **Gem icon + "+N stones"** rendered as a chip with a sparkle pulse.
+- **Bursting halo** behind the panel + 18 confetti pieces flying
+  outward.
+- **Drop-in scale + alpha pop** on the headline / title / reward.
+- **Held longer** (3.5s) so the gem total can finish ticking up
+  while the toast is still readable.
+
+### Gem total math (the equation reads right now)
+
+The top counter no longer ticks up on every pickup. It stays locked
+at the *batch start total* through:
+
+1. Live additions (the running "3 + 5 + 1" panel)
+2. The subtotal reveal ("3 + 5 + 1 = 9")
+3. The first parts of the total equation ("12 + 9")
+
+…and only updates on the final " = 21" step, with a celebratory
+flash (orange colour, scale 1.35 → 1.0). That way `previousTotal`
+in the equation always matches the number above it, and the kid
+*sees* the new total **become** the new total.
+
+### Touched
+
+- **New:** `src/systems/SaveGame.js`
+- **Updated:** `src/main.js`, `src/scenes/TitleScene.js`,
+  `src/scenes/GameScene.js`, `src/systems/GemBag.js`,
+  `src/systems/Protagonist.js`, `src/systems/Quests.js`,
+  `src/systems/GemHUD.js`, `src/systems/QuestHUD.js`
+
+### Open hooks for next agent
+
+- The quest-complete halo/confetti is fixed-colour. A nice next pass
+  would be picking colours for the halo based on the quest theme
+  (gold for stone-collectors, pink for inventory quests, etc).
+- "Let's go!" wipes the save with no confirmation — fine for a kid
+  whose dad is right there, but if it ever ships to other families
+  consider a soft "Are you sure?" two-tap.
+- The save persists immediately on every change. For a 4-year-old
+  rapid-tapping gems that's a lot of writes; if it ever shows up
+  in DevTools as slow, debounce to 500ms.
+
 ## 2026-05-10 — v1.7: a UI/UX polish pass
 
 A pass that makes the world feel like one little hand-painted thing.
