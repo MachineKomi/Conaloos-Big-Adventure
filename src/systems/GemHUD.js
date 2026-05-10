@@ -17,26 +17,19 @@
  */
 
 import Phaser from 'phaser';
+import { COL, RADIUS, STROKE, TOPBAR, TYPE, drawPanel } from './UITokens.js';
 
-const PANEL_TOP = 12;
-const PANEL_H = 80;
-const PANEL_RADIUS = 24;
+const PANEL_TOP = TOPBAR.paddingTop;
+const PANEL_H = TOPBAR.itemH;
 const PANEL_PADDING_X = 18;
-const PANEL_BG = 0xfff8e7;
-const PANEL_BG_ALPHA = 0.94;
-const PANEL_STROKE = 0x4a3a1f;
-const PANEL_STROKE_W = 4;
 
 const ICON_SIZE = 56;
 const ICON_GAP = 12;
-const TEXT_FONT_PX = 36;
-const TEXT_COLOUR = '#4a3a1f';
 
-const BATCH_PANEL_BG = 0xfff2a8;
+const BATCH_PANEL_BG = COL.gold;
 const BATCH_PANEL_BG_ALPHA = 0.95;
 const BATCH_PANEL_PADDING = 16;
-const BATCH_FONT_PX = 32;
-const BATCH_PANEL_GAP = 10;       // distance below the total panel
+const BATCH_PANEL_GAP = 10;
 
 const BATCH_SETTLE_MS = 1400;
 const REVEAL_STEP_MS = 460;
@@ -76,17 +69,17 @@ export class GemHUDScene extends Phaser.Scene {
   _build() {
     this._panel = this.add.graphics().setDepth(8000);
     this._totalText = this.add.text(0, 0, `${this.gemBag.total}`, {
-      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: `${TEXT_FONT_PX}px`,
-      color: TEXT_COLOUR
+      fontFamily: TYPE.family,
+      fontSize: `${TYPE.hero}px`,
+      color: COL.inkHex
     }).setOrigin(0, 0.5).setDepth(8002);
 
     // Batch (running additions) panel — hidden until first pickup.
     this._batchPanelG = this.add.graphics().setDepth(7980);
     this._batchText = this.add.text(0, 0, '', {
-      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: `${BATCH_FONT_PX}px`,
-      color: '#a45e08'
+      fontFamily: TYPE.family,
+      fontSize: `${TYPE.heading}px`,
+      color: COL.orangeHex
     }).setOrigin(0.5, 0.5).setDepth(7981);
     this._hideBatchPanel();
 
@@ -114,23 +107,19 @@ export class GemHUDScene extends Phaser.Scene {
 
   _reposition() {
     const { width } = this.scale;
-    const textW = this._totalText.width || 32;
+    const textW = Math.max(this._totalText.width, 56); // floor so single-digit doesn't look cramped
     const panelW = PANEL_PADDING_X + ICON_SIZE + ICON_GAP + textW + PANEL_PADDING_X;
     const x = (width - panelW) / 2;
     const y = PANEL_TOP;
 
     this._panel.clear();
-    this._panel.fillStyle(PANEL_BG, PANEL_BG_ALPHA);
-    this._panel.lineStyle(PANEL_STROKE_W, PANEL_STROKE, 1);
-    this._panel.fillRoundedRect(x, y, panelW, PANEL_H, PANEL_RADIUS);
-    this._panel.strokeRoundedRect(x, y, panelW, PANEL_H, PANEL_RADIUS);
+    drawPanel(this._panel, x, y, panelW, PANEL_H, { radius: RADIUS.card });
 
     if (this._icon) {
       this._icon.setPosition(x + PANEL_PADDING_X + ICON_SIZE / 2, y + PANEL_H / 2);
     }
     this._totalText.setPosition(x + PANEL_PADDING_X + ICON_SIZE + ICON_GAP, y + PANEL_H / 2);
 
-    // Reposition the batch panel underneath the total.
     this._renderBatchPanel();
   }
 
@@ -195,11 +184,12 @@ export class GemHUDScene extends Phaser.Scene {
     const y = PANEL_TOP + PANEL_H + BATCH_PANEL_GAP;
 
     this._batchPanelG.clear();
-    this._batchPanelG.fillStyle(BATCH_PANEL_BG, BATCH_PANEL_BG_ALPHA);
-    this._batchPanelG.lineStyle(3, PANEL_STROKE, 1);
-    this._batchPanelG.fillRoundedRect(x, y, w, h, 16);
-    this._batchPanelG.strokeRoundedRect(x, y, w, h, 16);
-
+    drawPanel(this._batchPanelG, x, y, w, h, {
+      radius: RADIUS.chip,
+      stroke: STROKE.small,
+      fill: BATCH_PANEL_BG,
+      fillAlpha: BATCH_PANEL_BG_ALPHA
+    });
     this._batchText.setPosition(x + w / 2, y + h / 2);
     this._batchPanelG.setAlpha(1);
     this._batchText.setAlpha(1);
@@ -315,11 +305,12 @@ export class GemHUDScene extends Phaser.Scene {
     const y = PANEL_TOP + PANEL_H + BATCH_PANEL_GAP;
 
     this._batchPanelG.clear();
-    this._batchPanelG.fillStyle(BATCH_PANEL_BG, BATCH_PANEL_BG_ALPHA);
-    this._batchPanelG.lineStyle(3, PANEL_STROKE, 1);
-    this._batchPanelG.fillRoundedRect(x, y, w, h, 16);
-    this._batchPanelG.strokeRoundedRect(x, y, w, h, 16);
-
+    drawPanel(this._batchPanelG, x, y, w, h, {
+      radius: RADIUS.chip,
+      stroke: STROKE.small,
+      fill: BATCH_PANEL_BG,
+      fillAlpha: BATCH_PANEL_BG_ALPHA
+    });
     this._batchText.setPosition(x + w / 2, y + h / 2);
   }
 }

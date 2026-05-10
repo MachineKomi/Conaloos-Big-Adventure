@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel } from '../systems/UITokens.js';
 
 const VERSE = [
   "Hello! I'm Amelia. The world is below.",
@@ -64,10 +65,7 @@ export class TutorialScene extends Phaser.Scene {
     const panelY = (height - panelH) / 2;
 
     const panel = this.add.graphics();
-    panel.fillStyle(0xfff8e7, 0.96);
-    panel.lineStyle(4, 0x4a3a1f, 1);
-    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 32);
-    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 32);
+    drawPanel(panel, panelX, panelY, panelW, panelH, { radius: RADIUS.panel });
 
     // Title.
     const titleSize = Math.round(Math.min(panelW * 0.10, 56));

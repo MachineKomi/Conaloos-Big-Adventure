@@ -11,31 +11,17 @@
  */
 
 import Phaser from 'phaser';
+import { COL, RADIUS, STROKE, TOPBAR, TYPE, ANIM, drawPanel } from './UITokens.js';
 
-const ICON_X = 16;
-const ICON_Y = 12;
-const ICON_SIZE = 100;             // bigger so kids can find it (was 80).
-const ICON_RADIUS = 26;
-const ICON_BG = 0xfff8e7;
-const ICON_BG_ALPHA = 0.92;
-const ICON_STROKE = 0x4a3a1f;
-const ICON_STROKE_W = 4;
-// Over-scale the backpack image rather than cropping it (cropping cut
-// off the corners of some sprites). The over-scale factor is roughly
-// the inverse of the average opaque-region fraction.
+const ICON_X = TOPBAR.paddingX;
+const ICON_Y = TOPBAR.paddingTop;
+const ICON_SIZE = TOPBAR.itemH;       // 80 — aligned with all top-bar items
 const BACKPACK_OVERSCALE = 1.45;
 
 const SLOT_SIZE = 120;
-const SLOT_GAP = 12;
-const PANEL_PADDING = 18;
-const PANEL_RADIUS = 26;
-const PANEL_BG = 0xfff8e7;
-const PANEL_BG_ALPHA = 0.94;
-const PANEL_STROKE = 0x4a3a1f;
-const PANEL_STROKE_W = 4;
+const SLOT_GAP = 14;
+const PANEL_PADDING = 20;
 const COUNT_FONT = 22;
-// Slot items: over-scale (no crop, since cropping cut off the edges
-// of teddy bears, books, etc.).
 const SLOT_THING_OVERSCALE = 1.50;
 
 const BACKPACK_KEY = 'thing_backpack';
@@ -78,10 +64,7 @@ export class InventoryScene extends Phaser.Scene {
     const y = ICON_Y;
 
     const bg = this.add.graphics().setDepth(7100);
-    bg.fillStyle(ICON_BG, ICON_BG_ALPHA);
-    bg.lineStyle(ICON_STROKE_W, ICON_STROKE, 1);
-    bg.fillRoundedRect(x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
-    bg.strokeRoundedRect(x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
+    drawPanel(bg, x, y, ICON_SIZE, ICON_SIZE, { radius: RADIUS.card });
     this._iconBg = bg;
 
     if (this.textures.exists(BACKPACK_KEY)) {
@@ -89,27 +72,35 @@ export class InventoryScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(7101);
       const tex = this.textures.get(BACKPACK_KEY).getSourceImage();
-      // Over-scale (no crop) — keeps the full bag silhouette but
-      // makes the visible content fill the icon. Some pixels render
-      // outside the icon's rounded-rect area; that's fine because
-      // the bag's empty corners ARE transparent.
       img.setScale(((ICON_SIZE - 8) * BACKPACK_OVERSCALE) / tex.height);
       this._iconImg = img;
     } else {
       this._iconLabel = this.add.text(x + ICON_SIZE / 2, y + ICON_SIZE / 2, 'bag', {
-        fontFamily: '"Fredoka", system-ui, sans-serif',
+        fontFamily: TYPE.family,
         fontSize: '22px',
-        color: '#4a3a1f'
+        color: COL.inkHex
       }).setOrigin(0.5).setDepth(7101);
     }
 
     const zone = this.add.zone(x, y, ICON_SIZE, ICON_SIZE).setOrigin(0, 0);
     zone.setInteractive({ useHandCursor: true });
     zone.setDepth(7102);
-    zone.on('pointerover', () => this.tweens.add({ targets: bg, alpha: 1, duration: 100 }));
-    zone.on('pointerout',  () => this.tweens.add({ targets: bg, alpha: ICON_BG_ALPHA, duration: 100 }));
+    // Hover: redraw with brighter fill alpha; pointer leaves: redraw normal.
+    const redrawAlpha = (alpha) => {
+      bg.clear();
+      drawPanel(bg, x, y, ICON_SIZE, ICON_SIZE, { radius: RADIUS.card, fillAlpha: alpha });
+    };
+    zone.on('pointerover', () => redrawAlpha(1.0));
+    zone.on('pointerout',  () => redrawAlpha(0.96));
     zone.on('pointerup', () => {
-      this._userToggled = !this.open;       // tracks: did user just open it manually?
+      // Tiny dip-and-spring on click — feels like a real button.
+      this.tweens.add({
+        targets: this._iconImg ?? this._iconLabel,
+        scale: { from: (this._iconImg?.scale ?? 1) * 0.92, to: this._iconImg?.scale ?? 1 },
+        duration: ANIM.press,
+        ease: 'Back.easeOut'
+      });
+      this._userToggled = !this.open;
       this.open = !this.open;
       this._cancelAutoHide();
       this._renderPanel();
@@ -168,38 +159,37 @@ export class InventoryScene extends Phaser.Scene {
 
     const placeholder = items.length === 0 ? [{ key: '__empty', count: 0 }] : items;
     const totalW = placeholder.length * SLOT_SIZE + (placeholder.length - 1) * SLOT_GAP + PANEL_PADDING * 2;
-    const totalH = SLOT_SIZE + PANEL_PADDING * 2 + 30;
+    const totalH = SLOT_SIZE + PANEL_PADDING * 2 + 36;
     const x = (width - totalW) / 2;
-    const y = height - totalH - 14;
+    const yResting = height - totalH - 16;
 
-    this._panelG.fillStyle(PANEL_BG, PANEL_BG_ALPHA);
-    this._panelG.lineStyle(PANEL_STROKE_W, PANEL_STROKE, 1);
-    this._panelG.fillRoundedRect(x, y, totalW, totalH, PANEL_RADIUS);
-    this._panelG.strokeRoundedRect(x, y, totalW, totalH, PANEL_RADIUS);
+    drawPanel(this._panelG, x, yResting, totalW, totalH, { radius: RADIUS.panel });
 
-    const title = this.add.text(x + totalW / 2, y + 16, "Amelia's bag", {
-      fontFamily: '"Fredoka", system-ui, sans-serif',
-      fontSize: '22px',
-      color: '#4a3a1f'
+    const title = this.add.text(x + totalW / 2, yResting + 16, "Amelia's bag", {
+      fontFamily: TYPE.family,
+      fontSize: `${TYPE.heading}px`,
+      color: COL.inkHex
     }).setOrigin(0.5, 0).setDepth(7001);
     this._slotImages.push(title);
 
     if (items.length === 0) {
-      const empty = this.add.text(x + totalW / 2, y + 16 + SLOT_SIZE / 2 + PANEL_PADDING, '(empty so far)', {
-        fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
-        fontSize: '24px',
-        color: '#8a7a4a'
+      const empty = this.add.text(x + totalW / 2, yResting + 16 + SLOT_SIZE / 2 + PANEL_PADDING, '(empty so far)', {
+        fontFamily: TYPE.bodyFamily,
+        fontSize: `${TYPE.body}px`,
+        color: COL.inkSoft
       }).setOrigin(0.5).setDepth(7001);
       this._slotImages.push(empty);
+      this._slidePanelIn(this._panelG, this._slotImages, yResting);
       return;
     }
 
+    const y = yResting;
     items.forEach((item, i) => {
       const key = item.key;
       const count = item.count;
       if (!this.textures.exists(key)) return;
       const cx = x + PANEL_PADDING + i * (SLOT_SIZE + SLOT_GAP) + SLOT_SIZE / 2;
-      const cy = y + 30 + PANEL_PADDING + SLOT_SIZE / 2;
+      const cy = y + 36 + PANEL_PADDING + SLOT_SIZE / 2;
 
       const img = this.add.image(cx, cy, key).setOrigin(0.5);
       const tex = this.textures.get(key).getSourceImage();
@@ -236,14 +226,35 @@ export class InventoryScene extends Phaser.Scene {
     });
 
     // CRITICAL: a transparent zone covering the whole panel that
-    // captures clicks. Without this, taps on the inventory pass
-    // through to the game scene below (the v1.2.3 bug Dad reported
-    // — clicking a bucket in the inventory was re-collecting a
-    // bucket from the scene because the click went through).
+    // captures clicks (so taps don't fall through to the game scene
+    // below and re-collect things).
     const blocker = this.add.zone(x, y, totalW, totalH).setOrigin(0, 0);
     blocker.setInteractive();
     blocker.setDepth(7000); // below items (which are 7001) but above gameplay
     this._slotImages.push(blocker);
+
+    this._slidePanelIn(this._panelG, this._slotImages, y);
+  }
+
+  /**
+   * Slide the inventory panel up from the bottom of the screen with a
+   * gentle ease, so opening the bag feels like a *drawer*. Called once
+   * per render. No-op under reduced-motion.
+   */
+  _slidePanelIn(panelG, items, restingY) {
+    const SLIDE = 32; // pixels offset from rest
+    const all = [panelG, ...items];
+    all.forEach((o) => {
+      o.y = (o.y ?? 0) + SLIDE;
+      o.alpha = 0;
+    });
+    this.tweens.add({
+      targets: all,
+      y: '-=' + SLIDE,
+      alpha: 1,
+      duration: ANIM.panelOpen,
+      ease: 'Sine.easeOut'
+    });
   }
 
   /** Show the inventory item's lore dialogue without re-collecting. */

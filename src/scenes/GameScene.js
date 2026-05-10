@@ -155,6 +155,7 @@ export class GameScene extends Phaser.Scene {
         this.dialogue.dismiss();
         return;
       }
+      this._tapRipple(pointer.worldX, pointer.worldY);
       this.services.protagonist?.walkTo(pointer.worldX, pointer.worldY);
     });
 
@@ -618,6 +619,42 @@ export class GameScene extends Phaser.Scene {
       ],
       onComplete: () => { sprite._wiggling = false; }
     });
+  }
+
+  /**
+   * A soft "tap landed" ripple at the click point — two concentric
+   * rings that expand and fade. Tells the kid "yes, I heard you" even
+   * before Amelia starts walking. Subtle, warm-cream stroke matching
+   * the rest of the UI chrome.
+   */
+  _tapRipple(x, y) {
+    if (Accessibility.reducedMotion) return;
+    // Don't paint ripples WAY off-screen (e.g. negative worldY from a
+    // weird pointer event).
+    const { width, height } = this.scale;
+    if (x < -40 || x > width + 40 || y < -40 || y > height + 40) return;
+
+    const draw = (delay, startR, endR, alpha, lineW) => {
+      const ring = this.add.graphics().setDepth(8500);
+      ring.lineStyle(lineW, 0x4a3a1f, alpha);
+      ring.strokeCircle(x, y, startR);
+      this.tweens.add({
+        targets: ring,
+        alpha: { from: alpha, to: 0 },
+        duration: 480,
+        delay,
+        ease: 'Sine.easeOut',
+        onUpdate: (tw) => {
+          const t = tw.progress;
+          ring.clear();
+          ring.lineStyle(lineW, 0x4a3a1f, alpha * (1 - t));
+          ring.strokeCircle(x, y, startR + (endR - startR) * t);
+        },
+        onComplete: () => ring.destroy()
+      });
+    };
+    draw(0,    8,  34, 0.55, 3);
+    draw(90,  4,  22, 0.35, 2);
   }
 
   _ambientSparkle() {

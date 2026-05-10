@@ -1,5 +1,83 @@
 # Changelog
 
+## 2026-05-10 — v1.7: a UI/UX polish pass
+
+A pass that makes the world feel like one little hand-painted thing.
+Every panel, every chip, every speech bubble, every menu now shares
+the same paper colour, the same warm-brown stroke, the same drop
+shadow, and the same rounded-corner family. A 4-year-old reads UI
+by *shape*, not by *word*, so the shapes have to be consistent.
+
+### Design tokens
+
+New `src/systems/UITokens.js` is the single source of truth for the
+palette, stroke, radii, top-bar layout, typography, animation
+timings, and a shared `drawPanel()` helper that produces the soft
+drop shadow + cream fill + warm-brown stroke that every UI surface
+now uses.
+
+### Top-bar (bag, quest star, gem counter, burger)
+
+All four items render at the same height (80px) and share the same
+panel style. The bag, quest star, and burger are now visually a
+matched set; the centred gem counter is the same height too.
+
+- **Hover** brightens fill alpha (no more "did I hover?" guessing).
+- **Press** triggers a tiny squish-and-spring on the icon glyph so
+  every tap feels real.
+- **Quest panel** now shows progress bars for incomplete quests
+  (with `n/total` labels) and reward chips for completed ones; it
+  slides down from the star icon.
+- **Inventory drawer** slides up from the bottom on open.
+- **Burger menu** dropdown items got soft glyph icons (⌂ ♪ A) so
+  the kid can read them by shape, and the panel slides in.
+
+### Speech bubbles + quiz dialog
+
+Speech bubbles now use the shared paper colour and stroke, plus a
+custom drop shadow that traces the bubble + tail outline (so the
+shadow follows the tail, not just the rectangle). Bubbles drop in
+with a gentle Back ease.
+
+Quiz buttons got real states:
+
+- **Hover** brightens the fill and lifts the label slightly.
+- **Press** squishes the label.
+- **Choose** flashes the picked button (green for correct, gold for
+  preference) before the dialog dismisses, so the kid sees which
+  one they chose.
+
+### Tap-to-walk ripple
+
+Tapping the background to walk Amelia now paints two soft
+concentric rings at the click point that expand and fade. Tells
+the child "yes, I heard you" before Amelia takes her first step.
+
+### Tutorial panel
+
+Now uses the same `drawPanel()` helper, so the "How to play" page
+matches the rest of the world's chrome (drop shadow, paper, brown
+stroke).
+
+### Touched
+
+- **New:** `src/systems/UITokens.js`
+- **Updated:** `src/systems/GemHUD.js`, `Inventory.js`, `QuestHUD.js`,
+  `GlobalUI.js`, `DialogueBox.js`, `QuizDialog.js`, `scenes/GameScene.js`,
+  `scenes/TutorialScene.js`
+
+### Open hooks for next agent
+
+- The title-screen buttons are intentionally bespoke (they have a
+  warm yellow glow halo on hover that's part of the brand). Leave
+  them alone unless playtest says otherwise.
+- The bottom-of-screen inventory drawer is centred horizontally,
+  but with a very full bag (8+ items) it could push past the edges.
+  Consider a max-cols + wrap if Amelia's collection grows.
+- A subtle ambient idle for the burger button (a slow breathing
+  alpha pulse) might draw the eye toward the menu the first time
+  the kid plays. Worth A/B-ing with the parent.
+
 ## 2026-05-09 — v1.6: a writing pass
 
 A focused pass on the prose. Influences: Dr Seuss (anapestic

@@ -11,32 +11,20 @@
  */
 
 import Phaser from 'phaser';
+import { COL, RADIUS, STROKE, TOPBAR, TYPE, ANIM, drawPanel } from './UITokens.js';
 
-const ICON_X = 130;        // right of the inventory bag (which sits at x=16, w=100)
-const ICON_Y = 12;
-const ICON_SIZE = 100;
-const ICON_RADIUS = 26;
-const ICON_BG = 0xfff8e7;
-const ICON_BG_ALPHA = 0.92;
-const ICON_STROKE = 0x4a3a1f;
-const ICON_STROKE_W = 4;
-const ICON_TEXT_COLOUR = '#4a3a1f';
+// Place the quest button right beside the inventory bag.
+const ICON_X = TOPBAR.paddingX + TOPBAR.itemH + TOPBAR.gap;
+const ICON_Y = TOPBAR.paddingTop;
+const ICON_SIZE = TOPBAR.itemH;       // 80 — aligned with bag + burger + gem hud
 
-const PANEL_W = 480;
-const PANEL_BG = 0xfff8e7;
-const PANEL_BG_ALPHA = 0.96;
-const PANEL_STROKE = 0x4a3a1f;
-const PANEL_STROKE_W = 4;
-const PANEL_RADIUS = 22;
+const PANEL_W = 520;
+const ROW_H = 72;
+const ROW_GAP = 8;
+const ROW_PADDING_X = 18;
 
-const ROW_H = 64;
-const ROW_GAP = 6;
-const ROW_PADDING_X = 16;
-
-const TOAST_BG = 0xfff2a8;
-const TOAST_BG_ALPHA = 0.97;
-const TOAST_W = 460;
-const TOAST_H = 110;
+const TOAST_W = 480;
+const TOAST_H = 120;
 
 export class QuestHUDScene extends Phaser.Scene {
   constructor() {
@@ -69,20 +57,17 @@ export class QuestHUDScene extends Phaser.Scene {
     const y = ICON_Y;
 
     const bg = this.add.graphics().setDepth(7700);
-    bg.fillStyle(ICON_BG, ICON_BG_ALPHA);
-    bg.lineStyle(ICON_STROKE_W, ICON_STROKE, 1);
-    bg.fillRoundedRect(x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
-    bg.strokeRoundedRect(x, y, ICON_SIZE, ICON_SIZE, ICON_RADIUS);
+    drawPanel(bg, x, y, ICON_SIZE, ICON_SIZE, { radius: RADIUS.card });
     this._iconBg = bg;
 
-    const label = this.add.text(x + ICON_SIZE / 2, y + ICON_SIZE / 2, '★', {
-      fontFamily: '"Fredoka", "Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: '46px',
-      color: ICON_TEXT_COLOUR
+    const label = this.add.text(x + ICON_SIZE / 2, y + ICON_SIZE / 2 - 2, '★', {
+      fontFamily: TYPE.family,
+      fontSize: '44px',
+      color: COL.inkHex
     }).setOrigin(0.5).setDepth(7701);
     this._iconLabel = label;
 
-    // Tiny "n done" badge in the corner — shows progress at a glance.
+    // Tiny "n done" badge in the top-right corner.
     const completed = this.questManager.completedCount();
     const total = this.questManager.list().length;
     const badge = this.add.text(
@@ -90,10 +75,10 @@ export class QuestHUDScene extends Phaser.Scene {
       y + 4,
       `${completed}/${total}`,
       {
-        fontFamily: '"Fredoka", system-ui, sans-serif',
-        fontSize: '14px',
+        fontFamily: TYPE.family,
+        fontSize: `${TYPE.badge}px`,
         color: '#ffffff',
-        backgroundColor: '#4a3a1f',
+        backgroundColor: COL.inkHex,
         padding: { left: 6, right: 6, top: 2, bottom: 2 }
       }
     ).setOrigin(1, 0).setDepth(7702);
@@ -102,9 +87,19 @@ export class QuestHUDScene extends Phaser.Scene {
     const zone = this.add.zone(x, y, ICON_SIZE, ICON_SIZE).setOrigin(0, 0);
     zone.setInteractive({ useHandCursor: true });
     zone.setDepth(7703);
-    zone.on('pointerover', () => this.tweens.add({ targets: bg, alpha: 1, duration: 100 }));
-    zone.on('pointerout',  () => this.tweens.add({ targets: bg, alpha: ICON_BG_ALPHA, duration: 100 }));
+    const redrawAlpha = (alpha) => {
+      bg.clear();
+      drawPanel(bg, x, y, ICON_SIZE, ICON_SIZE, { radius: RADIUS.card, fillAlpha: alpha });
+    };
+    zone.on('pointerover', () => redrawAlpha(1.0));
+    zone.on('pointerout',  () => redrawAlpha(0.96));
     zone.on('pointerup', () => {
+      this.tweens.add({
+        targets: label,
+        scale: { from: 0.85, to: 1.0 },
+        duration: ANIM.press,
+        ease: 'Back.easeOut'
+      });
       this.open = !this.open;
       this._renderPanel();
     });
@@ -135,47 +130,51 @@ export class QuestHUDScene extends Phaser.Scene {
   _showToast(def) {
     const { width } = this.scale;
     const x = (width - TOAST_W) / 2;
-    const y = 110;
+    const yResting = 120;
 
     const bg = this.add.graphics().setDepth(8800);
-    bg.fillStyle(TOAST_BG, TOAST_BG_ALPHA);
-    bg.lineStyle(4, PANEL_STROKE, 1);
-    bg.fillRoundedRect(x, y, TOAST_W, TOAST_H, 20);
-    bg.strokeRoundedRect(x, y, TOAST_W, TOAST_H, 20);
+    drawPanel(bg, x, yResting, TOAST_W, TOAST_H, {
+      radius: RADIUS.panel,
+      fill: COL.gold,
+      fillAlpha: 0.97
+    });
 
-    const headline = this.add.text(x + TOAST_W / 2, y + 22, '★ Quest done!', {
-      fontFamily: '"Fredoka", system-ui, sans-serif',
-      fontSize: '24px',
-      color: '#a45e08'
+    const headline = this.add.text(x + TOAST_W / 2, yResting + 22, '★ Quest done!', {
+      fontFamily: TYPE.family,
+      fontSize: `${TYPE.heading}px`,
+      color: COL.orangeHex
     }).setOrigin(0.5, 0).setDepth(8801);
 
-    const title = this.add.text(x + TOAST_W / 2, y + 56, `"${def.title}"`, {
-      fontFamily: '"Fredoka", system-ui, sans-serif',
+    const title = this.add.text(x + TOAST_W / 2, yResting + 58, `"${def.title}"`, {
+      fontFamily: TYPE.family,
       fontSize: '22px',
-      color: '#4a3a1f'
+      color: COL.inkHex
     }).setOrigin(0.5, 0).setDepth(8801);
 
-    const reward = this.add.text(x + TOAST_W / 2, y + 86, `+${def.reward} stones`, {
-      fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
-      fontSize: '18px',
-      color: '#4a3a1f'
+    const reward = this.add.text(x + TOAST_W / 2, yResting + 90, `+${def.reward} stones`, {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: `${TYPE.body}px`,
+      color: COL.inkHex
     }).setOrigin(0.5, 0).setDepth(8801);
 
     const items = [bg, headline, title, reward];
 
-    items.forEach((o) => o.setAlpha(0));
+    // Drop in from above.
+    items.forEach((o) => { o.alpha = 0; o.y = (o.y ?? 0) - 16; });
     this.tweens.add({
       targets: items,
       alpha: 1,
-      duration: 220,
-      ease: 'Sine.easeOut'
+      y: '+=16',
+      duration: ANIM.toast,
+      ease: 'Back.easeOut'
     });
 
     this.time.delayedCall(2800, () => {
       this.tweens.add({
         targets: items,
         alpha: 0,
-        duration: 320,
+        y: '-=12',
+        duration: ANIM.toast,
         ease: 'Sine.easeIn',
         onComplete: () => items.forEach((o) => o.destroy())
       });
@@ -189,56 +188,119 @@ export class QuestHUDScene extends Phaser.Scene {
     if (!this.open) return;
 
     const list = this.questManager.list();
-    const { width, height } = this.scale;
+    const { height } = this.scale;
     const x = ICON_X;
     const y = ICON_Y + ICON_SIZE + 8;
     const maxRows = Math.min(list.length, Math.floor((height - y - 24) / (ROW_H + ROW_GAP)));
-    const totalH = 60 + maxRows * (ROW_H + ROW_GAP) + 12;
+    const totalH = 60 + maxRows * (ROW_H + ROW_GAP) + 16;
 
-    this._panelG.fillStyle(PANEL_BG, PANEL_BG_ALPHA);
-    this._panelG.lineStyle(PANEL_STROKE_W, PANEL_STROKE, 1);
-    this._panelG.fillRoundedRect(x, y, PANEL_W, totalH, PANEL_RADIUS);
-    this._panelG.strokeRoundedRect(x, y, PANEL_W, totalH, PANEL_RADIUS);
+    drawPanel(this._panelG, x, y, PANEL_W, totalH, { radius: RADIUS.panel });
 
-    const title = this.add.text(x + PANEL_W / 2, y + 14, "Quests", {
-      fontFamily: '"Fredoka", system-ui, sans-serif',
-      fontSize: '24px',
-      color: '#4a3a1f'
+    const title = this.add.text(x + PANEL_W / 2, y + 16, "Quests", {
+      fontFamily: TYPE.family,
+      fontSize: `${TYPE.heading}px`,
+      color: COL.inkHex
     }).setOrigin(0.5, 0).setDepth(7601);
     this._panelItems.push(title);
 
-    let rowY = y + 50;
+    let rowY = y + 56;
     for (let i = 0; i < maxRows; i++) {
       const entry = list[i];
       const def = entry.def;
       const rowX = x + ROW_PADDING_X;
       const rowW = PANEL_W - ROW_PADDING_X * 2;
 
+      // Row background tinted by completion state.
       const rowBg = this.add.graphics().setDepth(7601);
-      const rowColour = entry.completed ? 0xc8e7c8 : 0xfff2a8;
-      rowBg.fillStyle(rowColour, 0.6);
-      rowBg.fillRoundedRect(rowX, rowY, rowW, ROW_H, 12);
+      const rowColour = entry.completed ? COL.green : COL.gold;
+      rowBg.fillStyle(rowColour, 0.5);
+      rowBg.fillRoundedRect(rowX, rowY, rowW, ROW_H, RADIUS.chip);
       this._panelItems.push(rowBg);
 
-      const titleText = entry.completed ? `✓ ${def.title}` : def.title;
-      const t = this.add.text(rowX + 10, rowY + 6, titleText, {
-        fontFamily: '"Fredoka", system-ui, sans-serif',
-        fontSize: '18px',
-        color: '#4a3a1f'
+      const titleText = entry.completed ? `✓  ${def.title}` : def.title;
+      const t = this.add.text(rowX + 12, rowY + 8, titleText, {
+        fontFamily: TYPE.family,
+        fontSize: '20px',
+        color: COL.inkHex
       }).setOrigin(0, 0).setDepth(7602);
       this._panelItems.push(t);
 
-      const progressText = entry.completed
-        ? `(+${def.reward} stones rewarded)`
-        : `${def.desc}  —  ${entry.progress}/${def.target}`;
-      const p = this.add.text(rowX + 10, rowY + 30, progressText, {
-        fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
-        fontSize: '14px',
-        color: '#5a4a2a'
+      const descText = entry.completed
+        ? `(+${def.reward} stones — collected)`
+        : def.desc;
+      const p = this.add.text(rowX + 12, rowY + 36, descText, {
+        fontFamily: TYPE.bodyFamily,
+        fontSize: `${TYPE.caption}px`,
+        color: COL.inkSoft
       }).setOrigin(0, 0).setDepth(7602);
       this._panelItems.push(p);
 
+      // Progress bar on the right (only for incomplete quests).
+      if (!entry.completed) {
+        const barW = 130;
+        const barH = 14;
+        const barX = rowX + rowW - barW - 12;
+        const barY = rowY + ROW_H / 2 - barH / 2;
+        const fill = Math.max(0, Math.min(1, entry.progress / def.target));
+
+        const bar = this.add.graphics().setDepth(7602);
+        // Background track
+        bar.fillStyle(COL.ink, 0.18);
+        bar.fillRoundedRect(barX, barY, barW, barH, barH / 2);
+        // Filled portion
+        bar.fillStyle(COL.orange, 1);
+        bar.fillRoundedRect(barX, barY, Math.max(barH, barW * fill), barH, barH / 2);
+        this._panelItems.push(bar);
+
+        const progressLabel = this.add.text(
+          barX + barW / 2,
+          barY + barH / 2,
+          `${entry.progress}/${def.target}`,
+          {
+            fontFamily: TYPE.family,
+            fontSize: '12px',
+            color: '#ffffff',
+            stroke: COL.inkHex,
+            strokeThickness: 3
+          }
+        ).setOrigin(0.5).setDepth(7603);
+        this._panelItems.push(progressLabel);
+      } else {
+        const rewardChip = this.add.text(
+          rowX + rowW - 12,
+          rowY + ROW_H / 2,
+          `+${def.reward}`,
+          {
+            fontFamily: TYPE.family,
+            fontSize: '20px',
+            color: '#ffffff',
+            backgroundColor: COL.orangeHex,
+            padding: { left: 10, right: 10, top: 4, bottom: 4 }
+          }
+        ).setOrigin(1, 0.5).setDepth(7603);
+        this._panelItems.push(rewardChip);
+      }
+
       rowY += ROW_H + ROW_GAP;
     }
+
+    // Slide the panel down from the icon.
+    this._slideDown(this._panelG, this._panelItems, y);
+  }
+
+  _slideDown(panelG, items, restingY) {
+    const SLIDE = 24;
+    const all = [panelG, ...items];
+    all.forEach((o) => {
+      o.y = (o.y ?? 0) - SLIDE;
+      o.alpha = 0;
+    });
+    this.tweens.add({
+      targets: all,
+      y: '+=' + SLIDE,
+      alpha: 1,
+      duration: ANIM.panelOpen,
+      ease: 'Sine.easeOut'
+    });
   }
 }

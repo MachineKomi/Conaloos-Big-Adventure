@@ -2,31 +2,31 @@
  * QuizDialog — speech-bubble style panel anchored to a speaker, with
  * a question and 2–4 tappable answer options.
  *
+ * v1.7 polish:
+ *   - Pulls colour, stroke, radius, type, and animation timings from
+ *     UITokens so the quiz reads as part of the same world.
+ *   - Buttons now have proper hover (gentle lift + brighter fill),
+ *     press (squish-and-spring), and choose feedback (brief flash on
+ *     the chosen answer before the dialog dismisses) so a 4-year-old
+ *     gets clear "yes, that's the one" confirmation.
+ *   - Drop-in entrance with a Back.easeOut tween for warmth.
+ *
  * On answer, the dialog dismisses itself and fires onAnswer({ option,
  * isCorrect, isPreference }) so the caller (HotspotManager) can play
  * the right reaction line and reward gems.
- *
- * Visual style mirrors DialogueBox so the world reads consistently.
  */
 
 import Phaser from 'phaser';
+import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel } from './UITokens.js';
 
 const PADDING_X = 24;
 const PADDING_Y = 18;
-const BUBBLE_BG = 0xfff8e7;
-const BUBBLE_BG_ALPHA = 0.96;
-const BUBBLE_STROKE = 0x4a3a1f;
-const STROKE_WIDTH = 4;
-const CORNER_RADIUS = 22;
-
-const TEXT_COLOUR = '#2b2b2b';
 const QUESTION_FONT_PX = 26;
 const OPTION_FONT_PX = 22;
-const OPTION_HEIGHT = 48;
-const OPTION_GAP = 8;
-const OPTION_PADDING_X = 14;
-const OPTION_BG = 0xfff2a8;
-const OPTION_BG_ALPHA = 1;
+const OPTION_HEIGHT = 52;
+const OPTION_GAP = 10;
+const OPTION_PADDING_X = 16;
+const OPTION_RADIUS = RADIUS.chip;
 
 export class QuizDialog {
   constructor(scene) {
@@ -65,9 +65,9 @@ export class QuizDialog {
 
     // Build question text first to compute width.
     const questionText = scene.add.text(0, 0, quiz.question, {
-      fontFamily: '"Atkinson Hyperlegible", system-ui, sans-serif',
+      fontFamily: TYPE.bodyFamily,
       fontSize: `${QUESTION_FONT_PX}px`,
-      color: TEXT_COLOUR,
+      color: COL.inkHex,
       align: 'center',
       lineSpacing: 6,
       wordWrap: { width: maxBubbleW - PADDING_X * 2, useAdvancedWrap: true }
@@ -76,9 +76,9 @@ export class QuizDialog {
     // Compute option widths (laid out vertically as full-width buttons).
     const optionLabels = quiz.options.map((o) =>
       scene.add.text(0, 0, o.text, {
-        fontFamily: '"Fredoka", system-ui, sans-serif',
+        fontFamily: TYPE.family,
         fontSize: `${OPTION_FONT_PX}px`,
-        color: '#4a3a1f',
+        color: COL.inkHex,
         align: 'center',
         wordWrap: { width: maxBubbleW - PADDING_X * 2 - OPTION_PADDING_X * 2, useAdvancedWrap: true }
       }).setOrigin(0.5, 0.5)
@@ -107,16 +107,18 @@ export class QuizDialog {
       cy = boxH / 2 + 24;
     }
 
+    // Bubble background — use drawPanel so it matches every other
+    // panel in the world (drop shadow + cream + warm-brown stroke).
     const bg = scene.add.graphics();
-    bg.fillStyle(BUBBLE_BG, BUBBLE_BG_ALPHA);
-    bg.lineStyle(STROKE_WIDTH, BUBBLE_STROKE, 1);
-    bg.fillRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
-    bg.strokeRoundedRect(-boxW / 2, -boxH / 2, boxW, boxH, CORNER_RADIUS);
+    drawPanel(bg, -boxW / 2, -boxH / 2, boxW, boxH, { radius: RADIUS.panel });
 
     questionText.setPosition(0, -boxH / 2 + PADDING_Y);
 
-    // Lay out option buttons.
+    // Lay out option buttons. Each button is its own little graphics +
+    // label + zone trio so we can independently animate hover/press
+    // and the eventual "chosen" flash.
     const optionItems = [];
+    const buttons = []; // { btnBg, label, zone, x, y, w, h, idx }
     let currentY = -boxH / 2 + PADDING_Y + questionText.height + 14;
     optionLabels.forEach((label, i) => {
       const btnW = boxW - PADDING_X * 2;
@@ -124,41 +126,107 @@ export class QuizDialog {
       const btnY = currentY;
 
       const btnBg = scene.add.graphics();
-      btnBg.fillStyle(OPTION_BG, OPTION_BG_ALPHA);
-      btnBg.lineStyle(3, BUBBLE_STROKE, 1);
-      btnBg.fillRoundedRect(btnX, btnY, btnW, OPTION_HEIGHT, 12);
-      btnBg.strokeRoundedRect(btnX, btnY, btnW, OPTION_HEIGHT, 12);
+      drawOptionButton(btnBg, btnX, btnY, btnW, OPTION_HEIGHT, OPTION_RADIUS, COL.gold, 1.0);
 
       label.setPosition(0, btnY + OPTION_HEIGHT / 2);
 
       const zone = scene.add.zone(btnX, btnY, btnW, OPTION_HEIGHT).setOrigin(0, 0);
       zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => { btnBg.alpha = 0.8; });
-      zone.on('pointerout',  () => { btnBg.alpha = 1.0; });
+
+      let isOver = false;
+      zone.on('pointerover', () => {
+        isOver = true;
+        // Brighter fill + tiny scale-up on the label only (graphics
+        // can't be tween-scaled cleanly without re-drawing, so we
+        // re-draw the bg at higher fill alpha and tween the label).
+        drawOptionButton(btnBg, btnX, btnY, btnW, OPTION_HEIGHT, OPTION_RADIUS, COL.paperWarm, 1.0);
+        scene.tweens.add({
+          targets: label,
+          scale: 1.04,
+          duration: ANIM.hover,
+          ease: 'Sine.easeOut'
+        });
+      });
+      zone.on('pointerout', () => {
+        isOver = false;
+        drawOptionButton(btnBg, btnX, btnY, btnW, OPTION_HEIGHT, OPTION_RADIUS, COL.gold, 1.0);
+        scene.tweens.add({
+          targets: label,
+          scale: 1.0,
+          duration: ANIM.hover,
+          ease: 'Sine.easeOut'
+        });
+      });
+      zone.on('pointerdown', () => {
+        // Press squish — bounces back on release/up.
+        scene.tweens.add({
+          targets: label,
+          scale: 0.94,
+          duration: 80,
+          ease: 'Sine.easeIn'
+        });
+      });
       zone.on('pointerup', () => {
         const opt = quiz.options[i];
         const isCorrect = !!quiz.isPreference || !!opt.isCorrect;
-        opts.onAnswer?.({ option: opt, idx: i, isCorrect, isPreference: !!quiz.isPreference });
-        this.destroy();
+        // Brief "chosen" flash on the picked button — orange ring of
+        // confirmation. Then dismiss + fire callback.
+        this._flashChosen(btnBg, btnX, btnY, btnW, OPTION_HEIGHT, isCorrect);
+        scene.tweens.add({
+          targets: label,
+          scale: { from: 1.04, to: 1.0 },
+          duration: ANIM.press,
+          ease: 'Back.easeOut'
+        });
+        scene.time.delayedCall(260, () => {
+          opts.onAnswer?.({ option: opt, idx: i, isCorrect, isPreference: !!quiz.isPreference });
+          this.destroy();
+        });
       });
 
       optionItems.push(btnBg, label, zone);
+      buttons.push({ btnBg, label, zone, x: btnX, y: btnY, w: btnW, h: OPTION_HEIGHT, idx: i });
       currentY += OPTION_HEIGHT + OPTION_GAP;
     });
 
     const container = scene.add.container(cx, cy, [bg, questionText, ...optionItems]);
     container.setDepth(10000);
 
+    // Drop-in entrance.
     container.setAlpha(0);
+    container.y += 12;
+    container.setScale(0.97);
     scene.tweens.add({
       targets: container,
       alpha: 1,
-      duration: 200,
-      ease: 'Sine.easeOut'
+      y: cy,
+      scale: 1,
+      duration: ANIM.panelOpen,
+      ease: 'Back.easeOut'
     });
 
     this.container = container;
   }
+
+  /** Brief orange ring + brighter fill on the chosen button. */
+  _flashChosen(btnBg, x, y, w, h, isCorrect) {
+    const flashColour = isCorrect ? COL.green : COL.gold;
+    btnBg.clear();
+    drawOptionButton(btnBg, x, y, w, h, OPTION_RADIUS, flashColour, 1.0, true);
+  }
+}
+
+/**
+ * Draw a single quiz option button with cream/gold fill + brown
+ * stroke. The `bright` flag emphasises the stroke for the "chosen"
+ * confirmation flash so the kid sees which one they picked.
+ */
+function drawOptionButton(g, x, y, w, h, radius, fillColour, fillAlpha, bright = false) {
+  g.clear();
+  g.fillStyle(fillColour, fillAlpha);
+  g.lineStyle(bright ? STROKE.panel : STROKE.small, COL.ink, 1);
+  g.fillRoundedRect(x, y, w, h, radius);
+  g.strokeRoundedRect(x, y, w, h, radius);
 }
 
 function clamp(v, lo, hi) {
