@@ -1,97 +1,148 @@
 /**
  * Inventory-aware character reactions.
  *
- * When Amelia clicks on a character while carrying certain items, the
- * character may pick a *contextual* line referencing the item she has.
- * HotspotManager picks one of these (with ~40% chance per click when
- * applicable) instead of a normal line.
+ * When Amelia walks up to a peep with a particular thing in her bag,
+ * the peep may notice — and what they say is shaped by what they
+ * see. This is where world coherence lives: mommy actually responds
+ * to the cake, Cosenae actually wants the microscope, Tootsie
+ * positively *erupts* at a banana.
  *
- * Schema:
- *   characterKey -> {
- *     thingKey -> [response strings]
- *   }
+ * Each reaction is one or two lines, written to scan when read aloud.
  *
- * If the player has multiple matching items, one is picked at random.
+ * HotspotManager picks one of these (40% chance per click) when
+ * Amelia carries something the speaker has lines about.
  */
 
 export const inventoryReactions = {
+
+  // -------- mommy --------
   'peep_mommy_F_30ish': {
     'thing_birthday-cake-with-one-candle': [
-      "Oh! Is that a *cake*? Whose day is it, do you know?\nWe should sing them a song before the candle's dim glow."
+      "Oh -- a *cake*! With one candle, just so!\nI wonder whose day it is. Shall we go know?"
     ],
     'thing_books': [
-      "Bringing me a book? What a *fine* idea --\nLet's curl up by the window and read it, my dear."
+      "A book in the bag is a kindness, really --\na small folded world that you carry, sincerely."
     ],
     'thing_teddybear': [
-      "He likes to be carried but doesn't say much --\nGive him a squeeze; he comforts the touch."
-    ]
-  },
-  'peep_daddy_M_30ish': {
-    'thing_birthday-cake-with-one-candle': [
-      "A cake with one candle? That's *somebody's* one.\nLet's set out the napkins. The party's begun."
+      "He doesn't say much, but he listens with care.\nGive him a squeeze. (He'll remember you there.)"
     ],
     'thing_flashlight': [
-      "A torch, hm? Excellent. The mornings get dark --\nAnd a torch is for finding your slippers, *for a lark*."
-    ],
-    'thing_banana': [
-      "A banana's the snack of an *adventurer*.\n(I'd say that out loud, but the kitchen would stir.)"
+      "A torch! How clever. The mornings get blue --\nand a torch is for finding what *brunch* is for too."
     ]
   },
+
+  // -------- daddy --------
+  'peep_daddy_M_30ish': {
+    'thing_birthday-cake-with-one-candle': [
+      "Mm. Cake. With a candle. Whose day shall we sing?\n(I do hope it's mine. I love nearly *anything*.)"
+    ],
+    'thing_flashlight': [
+      "A torch in the daytime is hope, if you ask.\nIt's *ready*. (And readiness counts as a task.)"
+    ],
+    'thing_banana': [
+      "A banana's a snack of an *adventurer*.\nYou eat it midway, when you're feeling unsure."
+    ],
+    'thing_books': [
+      "Bring it here, slowly. We'll read just a page.\nI'll do the voices. (You judge how I age.)"
+    ]
+  },
+
+  // -------- Cosenae --------
   'peep_Cosenae_M_5': {
     'thing_microscope': [
-      "OH! Did you bring my MICROSCOPE? I've been *looking*.\nA pebble I found has a face -- I'm not joking."
+      "OH! Did you bring my MICROSCOPE? Excellent news!\nI've a *pebble* with FACES, in close-up reviews."
     ],
     'thing_globe': [
-      "The globe! Spin it! Where shall we go today?\nIf you point at the ocean we'll need a *boat*, by the way."
+      "The GLOBE! Spin it! Point! Where shall we *go*?\nIf it lands on the ocean, we'll need a small boat. (And a row.)"
     ],
     'thing_books': [
-      "A book! Let me see --- I've maybe read it.\n(I haven't. But I might.) (I could pretend, said it.)"
+      "A book! Let me see -- I have *probably* read it.\n(I haven't. But I might. So let's just call it *credit*.)"
+    ],
+    'thing_hourglass': [
+      "An *hourglass*! Marvellous! Time has a shape now!\nIt looks like a number eight, halfway, somehow."
     ]
   },
+
+  // -------- Lulumi --------
   'peep_Lulumi_F_14': {
     'thing_books': [
-      "A book in a bag! That's a portable kind --\nA whole other world, *folded up* in your mind."
+      "A book in a bag is a *portable* thought --\nan unfolded world, of the sort I have caught."
     ],
     'thing_hourglass': [
-      "Time in a glass -- I find that quite calming.\nThe *now* turns to *was* with no need for alarming."
+      "Time in a glass is the calmest of clocks.\nI've added it, just now, to my list. (Sand and rocks.)"
     ],
     'thing_microscope': [
-      "Hand me the microscope -- there's a moss on the wall.\nI'll add it to my list of small things, after all."
+      "Hand me the lens? There's a moss on the wall.\nI'll add it to my list of *small things, after all*."
+    ],
+    'thing_flashlight': [
+      "A torch is a fine thing to carry along --\nyou don't need to use it; just owning is strong."
     ]
   },
+
+  // -------- Tootsie --------
   'peep_Tootsie_friendly-cactus': {
     'thing_birthday-cake-with-one-candle': [
-      "A CAKE? A WHOLE CAKE? With a CANDLE? *Today?*\nIt must be for someone. Let's all shout HOORAY."
+      "A CAKE! WHOLE CAKE! With a CANDLE! TODAY!\nIt MUST be for *someone*! Let's all shout HOORAY!"
     ],
     'thing_banana': [
-      "A snack! For a friend! Or for me! Or for *you*!\nFriends share their bananas. (That's just what they do.)"
+      "A SNACK! For a friend! Or for *me*! Or for *you*!\nFriends share their bananas. (That's just what they DO.)"
+    ],
+    'thing_teddybear': [
+      "OH! A teddy! He's softer than ANY of mine!\n(I'm a cactus. I don't have a teddy. He's *thine*.)"
     ]
   },
+
+  // -------- Conaloo --------
   'animal_Conaloo_bear-butterly': {
     'thing_teddybear': [
-      "Mm. He looks a bit like me, doesn't he?\nThough his wings are imagined. (Mine are real. Mostly.)"
+      "Mm. He looks a bit like me -- if you squint.\nHis wings are *imagined*. (Mine are real. -- Most days. Without stint.)"
     ],
     'thing_hourglass': [
-      "I have decided about time. It's a friend.\nBut a slow one, who naps on the rug, and the bend."
+      "I've decided that *time* is a friend of mine, slow.\nWe sit, and we don't speak. (And mostly, we know.)"
+    ],
+    'thing_birthday-cake-with-one-candle': [
+      "A candle! A wish! And a someone-it's-for!\nThe sweetest of three things to bring through a door."
     ]
   },
+
+  // -------- Pepsi --------
   'animal_Pepsi_dog-thing': {
     'thing_banana': [
-      "Pepsi sniffs the banana. -- (snorf.) -- He's not sure.\n*Stick* is the food he prefers, to be pure."
+      "Pepsi sniffs the banana. (snorf.) He's not sure.\n*Stick* is the food he prefers, to be pure."
     ],
     'thing_tyre': [
-      "OH. A tyre. Pepsi's eyes go wide. (boof.)\nHe imagines it bouncing. He imagines a roof."
+      "OH. A *tyre*. Pepsi's eyes go quite wide. (boof.)\nHe imagines it bouncing. He imagines a roof."
+    ],
+    'thing_teddybear': [
+      "Pepsi nudges the teddy, gently, with nose.\nThe teddy says nothing. They are friends. (One supposes.)"
+    ]
+  },
+
+  // -------- Konessa --------
+  'peep_Konessa_has-flower': {
+    'thing_books': [
+      "A book? Oh -- read me a line. Just one will do.\nMy flower likes hearing things, even what's *new*."
+    ],
+    'thing_banana': [
+      "My flower has *never* yet eaten one of those.\nI might offer her a *taste*. (She's lovely. She knows.)"
+    ]
+  },
+
+  // -------- Loosa --------
+  'peep_Loosa_cactus': {
+    'thing_hourglass': [
+      "-- I have something to tell you. -- I'll tell you it slow.\nThat hourglass and me? -- We're old friends. -- We know."
+    ],
+    'thing_flashlight': [
+      "-- A torch. -- For the night. -- I do not need one.\nMy nights are the same as my days. (So they're none.)"
     ]
   }
 };
 
 /**
- * If the character has any reactions for items in inventory, return a
- * random one. Otherwise null.
- *
- * @param {string} characterKey
- * @param {Array<{key:string,count:number}>} inventoryItems
- * @returns {string|null}
+ * Pick a contextual line for the given character, given the player's
+ * current inventory. Returns null if the character has no lines for
+ * anything Amelia is carrying.
  */
 export function pickInventoryReaction(characterKey, inventoryItems) {
   const reactions = inventoryReactions[characterKey];

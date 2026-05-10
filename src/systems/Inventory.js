@@ -263,19 +263,39 @@ export class InventoryScene extends Phaser.Scene {
   }
 }
 
-/** Tiny lookup of "what's this thing?" lines for inventory taps. */
+/** A tiny poem per item — what's that thing in your bag, exactly?
+ *  Read aloud they should each scan as a couplet, not a label. */
 function inventoryDescription(key) {
   const map = {
-    'thing_birthday-cake-with-one-candle': "A cake for someone's birthday-ish day.\nThe candle is *one* — that's tomorrow, perhaps.",
-    'thing_books': "A small book, half-read, half-thought-about.\nSomeone's pencilled a star at a paragraph.",
-    'thing_teddybear': "A teddy who's a *very* good listener.\nHe sits at the back of the bag, perfectly still.",
-    'thing_flashlight': "A torch with a sun in its small metal head.\nIt waits to be needed; it doesn't ask why.",
-    'thing_microscope': "Tiny things look HUGE through this brass eye.\nA fly's wing is a window. A speck is a star.",
-    'thing_globe': "A whole world in a hand — turn, point, *imagine*.\nWherever you tap, somebody's mid-tea.",
-    'thing_hourglass': "Sand turning over: a *now* into *was*.\nThe pile underneath is the story so far.",
-    'thing_bucket': "A bucket of seaside, a bucket of lake.\nWhatever you put in, the bucket can take.",
-    'thing_banana': "A snack with its own clever wrapper.\nBend it just so, and the inside says *hello*.",
-    'thing_tyre': "A circle that's flat on the ground, then it rolls.\nIt's good for the *going*, but odd in the bowls."
+    'thing_birthday-cake-with-one-candle':
+      "A cake. With *one* candle, all on its own.\nIt's somebody's somewhere. (You'll know when it's known.)",
+
+    'thing_books':
+      "A book, half-read, with a leaf for a marker --\nthe story has *paused*, in a thicket, a parker.",
+
+    'thing_teddybear':
+      "A teddy, polite, who's a *very* good listener.\nHe is paid in small hugs. (His salary's *whisker*.)",
+
+    'thing_flashlight':
+      "A torch, with a sun in its small metal head --\nit makes morning wherever you stand. (Or your bed.)",
+
+    'thing_microscope':
+      "A brass eye for *tiny*. A fly's wing's a window;\na grain of small dust is a galaxy, in show.",
+
+    'thing_globe':
+      "A whole world, in a hand. Spin it. Point. *Imagine.*\nThe spot where you stop is where somebody's grinnin'.",
+
+    'thing_hourglass':
+      "Sand falling slowly: a *now* into *was*.\nThe heap at the bottom is *story*, because.",
+
+    'thing_bucket':
+      "A bucket of seaside, a bucket of lake.\nWhatever you pour in -- the bucket will take.",
+
+    'thing_banana':
+      "A snack with a wrapper its grew, on its own.\nUnzip the small zipper. (No teeth. Just bone-known.)",
+
+    'thing_tyre':
+      "A round thing that *rolls* if you give it a shove.\nWhich means it loves *forward*. (Which I love. I love.)"
   };
-  return map[key] || "Tucked safely inside the bag.";
+  return map[key] || "Tucked safely inside the bag.\nIt waits, in the warm of the dark.";
 }

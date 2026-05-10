@@ -10,19 +10,22 @@ import Phaser from 'phaser';
 
 const VERSE = [
   "Hello! I'm Amelia. The world is below.",
-  "Click anywhere on it -- I walk where I go.",
+  "Click *anywhere* on it -- I walk where I go.",
   "",
-  "Click *peeps*, click *animals*, click *things* on the floor --",
-  "And listen for rhymes, then click some more.",
+  "Click *peeps*, click *animals*, click *things* on the ground --",
+  "they'll all have a rhyme, or a fact, or a sound.",
   "",
-  "Pick up shiny *gems* and they'll fly to the top --",
-  "They add up like sums, the math doesn't stop.",
+  "Pick up the small *gems* -- they fly to the top.",
+  "They add up like *sums*. (The math doesn't stop.)",
   "",
   "Pick up *small things* -- they slide into my bag.",
-  "Tap the backpack to peek. (It's a fine little brag.)",
+  "Tap the *backpack* to peek. (It's a fine little brag.)",
   "",
-  "If a *door* or a *ladder* is what you've spied,",
-  "Just click on it -- and I'll go for a ride."
+  "If a *door* or a *ladder* is what you have spied,",
+  "just click it -- and I'll happily go for a ride.",
+  "",
+  "And the *star* up there? Quests! For when you've done deeds --",
+  "you'll find them inside it, with stones for your needs."
 ];
 
 const CONTINUE_LABEL = "Off we go!";

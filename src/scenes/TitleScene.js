@@ -15,8 +15,8 @@ import Phaser from 'phaser';
 
 const TITLE_TEXT = "Take the Long Way";
 const SUBTITLE_LINES = [
-  "A garden, a lake, a friend on a path,",
-  "A bear-butterly, and a smidgen of math."
+  "A garden, a lake, a friend on the path,",
+  "a bear-butterly, and the smallest of math."
 ];
 
 const PLAY_LABEL = "Let's go!";

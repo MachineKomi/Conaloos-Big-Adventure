@@ -14,57 +14,57 @@
  */
 
 export const QUEST_DEFS = [
-  // -- Easy starter quests ----------------------------------------
+  // -- First-step beats --------------------------------------------
   {
     id: 'first-gem',
-    title: "First sparkle",
-    desc: "Collect your first gem.",
+    title: "A first small sparkle",
+    desc: "Pick up your very first gem.",
     target: 1,
     reward: 3,
     matches: (evt) => (evt.type === 'gem-collected' ? 1 : 0)
   },
   {
     id: 'first-thing',
-    title: "First treasure",
-    desc: "Pick up your first thing.",
+    title: "A pocket begins",
+    desc: "Pick up your first something to carry.",
     target: 1,
     reward: 5,
     matches: (evt) => (evt.type === 'thing-collected' ? 1 : 0)
   },
   {
     id: 'first-portal',
-    title: "First wander",
-    desc: "Travel to a new scene.",
+    title: "Out the door, then",
+    desc: "Take a portal to somewhere new.",
     target: 1,
     reward: 4,
-    // Counts only visits AFTER the first scene.
     matches: (evt) => (evt.type === 'scene-visited' && !evt.firstScene ? 1 : 0)
   },
 
-  // -- Mid-game collectathons -------------------------------------
+  // -- Stone-collectors --------------------------------------------
   {
     id: 'gem-rookie',
-    title: "Gem rookie",
-    desc: "Collect 25 stones.",
+    title: "A handful of stones",
+    desc: "Add 25 stones to the bag.",
     target: 25,
     reward: 8,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
   {
     id: 'gem-hoarder',
-    title: "Gem hoarder",
-    desc: "Collect 100 stones.",
+    title: "Properly-good hoarder",
+    desc: "Get the bag up to 100 stones.",
     target: 100,
     reward: 20,
     matches: (evt) => (evt.type === 'gem-collected' ? evt.value : 0)
   },
+
+  // -- Thing-collectors --------------------------------------------
   {
     id: 'thing-collector',
-    title: "Pocket of plenty",
-    desc: "Collect 5 different things.",
+    title: "A clever, busy bag",
+    desc: "Carry five different things at once (or by turns).",
     target: 5,
     reward: 10,
-    // Each unique thing key counts once.
     _seen: new Set(),
     matches: function (evt) {
       if (evt.type !== 'thing-collected') return 0;
@@ -73,10 +73,12 @@ export const QUEST_DEFS = [
       return 1;
     }
   },
+
+  // -- Bright sparks (quiz-correct) --------------------------------
   {
     id: 'quiz-novice',
-    title: "Bright spark",
-    desc: "Get 3 quiz answers right.",
+    title: "A bright little spark",
+    desc: "Get three quiz questions right.",
     target: 3,
     reward: 8,
     matches: (evt) => (evt.type === 'quiz-correct' ? 1 : 0)
@@ -84,15 +86,17 @@ export const QUEST_DEFS = [
   {
     id: 'quiz-scholar',
     title: "Scholar of small things",
-    desc: "Get 10 quiz answers right.",
+    desc: "Get ten quiz questions right.",
     target: 10,
     reward: 18,
     matches: (evt) => (evt.type === 'quiz-correct' ? 1 : 0)
   },
+
+  // -- Wanderers ---------------------------------------------------
   {
     id: 'wanderer',
-    title: "Long-way wanderer",
-    desc: "Visit 5 different scenes.",
+    title: "Off the beaten path",
+    desc: "Visit five different scenes.",
     target: 5,
     reward: 15,
     _seen: new Set(),
@@ -105,10 +109,9 @@ export const QUEST_DEFS = [
   },
   {
     id: 'globetrotter',
-    title: "Whole-world walker",
-    desc: "Visit every scene.",
-    target: 11, // matches current scene count; quest will simply
-                // require all when more land
+    title: "The whole-world walker",
+    desc: "Visit every scene there is.",
+    target: 11,
     reward: 30,
     _seen: new Set(),
     matches: function (evt) {
@@ -119,22 +122,30 @@ export const QUEST_DEFS = [
     }
   },
 
-  // -- Specific items ---------------------------------------------
+  // -- Specific finds ---------------------------------------------
   {
     id: 'sweet-tooth',
-    title: "Sweet tooth",
-    desc: "Find the birthday cake.",
+    title: "Whose birthday's this?",
+    desc: "Find the cake with the one little candle.",
     target: 1,
     reward: 5,
     matches: (evt) => (evt.type === 'thing-collected' && evt.key === 'thing_birthday-cake-with-one-candle' ? 1 : 0)
   },
   {
     id: 'bring-your-buddy',
-    title: "Comfort along",
-    desc: "Find the teddy bear.",
+    title: "Soft and quiet",
+    desc: "Find the teddy who waits at the door.",
     target: 1,
     reward: 5,
     matches: (evt) => (evt.type === 'thing-collected' && evt.key === 'thing_teddybear' ? 1 : 0)
+  },
+  {
+    id: 'star-finder',
+    title: "Stars in pockets",
+    desc: "Hold the hourglass in your hand.",
+    target: 1,
+    reward: 6,
+    matches: (evt) => (evt.type === 'thing-collected' && evt.key === 'thing_hourglass' ? 1 : 0)
   }
 ];
 

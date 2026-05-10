@@ -1,5 +1,79 @@
 # Changelog
 
+## 2026-05-09 — v1.6: a writing pass
+
+A focused pass on the prose. Influences: Dr Seuss (anapestic
+mischief), Roald Dahl (unbothered absurdity), Julia Donaldson
+(clean-rhyme tenderness), and the best Maxis edutainment
+(facts smuggled, never lectured).
+
+### Character dialogue (full rewrite)
+
+Every character has a fresh 6–7 line pool, each line written
+to *scan* read aloud, with a clearer voice per character:
+
+- **Amelia** — tiny philosopher; declarative; surprising.
+- **Cosenae** — confident half-facts ("a bee can lift up a tree").
+- **Poona** — bursting with plans she never finishes.
+- **Lulumi** — patient list-keeper; quiet wonder.
+- **mommy** — observational; small details treated as gifts.
+- **daddy** — calm; humming between words; secretly delighted.
+- **Keefa** — half-singing; hears music in everything.
+- **Loosa** — long pauses; dry; ancient.
+- **Tootsie** — BRIGHT; EAGER; many exclamations.
+- **Wawoo** — mechanical poet; one "wawoo" per response.
+- **Konessa** — soft, focused, single image per line.
+- **Conaloo** — warm couplets; honey + rhyme.
+- **Monaloo** — light, two-line responses with a shorter second.
+- **Cofeenie** — royal-but-bunny decrees.
+- **Lucy** — quiet noticer of small things.
+- **Pepsi** — narrator describes; he punctuates with boofs.
+- **Seesa** — HYPER pink bee, sentences sometimes end before.
+
+### Quizzes (warmer + more variety)
+
+Cosenae now has 9 questions (math, day/night, animals, plants,
+size, alive-vs-not). Lulumi has 7 (rhymes, seasons, colours,
+shapes, letters, quadrupeds). Conaloo and Amelia have rich
+preference-question pools. Tootsie and Pepsi added with
+charming cheerful pools. Every wrong-answer reaction is now a
+genuine *teach*, not a brisk correction.
+
+### Quest titles + descriptions
+
+Quest text now scans like a mini-book: "A first small sparkle"
+(first gem), "A pocket begins" (first thing), "Out the door,
+then" (first portal), "A handful of stones" (25 gems), "A
+clever, busy bag" (5 things), "A bright little spark" (3 quiz
+wins), "Off the beaten path" (5 scenes), "The whole-world
+walker" (every scene), "Whose birthday's this?" (cake),
+"Soft and quiet" (teddy), and a new "Stars in pockets" for
+the hourglass.
+
+### Inventory descriptions
+
+Each item is now a tiny couplet — read aloud they each scan
+as a poem, not a label. Cake, books, teddy, flashlight,
+microscope, globe, hourglass, bucket, banana, tyre.
+
+### Inventory-aware reactions
+
+Each peep's "oh, I notice you have…" lines tightened.
+Every line now lands on an image or a turn.
+
+### Scene lore
+
+Polished lines for: rocketship countdown, trade, sun, hearth,
+window, tea, shelf, tree-A, tree-B, lake, mountain, pebbles.
+The teaching beats are still smuggled, but the language is
+sharper and rhymes cleaner.
+
+### Tutorial + title
+
+Tutorial now mentions the gem-counter, the bag, and the
+quest star. Title subtitle: "A garden, a lake, a friend on
+the path, / a bear-butterly, and the smallest of math."
+
 ## 2026-05-09 — v1.5: math reveal polish + dialogue stays + quests + buddy growth
 
 ### Gem math display

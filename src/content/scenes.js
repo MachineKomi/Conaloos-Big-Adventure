@@ -166,9 +166,10 @@ export const scenes = {
       tinyMuseum('countdown',
         { x: 0.50, y: 0.20, w: 0.16, h: 0.18 },
         [
-          "Five! Four! Three! Two! One! -- and the rocket would go.\nA countdown is *backwards*, in case you don't know.",
-          "Why backwards? Well, ZERO's the moment of go.\nSo we count toward the zero, all small, in a row.",
-          "Five fingers, four toes-on-a-paw, three small bears,\nTwo eyes-on-a-Conaloo, one nose. (Then up there.)"
+          "*Five! Four! Three! Two! One!* -- and the rocket would go.\nA countdown's *backwards*. Did you know? Did you know?",
+          "Why *backwards*? Because *zero* is the moment of *go*.\nSo we count *toward* the zero, all small in a row.",
+          "Five fingers. Four toes-on-a-paw. Three small bears.\nTwo eyes-on-a-Conaloo. One *nose*. (Then up there.)",
+          "Counting *backwards* is harder than counting up forward.\nIt's the brain doing pull-ups -- not running, just *toward*."
         ],
         'numbers'),
 
@@ -178,16 +179,17 @@ export const scenes = {
         speaker: 'thing_teddybear',
         collect: 'thing_teddybear',
         responses: [
-          { text: "A teddy left out under the rocket's broad shadow --\nHe came to watch lift-off (he wasn't quite ready, though).", theme: 'emotions' }
+          { text: "A teddy left out, in the rocket's broad shadow --\nhe'd come to watch lift-off. He's *almost* ready, though.", theme: 'emotions' }
         ]
       },
 
       tinyMuseum('trade',
         { x: 0.30, y: 0.78, w: 0.10, h: 0.12 },
         [
-          "A trade is a swap of one thing for another --\nA pebble for peach, or a pear from your brother.",
-          "The thing about trading is *both* people gain --\nIf one of you doesn't, you ought to abstain.",
-          "Sometimes the best trade is *nothing for nothing* --\nWhich means: keep your peach. (We're already enough thing.)"
+          "A *trade* is a swap of one thing for another --\na pebble for peach, or a pear from your brother.",
+          "The trick about trading? Both people should *gain*.\nIf one of you doesn't, the trade is in *vain*.",
+          "Sometimes the best trade is *nothing for nothing* --\nwhich means: 'keep your peach. You're already *something*.'",
+          "Long, long ago, before *money* was made,\npeople just *bartered*: a pot for a spade."
         ],
         'economics'),
 
@@ -197,16 +199,16 @@ export const scenes = {
         speaker: 'thing_banana',
         collect: 'thing_banana',
         responses: [
-          { text: "Cosenae's lost his banana, it seems --\nA snack on the path, of his after-lunch dreams.", theme: 'language' }
+          { text: "Cosenae mislaid a banana, today --\na yellow surprise on his after-lunch way.", theme: 'language' }
         ]
       },
 
       questionStone('sun',
         { x: 0.10, y: 0.04, w: 0.20, h: 0.20 },
         [
-          "The sun is a star, did you know it? It's true.\nA terrible-far-away friend, looking at you.",
-          "If you hold up a hand, you can blot out the sun --\nWhich means hands are bigger. (Well, sort of. Sort of one.)",
-          "The light that arrives took a while to be here.\nWhat you're seeing is yesterday, mostly, my dear."
+          "The sun is a *star*. (Did you know? It's quite true.)\nA terribly-far-away friend, looking at you.",
+          "Hold up your hand -- you can *blot out* the sun.\nWhich means hands are *bigger*. (Well, sort of. Sort-of-one.)",
+          "The sunlight that lands here took *eight whole minutes* --\nso the sun you see *now* is the *sun-from-eight-minutes-ago*-ed."
         ],
         'science'),
 
@@ -285,36 +287,40 @@ export const scenes = {
       tinyMuseum('hearth',
         { x: 0.40, y: 0.20, w: 0.20, h: 0.40 },
         [
-          "A hearth is a hole that we ask for a fire,\nIt warms a whole room and a half of a choir.",
-          "Long ago, hearths were the heart of a place --\nA warm in the dark and a light on a face.",
-          "The smoke would go up through a hat in the roof.\n(That hat is a chimney. That fact is a proof.)"
+          "A *hearth* is a hole where we politely ask *fire*.\nIt warms a whole room and a half of a choir.",
+          "Long ago, the hearth was the *heart* of a place --\na warm in the dark, and a light on a face.",
+          "The smoke goes up through a hat in the roof --\nthat hat is a *chimney*. (That fact is the proof.)",
+          "Stories are *told* by the fire's small glow.\nThey're warmer that way -- and listeners know."
         ],
         'culture-history'),
 
       questionStone('window',
         { x: 0.04, y: 0.10, w: 0.20, h: 0.30 },
         [
-          "What's on the other side of a window, today?\nA bird? A whole forest? A field full of hay?",
-          "Why is it that windows make outside more outside?\nAnd inside more inside? (You decide.)",
-          "If a window remembered what passed through its glass,\nWould it tell you the geese, or the breath of the grass?"
+          "What's on the *other* side of a window, today?\nA bird? A whole forest? A field full of hay?",
+          "Why is it that windows make *outside* more outside,\nand *inside* more inside? (Ah, you decide.)",
+          "If a window remembered what passed through its glass --\nwould it tell you the *geese*, or the breath of the grass?",
+          "Glass is a *liquid* that's frozen in place.\nIf you waited a thousand years, it'd droop in its face."
         ],
         'philosophy'),
 
       tinyMuseum('tea',
         { x: 0.30, y: 0.55, w: 0.10, h: 0.18 },
         [
-          "A cup of warm tea, when it's split into two,\nIs not really halved -- it is *doubled*, with you.",
-          "The recipe? Simple. A leaf and some heat.\nA cup, and a moment, and someone to meet.",
-          "Enough is a feeling that's quiet and round --\nIt's not a *too little*, and not a *too found*."
+          "A cup of warm tea, when it's *split* into two,\nis not halved at all -- it's *doubled*, with you.",
+          "The recipe's simple: a leaf, and some heat,\na cup, and a moment, and someone to meet.",
+          "*Enough* is a feeling -- it's quiet, and round.\nIt is not a *too-little*. It is not a *too-found*.",
+          "Tea is a leaf that has gone for a swim.\nIt's worth waiting for. (And so are *thim*.)"
         ],
         'economics'),
 
       tinyMuseum('shelf',
         { x: 0.78, y: 0.30, w: 0.18, h: 0.30 },
         [
-          "One book on the shelf. Then a second. Then three.\nFour books all in order, just lined up to be.",
-          "Sorting is putting the smalls before bigs --\nWhich works just as well for your toes as for figs.",
-          "A list is a line of the things in a row --\nAnd then, if you'd like, you can rearrange so."
+          "One book. Then *two* books. Then *three* books. Then *four*.\nThe shelf is a *list* you can hold -- nothing more.",
+          "Sorting's just *putting the smalls before bigs*.\nIt works just as well for your toes as for figs.",
+          "A *list* is a line of the things in a row --\nthen, if you fancy, *rearrange them*. (Just so.)",
+          "Computers do this trick a *billion* times a second.\nWe call it a *sort*. (And nobody quite reckoned.)"
         ],
         'computer-science'),
 
@@ -388,28 +394,31 @@ export const scenes = {
       tinyMuseum('lake',
         { x: 0.20, y: 0.40, w: 0.60, h: 0.20 },
         [
-          "A lake is a puddle that decided to stay,\nIt's gathered the rain of a long, long, long day.",
-          "It's still on the top, but it's busy below --\nWith fishes and snail-folk and weeds in a row.",
-          "It mirrors the mountains, the sky, and the trees.\nThe trick of the mirror is just standing at ease.",
-          "A lake holds the colours of all that's around --\nAnd hands them right back, when the wind isn't loud."
+          "A *lake* is a puddle that decided to *stay*.\nIt's gathered the rain of a long, long, long day.",
+          "Still on the top -- but it's *busy* below,\nwith fishes and snail-folk and weeds in a row.",
+          "It mirrors the mountains, the sky, and the trees.\nThe trick of a mirror is just standing at ease.",
+          "A lake holds the colours of all that's around --\nthen hands them *right back*, when the wind isn't loud.",
+          "The *deepest* lakes go down for a *kilometre*.\nThat's *one thousand metres* -- and then six and a metre."
         ],
         'science'),
 
       questionStone('mountain',
         { x: 0.05, y: 0.08, w: 0.40, h: 0.30 },
         [
-          "How long, do you think, has that mountain been there?\nLonger than rabbits. Longer than care.",
-          "If a mountain could whisper, what would it confide?\nThe weather of years? The names of the tide?",
-          "What lives at the top of a mountain that high?\nA wind? A small shrew? A whole house of sky?"
+          "How long has that mountain been *standing* up there?\nLonger than rabbits. Longer than care.",
+          "If a mountain could *whisper*, what would it confide?\nThe weather of *years*? The *names* of the tide?",
+          "What lives at the top of a mountain *that* high?\nA wind? A small shrew? A whole *house* of sky?",
+          "Mountains *grow* (very slowly), each year by a *bit*.\nLike fingernails -- only with stone, in a fit."
         ],
         'philosophy'),
 
       tinyMuseum('pebbles',
         { x: 0.40, y: 0.78, w: 0.20, h: 0.18 },
         [
-          "One pebble, two pebbles, three pebbles, four --\nAnd after that's done, you can ask for some more.",
-          "Five pebbles, six pebbles, seven, then eight --\nThe pile of pebbles is starting to weight.",
-          "A number's a name that we give to a count --\nA way to say HOW MUCH, a way to say AMOUNT."
+          "*One* pebble, *two* pebbles, *three* pebbles, *four*.\nAnd after that's done, you can ask for some more.",
+          "*Five* pebbles, *six* pebbles, *seven*, then *eight*.\nThe pile of pebbles is starting to *weight*.",
+          "A *number* is a name that we give to a *count* --\na way to say HOW MUCH, a way to say AMOUNT.",
+          "And here's a small secret: there's *no biggest number*.\nThe numbers go on. (Past your bedtime, past slumber.)"
         ],
         'numbers'),
 
@@ -508,18 +517,20 @@ export const scenes = {
       tinyMuseum('tree-A',
         { x: 0.0, y: 0.30, w: 0.18, h: 0.55 },
         [
-          "A tree, all in colours, is mostly a green --\nBut every leaf carries a different sheen.",
-          "Two greens, made together: a yellow and blue.\nThe trees know this trick. (Now you know it too.)",
-          "Each leaf is a hand that the wind likes to shake.\nThe tree doesn't mind. The tree's wide awake."
+          "A tree, all in colours, is *mostly* a green --\nbut every leaf carries a *different* sheen.",
+          "*Two* greens make a tree-green: a yellow and blue.\nThe trees know this trick. (Now you know it too.)",
+          "Each leaf is a hand that the wind likes to shake.\nThe tree doesn't mind. The tree's *wide* awake.",
+          "A leaf is a *factory*: in the back, sun is *eaten*\nand turned into food. (Plants, my friend, are quite *neat-en*.)"
         ],
         'art-history'),
 
       tinyMuseum('tree-B',
         { x: 0.82, y: 0.30, w: 0.18, h: 0.55 },
         [
-          "*Tree* in some languages: arbre, baum, ki, ya --\nThe shape is the same, but the names go quite far.",
-          "A tree is so quiet it sounds like a bell --\nThe slow kind of bell that you ring just to dwell.",
-          "It stands and it stands. And the standing's the song.\nWe're walking past trees that have stood -- oh, so long."
+          "*Tree* in some languages: arbre, baum, ki, ya.\nThe shape is the same -- but the *names* go quite far.",
+          "A tree is so quiet it sounds like a *bell* --\nthe slow kind of bell that you ring just to *dwell*.",
+          "It stands and it stands. And the standing's the *song*.\nWe're walking past trees that have stood -- oh, so long.",
+          "Some trees are *older* than every grandparent stacked.\nA redwood remembers when *Romans* relaxed."
         ],
         'language'),
 
