@@ -121,12 +121,22 @@ export class QuestHUDScene extends Phaser.Scene {
     if (evt.newlyCompleted?.length) {
       for (const entry of evt.newlyCompleted) {
         this._enqueueToast(entry.def);
-        // Auto-claim — credit gems via gemBag (uses a fake gem key
-        // so the icon updates).
         const reward = entry.def.reward || 0;
+        // CRITICAL: defer the gemBag.add by one frame.
+        //
+        // We're being called *inside* gemBag.add's own listener loop
+        // (the kid collected a gem → main.js fired quests.report →
+        // we got here). Calling gemBag.add synchronously now would
+        // recurse: the recursive add mutates gemBag.total, fires all
+        // listeners again with the reward, and then the outer add's
+        // remaining listeners (notably GemHUD's batch handler) read a
+        // mutated gemBag.total via `newTotal`. The result is a tangle
+        // of out-of-order events that produced the "double equation"
+        // bug. Deferring by one frame lets the outer add's loop
+        // finish first; then the reward arrives as a fresh, in-order
+        // event that joins the kid's still-open batch cleanly.
         if (reward > 0 && this.gemBag) {
-          // Pick gem_5 as the visual icon for the reward chunk.
-          this.gemBag.add('gem_5', reward);
+          this.time.delayedCall(0, () => this.gemBag.add('gem_5', reward));
         }
         this.questManager.claim(entry.def.id);
       }

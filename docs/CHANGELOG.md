@@ -1,5 +1,82 @@
 # Changelog
 
+## 2026-05-10 — v1.9.2: the case of the second equation
+
+The user reported: "It correctly shows the gems you've just
+collected and the sub total. it then correctly shows the current
+total + sub total = new total. but then after it updates the new
+total another equation appears and I don't know where that comes
+from."
+
+It was two compounding bugs.
+
+### Bug 1: quest reward recursed inside `gemBag.add`'s listener loop
+
+`gemBag.add()` fires its listeners synchronously in a `for` loop.
+The first listener (main.js) called `quests.report`; if a quest
+completed, `QuestHUD._onChange` then called `gemBag.add(reward)`
+**recursively, while the outer add's `for` loop was still
+iterating**. The recursive call mutated `this.total` and fired all
+listeners again with the reward. Then control returned to the
+outer loop, which called the next listener — `GemHUD._onChange` —
+with `newTotal: this.total`. But `this.total` was now the
+post-reward value, not the original gem's value. The events
+arrived at GemHUD out of order and with stale `newTotal`.
+
+Fixed by deferring the quest reward `gemBag.add(...)` by one frame
+(`time.delayedCall(0, ...)`) so the outer add's listener loop can
+finish first. The reward then arrives as a fresh, in-order event
+that joins the kid's still-open batch cleanly — so the equation
+includes the reward gems, all in one math reveal.
+
+### Bug 2: `_settleBatch` could fire twice for the same batch
+
+If a new gem arrived during the settle's animation phase (between
+the subtotal reveal and the panel fade), `_onChange` reset the
+settle timer. The timer then fired `_settleBatch` AGAIN later —
+with the *updated* subtotal/pickups — while the first settle's
+animation chain was still mid-flight using stale closure values.
+Two equations played in overlapping order and the panel turned
+into a moving target. **This was the unexplained "second equation"
+the user saw.**
+
+Fixed by rebuilding the GemHUD batch as a strict three-state
+machine:
+
+```
+   idle ──gem──▶ collecting ──1.4s of quiet──▶ settling
+                     ▲                              │
+                     │     gems queued during       │
+                     │     settle drain into a      │
+                     └─────fresh batch on fade──────┘
+```
+
+The settle's animation captures all values up-front and never
+reads `this._batchPickups` again — so even if a gem arrives
+mid-animation, the running equation can't be poisoned. A gem
+arriving in the `settling` state is pushed onto a `_pendingPickups`
+queue; when the panel fades, the queue drains into a fresh
+`collecting` batch with a clean new equation. Sequential, never
+overlapping.
+
+### Other tightening
+
+- `_reposition()` now only re-renders the live `3 + 5 + 1` panel
+  when state is `collecting` — never during `settling`, so a resize
+  event mid-equation can't overwrite the captured equation text.
+- `_fullReset` (called from "new game") cancels every in-flight
+  timer, animation timer, and tween, then snaps the counter.
+- Trace-tested across four scenarios: rapid pickups, quest reward
+  during collecting, kid-collects-during-settle (now produces two
+  clean sequential equations instead of an overlap), and new-game
+  during settle (every animation cleanly cancelled).
+
+### Touched
+
+- **Updated:** `src/systems/GemHUD.js` (full rewrite of batch
+  logic as a state machine), `src/systems/QuestHUD.js` (defer
+  reward gemBag.add by one frame).
+
 ## 2026-05-10 — v1.9.1: queued toasts, gems-not-stones
 
 ### Quest-complete toasts queue, not stack
