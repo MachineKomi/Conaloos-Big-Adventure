@@ -564,6 +564,20 @@ export class GameScene extends Phaser.Scene {
   _afterResponse(hotspot, response) {
     this._applyRemix(response);
 
+    // Tell the quest tracker every hotspot tick. Lets puzzly quests
+    // match on hotspot id / type / speaker / theme without needing
+    // a new event type per category.
+    if (hotspot) {
+      this.services.quests?.report?.({
+        type: 'hotspot-clicked',
+        id: hotspot.id,
+        hotspotType: hotspot.type,
+        speaker: hotspot.speaker || null,
+        theme: response?.theme || null,
+        slug: this.slug
+      });
+    }
+
     // Rocketship: launch on first tap, every time. Otherwise: chance
     // of a small special animation.
     if (hotspot?.speaker === 'thing_rocketship') {
@@ -732,8 +746,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   _rocketLaunch(sprite) {
-    if (sprite._launched) return;
+    if (sprite._launched || sprite._launching) return;
+    // Mark BOTH flags up-front. _launched stops re-entry from the
+    // hotspot logic; _launching tells the HotspotManager to bail on
+    // any pointerover/out/up events on this sprite for the duration
+    // of the launch (otherwise hover/click would killTweensOf and
+    // strand the rocket mid-air — the v1.8 "starts to launch and
+    // then stops" bug). Both stay true until the sprite is destroyed.
+    sprite._launching = true;
     sprite._launched = true;
+    sprite.disableInteractive(); // belt + braces
+
+    // Tell the quest tracker so we can reward rocket fans.
+    this.services.quests?.report?.({
+      type: 'rocket-launched',
+      slug: this.slug
+    });
+
     const startY = sprite.y;
     const startX = sprite.x;
     const sceneH = this.scale.height;
@@ -748,6 +777,7 @@ export class GameScene extends Phaser.Scene {
       yoyo: true,
       repeat: 4,
       onComplete: () => {
+        if (!sprite.active) return;
         sprite.x = startX;
         this.services.audio?.playSfx?.('sfx_swoosh');
 
@@ -765,6 +795,9 @@ export class GameScene extends Phaser.Scene {
           });
         }
 
+        // Tiny celebratory hop from Amelia — she watches it go.
+        this.services.protagonist?.jumpCelebrate?.();
+
         // Phase 2: full launch off the top of the screen (and gone).
         this.tweens.add({
           targets: sprite,
@@ -778,6 +811,7 @@ export class GameScene extends Phaser.Scene {
             // Destroy so the rocket stays gone for this visit.
             // (It re-renders next time the scene is entered.)
             this.spritesByKey.delete('thing_rocketship');
+            sprite._launching = false; // (sprite is being destroyed anyway)
             sprite.destroy();
           }
         });

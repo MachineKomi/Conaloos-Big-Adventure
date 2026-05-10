@@ -150,14 +150,21 @@ export const scenes = {
         { x: 0.36, y: 0.48, w: 0.14, h: 0.14 },
         { theme: 'animals' }),
 
-      // Rocketship: ALWAYS launches on first tap, no dialogue. The
-      // launch IS the response. Far more reliable + satisfying than
-      // the previous click-counter approach.
+      // Rocketship: ALWAYS launches on first tap, no walk-up, no
+      // dialogue. The launch IS the response.
+      // - `instant: true` skips the walk-up so the kid taps and
+      //   the rocket goes — feels right.
+      // - `priority: 'high'` makes the zone win click-overlap
+      //   against neighbouring character zones (Conaloo, Cosenae)
+      //   even though the sprite renders visually behind them.
+      // - Bounds cover the rocket body so any tap on it lands.
       {
         id: 'rocketship',
         type: 'reactor',
         cursor: 'sparkle',
-        bounds: { x: 0.58, y: 0.55, w: 0.18, h: 0.35 },
+        instant: true,
+        priority: 'high',
+        bounds: { x: 0.56, y: 0.42, w: 0.20, h: 0.43 },
         speaker: 'thing_rocketship',
         rewardGemChance: 0,
         responses: []
@@ -489,11 +496,18 @@ export const scenes = {
         { x: 0.70, y: 0.24, w: 0.16, h: 0.16 },
         { theme: 'animals' }),
 
+      // Playground rocket. The playground's character zones overlap
+      // each other heavily, so `priority: 'high'` is the only clean
+      // way to make sure the rocket wins clicks against Tootsie,
+      // Amelia, and Poona standing around it. `instant: true` skips
+      // the walk-up.
       {
         id: 'playground-rocket',
         type: 'reactor',
         cursor: 'sparkle',
-        bounds: { x: 0.38, y: 0.55, w: 0.18, h: 0.40 },
+        instant: true,
+        priority: 'high',
+        bounds: { x: 0.40, y: 0.55, w: 0.16, h: 0.38 },
         speaker: 'thing_rocketship',
         rewardGemChance: 0,
         responses: []

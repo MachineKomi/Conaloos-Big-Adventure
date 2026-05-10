@@ -301,16 +301,22 @@ export class QuestHUDScene extends Phaser.Scene {
     this._panelG.clear();
     for (const o of this._panelItems) o.destroy();
     this._panelItems = [];
+    this._teardownScroll();
     if (!this.open) return;
 
     const list = this.questManager.list();
     const { height } = this.scale;
     const x = ICON_X;
     const y = ICON_Y + ICON_SIZE + 8;
-    const maxRows = Math.min(list.length, Math.floor((height - y - 24) / (ROW_H + ROW_GAP)));
-    const totalH = 60 + maxRows * (ROW_H + ROW_GAP) + 16;
 
-    drawPanel(this._panelG, x, y, PANEL_W, totalH, { radius: RADIUS.panel });
+    // Panel grows to fill available vertical room (capped). Quests
+    // beyond the visible area are reachable via scroll.
+    const panelH = Math.min(height - y - 24, 700);
+    const headerH = 56;
+    const footerPad = 16;
+    const visibleH = panelH - headerH - footerPad;
+
+    drawPanel(this._panelG, x, y, PANEL_W, panelH, { radius: RADIUS.panel });
 
     const title = this.add.text(x + PANEL_W / 2, y + 16, "Quests", {
       fontFamily: TYPE.family,
@@ -319,89 +325,214 @@ export class QuestHUDScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(7601);
     this._panelItems.push(title);
 
-    let rowY = y + 56;
-    for (let i = 0; i < maxRows; i++) {
-      const entry = list[i];
-      const def = entry.def;
-      const rowX = x + ROW_PADDING_X;
-      const rowW = PANEL_W - ROW_PADDING_X * 2;
+    // Completed/total chip just under the title — quick "how am I doing"
+    // glance for the parent.
+    const completed = this.questManager.completedCount();
+    const totalQ = list.length;
+    const summary = this.add.text(x + PANEL_W / 2, y + 44, `${completed} / ${totalQ} done`, {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: `${TYPE.caption}px`,
+      color: COL.inkSoft
+    }).setOrigin(0.5, 0).setDepth(7601);
+    this._panelItems.push(summary);
 
-      // Row background tinted by completion state.
-      const rowBg = this.add.graphics().setDepth(7601);
-      const rowColour = entry.completed ? COL.green : COL.gold;
-      rowBg.fillStyle(rowColour, 0.5);
-      rowBg.fillRoundedRect(rowX, rowY, rowW, ROW_H, RADIUS.chip);
-      this._panelItems.push(rowBg);
+    // Container holds every row. Scrolling = adjusting container.y.
+    const rowsTopY = y + headerH;
+    const rowContainer = this.add.container(0, 0).setDepth(7601);
+    this._rowContainer = rowContainer;
 
-      const titleText = entry.completed ? `✓  ${def.title}` : def.title;
-      const t = this.add.text(rowX + 12, rowY + 8, titleText, {
-        fontFamily: TYPE.family,
-        fontSize: '20px',
-        color: COL.inkHex
-      }).setOrigin(0, 0).setDepth(7602);
-      this._panelItems.push(t);
-
-      const descText = entry.completed
-        ? `(+${def.reward} stones — collected)`
-        : def.desc;
-      const p = this.add.text(rowX + 12, rowY + 36, descText, {
-        fontFamily: TYPE.bodyFamily,
-        fontSize: `${TYPE.caption}px`,
-        color: COL.inkSoft
-      }).setOrigin(0, 0).setDepth(7602);
-      this._panelItems.push(p);
-
-      // Progress bar on the right (only for incomplete quests).
-      if (!entry.completed) {
-        const barW = 130;
-        const barH = 14;
-        const barX = rowX + rowW - barW - 12;
-        const barY = rowY + ROW_H / 2 - barH / 2;
-        const fill = Math.max(0, Math.min(1, entry.progress / def.target));
-
-        const bar = this.add.graphics().setDepth(7602);
-        // Background track
-        bar.fillStyle(COL.ink, 0.18);
-        bar.fillRoundedRect(barX, barY, barW, barH, barH / 2);
-        // Filled portion
-        bar.fillStyle(COL.orange, 1);
-        bar.fillRoundedRect(barX, barY, Math.max(barH, barW * fill), barH, barH / 2);
-        this._panelItems.push(bar);
-
-        const progressLabel = this.add.text(
-          barX + barW / 2,
-          barY + barH / 2,
-          `${entry.progress}/${def.target}`,
-          {
-            fontFamily: TYPE.family,
-            fontSize: '12px',
-            color: '#ffffff',
-            stroke: COL.inkHex,
-            strokeThickness: 3
-          }
-        ).setOrigin(0.5).setDepth(7603);
-        this._panelItems.push(progressLabel);
-      } else {
-        const rewardChip = this.add.text(
-          rowX + rowW - 12,
-          rowY + ROW_H / 2,
-          `+${def.reward}`,
-          {
-            fontFamily: TYPE.family,
-            fontSize: '20px',
-            color: '#ffffff',
-            backgroundColor: COL.orangeHex,
-            padding: { left: 10, right: 10, top: 4, bottom: 4 }
-          }
-        ).setOrigin(1, 0.5).setDepth(7603);
-        this._panelItems.push(rewardChip);
-      }
-
+    let rowY = rowsTopY;
+    for (let i = 0; i < list.length; i++) {
+      this._buildRow(rowContainer, list[i], x + ROW_PADDING_X, rowY, PANEL_W - ROW_PADDING_X * 2);
       rowY += ROW_H + ROW_GAP;
     }
 
+    const totalContentH = rowY - rowsTopY;
+    this._scrollOffset = 0;
+    this._maxScroll = Math.max(0, totalContentH - visibleH);
+
+    // Geometry mask clips the rows to the visible area. The mask
+    // graphics is created via `make` (not added to the scene) — it
+    // exists only as a stencil shape.
+    const maskG = this.make.graphics({ x: 0, y: 0, add: false });
+    maskG.fillStyle(0xffffff);
+    maskG.fillRect(x, rowsTopY, PANEL_W, visibleH);
+    rowContainer.setMask(maskG.createGeometryMask());
+    this._scrollMaskGfx = maskG;
+
+    // Scrollbar (right edge) — only visible when content overflows.
+    if (this._maxScroll > 0) {
+      this._buildScrollbar(x, rowsTopY, PANEL_W, visibleH);
+      this._wireScrollInput(x, rowsTopY, PANEL_W, visibleH);
+    }
+
+    this._panelItems.push(rowContainer);
+    if (this._scrollbarTrack) this._panelItems.push(this._scrollbarTrack);
+    if (this._scrollbarThumb) this._panelItems.push(this._scrollbarThumb);
+
     // Slide the panel down from the icon.
     this._slideDown(this._panelG, this._panelItems, y);
+  }
+
+  /** Add one row's visuals into the row container. Coordinates are
+   *  absolute (scene-space) — the container itself is at (0, 0) and
+   *  pans by changing container.y, with the mask clipping content. */
+  _buildRow(container, entry, rowX, rowY, rowW) {
+    const def = entry.def;
+
+    // Row background tinted by completion state.
+    const bg = this.add.graphics();
+    const rowColour = entry.completed ? COL.green : COL.gold;
+    bg.fillStyle(rowColour, 0.5);
+    bg.fillRoundedRect(rowX, rowY, rowW, ROW_H, RADIUS.chip);
+    container.add(bg);
+
+    const titleText = entry.completed ? `✓  ${def.title}` : def.title;
+    const t = this.add.text(rowX + 12, rowY + 8, titleText, {
+      fontFamily: TYPE.family,
+      fontSize: '20px',
+      color: COL.inkHex,
+      wordWrap: { width: rowW - 160, useAdvancedWrap: true }
+    }).setOrigin(0, 0);
+    container.add(t);
+
+    const descText = entry.completed
+      ? `(+${def.reward} stones — collected)`
+      : def.desc;
+    const p = this.add.text(rowX + 12, rowY + 36, descText, {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: `${TYPE.caption}px`,
+      color: COL.inkSoft,
+      wordWrap: { width: rowW - 160, useAdvancedWrap: true }
+    }).setOrigin(0, 0);
+    container.add(p);
+
+    if (!entry.completed) {
+      const barW = 130;
+      const barH = 14;
+      const barX = rowX + rowW - barW - 12;
+      const barY = rowY + ROW_H / 2 - barH / 2;
+      const fill = Math.max(0, Math.min(1, entry.progress / def.target));
+
+      const bar = this.add.graphics();
+      bar.fillStyle(COL.ink, 0.18);
+      bar.fillRoundedRect(barX, barY, barW, barH, barH / 2);
+      bar.fillStyle(COL.orange, 1);
+      bar.fillRoundedRect(barX, barY, Math.max(barH, barW * fill), barH, barH / 2);
+      container.add(bar);
+
+      const progressLabel = this.add.text(
+        barX + barW / 2,
+        barY + barH / 2,
+        `${entry.progress}/${def.target}`,
+        {
+          fontFamily: TYPE.family,
+          fontSize: '12px',
+          color: '#ffffff',
+          stroke: COL.inkHex,
+          strokeThickness: 3
+        }
+      ).setOrigin(0.5);
+      container.add(progressLabel);
+    } else {
+      const rewardChip = this.add.text(
+        rowX + rowW - 12,
+        rowY + ROW_H / 2,
+        `+${def.reward}`,
+        {
+          fontFamily: TYPE.family,
+          fontSize: '20px',
+          color: '#ffffff',
+          backgroundColor: COL.orangeHex,
+          padding: { left: 10, right: 10, top: 4, bottom: 4 }
+        }
+      ).setOrigin(1, 0.5);
+      container.add(rewardChip);
+    }
+  }
+
+  /** Build the scrollbar (right edge of the panel). */
+  _buildScrollbar(panelX, areaY, panelW, areaH) {
+    const trackX = panelX + panelW - 16;
+    const trackW = 6;
+    const trackY = areaY + 4;
+    const trackH = areaH - 8;
+
+    const track = this.add.graphics().setDepth(7604);
+    track.fillStyle(COL.ink, 0.12);
+    track.fillRoundedRect(trackX, trackY, trackW, trackH, trackW / 2);
+    this._scrollbarTrack = track;
+
+    const thumb = this.add.graphics().setDepth(7605);
+    this._scrollbarThumb = thumb;
+    this._scrollbarBounds = { trackX, trackW, trackY, trackH };
+    this._renderScrollbarThumb();
+  }
+
+  _renderScrollbarThumb() {
+    if (!this._scrollbarThumb || !this._scrollbarBounds) return;
+    const { trackX, trackW, trackY, trackH } = this._scrollbarBounds;
+    const visibleFrac = trackH / (trackH + this._maxScroll);
+    const thumbH = Math.max(28, trackH * visibleFrac);
+    const thumbY = trackY + (trackH - thumbH) * (this._scrollOffset / this._maxScroll || 0);
+    this._scrollbarThumb.clear();
+    this._scrollbarThumb.fillStyle(COL.orange, 0.85);
+    this._scrollbarThumb.fillRoundedRect(trackX, thumbY, trackW, thumbH, trackW / 2);
+  }
+
+  /** Mouse wheel + drag scrolling on the panel area. */
+  _wireScrollInput(panelX, areaY, panelW, areaH) {
+    // An invisible zone over the rows area catches drags + signals
+    // "wheel within the panel" by tracking pointerover state.
+    const zone = this.add.zone(panelX, areaY, panelW, areaH).setOrigin(0, 0);
+    zone.setInteractive({ useHandCursor: false, draggable: true });
+    zone.setDepth(7600); // below everything else
+    this._scrollZone = zone;
+
+    let dragStartY = 0;
+    let dragStartOffset = 0;
+    zone.on('pointerdown', (pointer) => {
+      dragStartY = pointer.y;
+      dragStartOffset = this._scrollOffset;
+    });
+    zone.on('pointermove', (pointer) => {
+      if (pointer.isDown) {
+        const dy = dragStartY - pointer.y;
+        this._setScroll(dragStartOffset + dy);
+      }
+    });
+
+    // Wheel anywhere over the panel scrolls.
+    this._wheelHandler = (pointer, gameObjects, dx, dy) => {
+      const px = pointer.x, py = pointer.y;
+      if (px < panelX || px > panelX + panelW) return;
+      if (py < areaY || py > areaY + areaH) return;
+      this._setScroll(this._scrollOffset + dy * 0.5);
+    };
+    this.input.on('wheel', this._wheelHandler);
+  }
+
+  _setScroll(v) {
+    const next = Math.max(0, Math.min(this._maxScroll, v));
+    if (next === this._scrollOffset) return;
+    this._scrollOffset = next;
+    if (this._rowContainer) this._rowContainer.y = -next;
+    this._renderScrollbarThumb();
+  }
+
+  _teardownScroll() {
+    if (this._wheelHandler) {
+      this.input.off('wheel', this._wheelHandler);
+      this._wheelHandler = null;
+    }
+    if (this._scrollZone) { this._scrollZone.destroy(); this._scrollZone = null; }
+    if (this._scrollbarTrack) { this._scrollbarTrack.destroy(); this._scrollbarTrack = null; }
+    if (this._scrollbarThumb) { this._scrollbarThumb.destroy(); this._scrollbarThumb = null; }
+    if (this._rowContainer) { this._rowContainer.destroy(); this._rowContainer = null; }
+    if (this._scrollMaskGfx) { this._scrollMaskGfx.destroy(); this._scrollMaskGfx = null; }
+    this._scrollOffset = 0;
+    this._maxScroll = 0;
+    this._scrollbarBounds = null;
   }
 
   _slideDown(panelG, items, restingY) {

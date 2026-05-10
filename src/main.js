@@ -79,12 +79,27 @@ function start() {
   // again).
   const seenQuizzes = new Set();
 
-  // Wire game-system events into the quest tracker.
-  gemBag.onChange(({ delta }) => {
-    if (delta > 0) quests.report({ type: 'gem-collected', value: delta });
+  // Wire game-system events into the quest tracker. Quests get rich
+  // context — current totals, current inventory — so weirder
+  // predicates can check "do I have 8 things at once?" without us
+  // tracking that state inside each quest.
+  gemBag.onChange(({ delta, newTotal }) => {
+    if (delta > 0) {
+      quests.report({ type: 'gem-collected', value: delta, gemTotal: newTotal });
+    }
   });
-  protagonist.onCollectChange((thingKey) => {
-    if (thingKey) quests.report({ type: 'thing-collected', key: thingKey });
+  protagonist.onCollectChange((thingKey, inventorySnapshot) => {
+    if (!thingKey) return;
+    const inv = inventorySnapshot || protagonist.inventory();
+    const uniqueCount = inv.length;
+    const totalCount = inv.reduce((s, it) => s + (it.count || 0), 0);
+    quests.report({
+      type: 'thing-collected',
+      key: thingKey,
+      inventory: inv,
+      uniqueCount,
+      totalCount
+    });
   });
 
   // Replay persisted inventory + gem total into quest progress, so a
@@ -94,11 +109,18 @@ function start() {
   // duplicate celebrations. No HUDs are listening yet at this point.
   if (saveGame.hasSave()) {
     if (gemBag.total > 0) {
-      quests.report({ type: 'gem-collected', value: gemBag.total });
+      quests.report({ type: 'gem-collected', value: gemBag.total, gemTotal: gemBag.total });
     }
-    for (const it of protagonist.inventory()) {
+    const inv = protagonist.inventory();
+    for (const it of inv) {
       for (let i = 0; i < it.count; i++) {
-        quests.report({ type: 'thing-collected', key: it.key });
+        quests.report({
+          type: 'thing-collected',
+          key: it.key,
+          inventory: inv,
+          uniqueCount: inv.length,
+          totalCount: inv.reduce((s, x) => s + (x.count || 0), 0)
+        });
       }
     }
   }
@@ -188,9 +210,11 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
         entry.progress = 0;
         entry.completed = false;
         entry.claimed = false;
-        // Per-quest seen Sets (thing-collector, wanderer) — wipe so a
-        // fresh game can re-earn them.
+        // Per-quest scratchpads (seen Sets, compound-state objects)
+        // are stashed on the def itself. Wipe them so a fresh run
+        // earns each quest cleanly without ghost progress.
         if (entry.def._seen) entry.def._seen.clear();
+        if (entry.def._state) entry.def._state = null;
       }
       quests._sceneCount = 0;
       for (const fn of quests._listeners) fn({ updated: true, newlyCompleted: [] });

@@ -102,7 +102,13 @@ export class HotspotManager {
     // Match the zone's depth to the speaker sprite (if any) so clicks
     // route to the visually-front character when zones overlap. Phaser
     // input with topOnly=true picks the highest-depth interactive hit.
-    if (sprite) zone.setDepth(sprite.depth + 0.5);
+    //
+    // `priority: 'high'` overrides the y-based ordering so a small
+    // hotspot (the rocket) can win overlap against bigger character
+    // zones around it, even though the sprite itself stays visually
+    // behind those characters.
+    if (hotspot.priority === 'high') zone.setDepth(9500);
+    else if (sprite) zone.setDepth(sprite.depth + 0.5);
     else zone.setDepth(ay);
 
     // Resolve baseScale dynamically per event (NOT captured once),
@@ -114,8 +120,17 @@ export class HotspotManager {
     const getBase = () => (sprite ? (sprite._baseScale ?? sprite.scale) : 1);
     let hoverTween = null;
 
+    // A "protected" sprite is one currently mid-special-animation
+    // (rocket launching, etc) that we MUST NOT disturb — killing its
+    // tweens or starting a hover/bounce tween mid-launch would leave
+    // it in a half-finished state. The launch sets sprite._launching
+    // and sprite._launched; while either is true, the zone bails on
+    // every input event so the animation can run to completion.
+    const protectedSprite = () => sprite && (sprite._launching || sprite._launched);
+
     zone.on('pointerover', () => {
       if (!sprite) return;
+      if (protectedSprite()) return;
       sprite.setTint(HOVER_TINT);
       const baseScale = getBase();
       if (Accessibility.reducedMotion) {
@@ -134,6 +149,7 @@ export class HotspotManager {
 
     zone.on('pointerout', () => {
       if (!sprite) return;
+      if (protectedSprite()) return;
       sprite.clearTint();
       hoverTween?.remove();
       hoverTween = null;
@@ -158,6 +174,8 @@ export class HotspotManager {
       if (this._quizFreezeUntil && Date.now() < this._quizFreezeUntil) {
         return;
       }
+      // Don't disturb a sprite mid-special-animation (rocket launch).
+      if (protectedSprite()) return;
 
       const clickPos = pointer && pointer.worldX !== undefined
         ? { x: pointer.worldX, y: pointer.worldY }
@@ -165,10 +183,15 @@ export class HotspotManager {
       this._bounceSprite(sprite, getBase());
       this._emitSparkle(clickPos.x, clickPos.y);
 
-      // Walk Amelia toward the speaker (stopping a sprite-width away)
-      // before delivering the line.
+      // Some hotspots fire instantly without making Amelia walk over —
+      // e.g. the rocket, where the launch IS the response and any walk
+      // would just delay the satisfaction. For everything else, walk
+      // her toward the speaker (stopping a sprite-width away) and only
+      // then deliver the line.
       const protagonist = this.scene.services?.protagonist;
-      if (protagonist && hotspot.type !== 'portal') {
+      if (hotspot.instant) {
+        this._onClick(hotspot, clickPos);
+      } else if (protagonist && hotspot.type !== 'portal') {
         const approachX = sprite ? sprite.x : clickPos.x;
         protagonist.walkTo(approachX, 0, () => this._onClick(hotspot, clickPos), { approach: true });
       } else {

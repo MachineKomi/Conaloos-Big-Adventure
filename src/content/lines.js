@@ -37,7 +37,9 @@ export const genericLines = {
 export const portalLines = [
   "A path? Well, why not -- let us go for a peek.\nThe place at the end is the place that we seek.",
   "Off we go, over and under and through,\nTo somewhere a little less ordinary, too.",
-  "One foot, then another, then onward we tread.\nA new place is waiting, just up there ahead."
+  "One foot, then another, then onward we tread.\nA new place is waiting, just up there ahead.",
+  "*Off we both go*, and the *going's* a *song*.\nThe *somewhere* is *coming*. We won't be too long.",
+  "It's a *blustery* sort of *adventuring* day.\n(*Adventure* is *bother* with *somewhere* to play.)"
 ];
 
 /**
@@ -66,7 +68,9 @@ export const themedLines = {
   philosophy: [
     "Some questions take seconds. Some questions take years.\nAnd some? Well, you carry them all your life, dears.",
     "I think -- and I know -- are not quite the same.\nOne wears a question, and one wears a name.",
-    "Be kind to the small things, the slow things, the new --\nYou were once each of those, and they once will be you."
+    "Be kind to the small things, the slow things, the new --\nYou were once each of those, and they once will be you.",
+    "*Sometimes*, the smallest of things, in your day,\nis the biggest of things, in a quiet kind of way.",
+    "*Doing nothing* often leads to the *very* best of *something*.\nThat's a thing a Bear told me. (Then off he went, humming.)"
   ],
   'art-history': [
     "Long ago, people drew pictures in caves,\nWith soot, and with berries, and ochre that saves.",
@@ -86,7 +90,9 @@ export const themedLines = {
   language: [
     "A rhyme is a kind of a magic, you see --\nTwo words that agree at the end, secretly.",
     "BEAR is a word that means TWO different things:\nThe shaggy old fellow, OR what your arm brings.",
-    "In other lands, water is l'eau, agua, mizu --\nThe puddle's the same; the names crowd it like zoo."
+    "In other lands, water is l'eau, agua, mizu --\nThe puddle's the same; the names crowd it like zoo.",
+    "*Hello* is a word in *every* of country.\nIt sounds a bit different. (But *means* the same *plenty*.)",
+    "Some words, when you say them, are *small fluffy hums*.\nThey go *gently* in ears, like a *patter of thumbs*."
   ],
   science: [
     "The sun is a star, and it's terribly far,\nAnd we are a planet that spins where we are.",
@@ -96,7 +102,9 @@ export const themedLines = {
   emotions: [
     "Some days are a sunshine, some days are a sigh --\nAnd both of them, both of them, deserve a why.",
     "It's fine to be shy and it's fine to be loud,\nThe inside of you is allowed to be proud.",
-    "When something feels big and your eyes feel like rain,\nThat's not a wrong feeling. It just needs a name."
+    "When something feels big and your eyes feel like rain,\nThat's not a wrong feeling. It just needs a name.",
+    "*Bother*, said someone, who once stubbed his toe.\nA *bother* is honest. (And on you both go.)",
+    "*You're braver than you believe* (*I read*, in a book).\nAnd *stronger*. And *wiser*. (At least, on a look.)"
   ]
 };
 

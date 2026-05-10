@@ -1,5 +1,118 @@
 # Changelog
 
+## 2026-05-10 — v1.9: rockets fixed, big quest pack, scrollable log, Pooh warmth
+
+A pass on the rocketry, the quest log, and the prose.
+
+### Rockets, properly this time
+
+Three bugs fixed so the rocket actually works:
+
+1. **Hub rocket "doesn't launch":** Cosenae's hotspot zone overlapped
+   the rocket's, and his higher y-depth meant his zone won the click
+   on the rocket's right half. Same problem in the playground with
+   Tootsie / Amelia / Poona. Fixed by tightening the rocket's bounds
+   AND adding a `priority: 'high'` flag that bumps the zone's input
+   depth to 9500, so the rocket wins overlapping clicks even though
+   the sprite stays visually behind characters.
+2. **"Starts to launch and then stops":** subsequent pointerover /
+   pointerout / pointerup events on the rocket zone called
+   `tweens.killTweensOf(sprite)` mid-launch, which killed the quiver
+   tween and prevented Phase 2. Now any sprite with `_launching` /
+   `_launched` flags makes the zone bail on every input event so the
+   animation runs to completion.
+3. **Walk-then-launch felt sluggish:** new `instant: true` hotspot
+   flag skips the walk-up. The rocket launches the moment you tap.
+   Amelia does a celebratory hop when it goes.
+
+### Quest pack expansion (now 38 quests)
+
+Big expansion from 13 to 38 quests, including:
+- **Rocket quests:** "Up she goes!" (1 launch), "Two rockets, two
+  skies" (launch in both gardens), "Rocket fan, first class" (10
+  launches total).
+- **Stone milestones:** gem-tycoon (250), gem-emperor (500).
+- **Bag milestones:** thing-archivist (10 unique), one-of-each
+  (every collectable at once), a-full-bag (8 things at once).
+- **Quiz:** quiz-doctor (25 correct).
+- **Puzzly / riddly:** museum-curator (5 different fact-stones),
+  wonderer (10 question stones), friend-list (12 unique characters),
+  tap-a-hundred, philosopher / naturalist / budding-scientist /
+  language-friend (theme-tagged hotspots), scholar-and-stones (the
+  microscope + 100 stones), evening-quiet, morning-bright.
+
+To support these, hotspot clicks now fire a `hotspot-clicked` event
+with id, type, speaker, theme, slug — so quest predicates can match
+on whatever they want without us needing a new event type per
+category. `gem-collected` and `thing-collected` events now also
+carry current totals so quests like "carry 8 things at once" can be
+expressed in one line.
+
+### Scrollable quest panel
+
+The panel now renders all 38 quests inside a Container masked to
+the visible region. Mouse wheel scrolls; finger drag scrolls; an
+orange scrollbar thumb on the right shows position. Header gained
+a "N / 38 done" summary chip.
+
+### Achievements
+
+The user noticed there's no separate "Achievements" system — and
+indeed, in this game quests *are* the achievements. The new pack
+includes plenty of milestone-style "achievement" quests (tap 100
+hotspots, hold 500 stones, find every collectable). They live
+alongside narrative quests in one scrollable list.
+
+### Writing pass — Pooh warmth
+
+Layered Winnie-the-Pooh / A. A. Milne flavours into characters who
+fit naturally:
+- **Conaloo** leans into Pooh proper: "*Bother*", "a Bear of *very*
+  small brain", honey, humming, "the longest way round is the
+  *kindest*."
+- **Loosa** picks up Eeyore: "*Thanks for noticing*", patient
+  waiting, gentle melancholy.
+- **Cosenae** acquires Owl-pomposity: "*To the casual observer*",
+  "*expostulate*", grand mis-spellings.
+- **Lulumi** gains Christopher-Robin warmth: "*you're braver than
+  you believe*", taking small friends seriously.
+- **mommy / daddy** gain Hundred-Acre kettle-and-rain Britishness:
+  "blustery sort of day," "*Bother*, I've put the wrong jam in the
+  tea," "*nothing in particular*. It's *one* of my favourites."
+- **Konessa** picks up Piglet: "*small enough*", "*Oh*", small
+  voices on big feelings.
+- **Themed fallback lines** (philosophy / emotions / language /
+  portals) gained Pooh-shaped lines that scan in any scene.
+
+Each character keeps every existing line; the new ones widen the
+pool, so playtest favourites still appear and the average tone
+warms gently toward the Hundred-Acre.
+
+### Touched
+
+- **Updated:** `src/scenes/GameScene.js` (rocket launch hardening,
+  quest event), `src/systems/HotspotManager.js` (priority + instant
+  + protected sprite), `src/content/scenes.js` (rocket bounds +
+  flags), `src/systems/Quests.js` (38 quests), `src/main.js` (rich
+  event payloads, _state cleanup), `src/systems/QuestHUD.js`
+  (scrollable panel + summary chip), `src/content/characters.js`
+  (Pooh-vibe lines), `src/content/lines.js` (Pooh-vibe themed +
+  portal lines).
+
+### Open hooks for next agent
+
+- The hub still has Cosenae standing close to the rocket; the
+  rocket zone now wins, but a longer-term tidy is to nudge his
+  sprite x-coord left a bit so they don't visually crowd.
+- "Friend-list" quest counts every unique speaker; if a kid
+  inadvertently triggers it via a chain of fast clicks across
+  scenes, the celebration is fine but they may not realise what
+  earned it. Consider a "quest-progress chip" that briefly shows
+  "9/12 friends greeted" on increment.
+- Quest-row layout is fixed-height; one-of-each's long description
+  word-wraps and crowds the progress bar slightly. Consider
+  variable-height rows.
+
 ## 2026-05-10 — v1.8: save game, fanfare, and clean math
 
 A pass on persistence + the quest-completion moment + a clear-up of

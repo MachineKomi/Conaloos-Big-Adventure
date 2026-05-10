@@ -1,16 +1,22 @@
 /**
  * Character bios + dialogue pools.
  *
- * Each character speaks in their own voice — tonal cues drawn from the
- * picture-book triangle of Dr Seuss (anapestic mischief), Roald Dahl
- * (unbothered absurdity), and Julia Donaldson (clean-rhyme tenderness),
- * with a sprinkle of Maxis edutainment (factual smuggling).
+ * Each character speaks in their own voice — tonal cues drawn from
+ * the picture-book quadrangle of Dr Seuss (anapestic mischief),
+ * Roald Dahl (unbothered absurdity), Julia Donaldson (clean-rhyme
+ * tenderness), and **A. A. Milne / Pooh** (gentle wonder, "I think",
+ * "perhaps", honey-coloured British countryside warmth, the
+ * Hundred-Acre habit of being kind to small things).
  *
- * Lines are written to be read aloud. They scan; they end on an image
- * or a turn; they trust a four-year-old to follow.
+ * Maxis-style edutainment (factual smuggling) underneath all of it.
  *
- * Names come verbatim from Amelia (the 4yo lead designer). Don't tidy
- * them. HotspotManager picks lines at random (exhaustive shuffle).
+ * Lines are written to be read aloud. They scan; they end on an
+ * image or a turn; they trust a four-year-old to follow.
+ *
+ * Names come verbatim from Amelia (the 4yo lead designer). Don't
+ * tidy them. HotspotManager picks lines at random (exhaustive
+ * shuffle), so adding a few lines is the simplest way to shift
+ * average tone without losing playtest-favourite originals.
  */
 
 export const characters = {
@@ -35,7 +41,7 @@ export const characters = {
   },
 
   'peep_Cosenae_M_5': {
-    voice: "Confident; slightly wrong; deeply sincere. Roald-Dahl-mischief energy.",
+    voice: "Confident; slightly wrong; deeply sincere. Roald-Dahl-mischief energy with a top-note of Owl: pompous explanations, occasional grand mis-spelt words used with great seriousness.",
     catchphrase: "Actually, I think you'll find...",
     obsession: "Facts. Or things he firmly believes are facts.",
     themes: ['science', 'language', 'animals'],
@@ -46,7 +52,11 @@ export const characters = {
       "My sister's a four. I'm a five. So I'm bigger.\nAnd also more learnèd, and somewhat more rigour.",
       "Octopuses have *three* hearts. (Or *eight* legs. Or both.)\nI'm pretty sure -- well, I am ALMOST under oath.",
       "I told the school spider his web was a *masterpiece*.\nHe blinked all his eyes at me. (Spiders do, at least.)",
-      "You think you know counting? Well, listen, friend:\nthere is *no biggest number*. The numbers don't end."
+      "You think you know counting? Well, listen, friend:\nthere is *no biggest number*. The numbers don't end.",
+      "*To the casual observer*, this puddle is wet.\nBut a *scientiffic* eye will see *deeper* yet.",
+      "I'm going to *expostulate*. (That's a long word.)\nIt means: tell you firmly. (You may not have heard.)",
+      "I should warn you, my facts can be *quite* the surprise.\nA crocodile's *teeth*, did you know, are *just eyes*?",
+      "Allow me, my friend, to *expound*, if I may:\nthe *rain* is the sky doing washing today."
     ]
   },
 
@@ -66,7 +76,7 @@ export const characters = {
   },
 
   'peep_Lulumi_F_14': {
-    voice: "Older — but only by a little. Patient with the small ones. Keeps a list.",
+    voice: "Older — but only by a little. Patient with the small ones. Keeps a list. A little Christopher-Robin in the way she takes her younger friends seriously.",
     catchphrase: "...perhaps.",
     obsession: "Cataloguing things she's noticed today.",
     themes: ['language', 'art-history', 'culture-history', 'philosophy'],
@@ -77,7 +87,11 @@ export const characters = {
       "The dew has a memory. The moon has a view.\nThe kettle has *opinions*. I've copied a few.",
       "When I was your size, I could fit in a coat.\nNow I am bigger. (My pockets still float.)",
       "A list is a quiet kind of love, I think --\nyou choose what gets written, and what skips a blink.",
-      "Not all of the questions deserve a quick answer.\nSome are best left where they sat. Like a dancer."
+      "Not all of the questions deserve a quick answer.\nSome are best left where they sat. Like a dancer.",
+      "I think -- and I might be quite wrong -- that the rain\nis the sky's quiet way of starting again.",
+      "*You're* braver than you believe, and *stronger* than seem,\nand *wiser* than thought. (I read that, mid-dream.)",
+      "*Nothing*, I think, is the *best* sort of doing --\nas long as it's done with a friend, gently chewing.",
+      "I'll write you in, if I may, in my list.\nUnder *people-I-met-and-was-glad-they-existed*."
     ]
   },
 
@@ -86,7 +100,7 @@ export const characters = {
   // -------------------------------------------------------------- //
 
   'peep_mommy_F_30ish': {
-    voice: "Bright, observant, quick to wonder. Treats small details as small gifts.",
+    voice: "Bright, observant, quick to wonder. Treats small details as small gifts. Hundred-Acre warmth — kind kettle-and-rain Britishness.",
     catchphrase: "Oh -- look at THAT.",
     obsession: "Noticing.",
     themes: ['art-history', 'science', 'emotions'],
@@ -97,12 +111,16 @@ export const characters = {
       "Do you see how the shadow of *you* turns to *eight*\nwhen the lamps are all lit and the hour is late?",
       "Tea makes a sound when it's stirred in a cup --\na *circle* you hear, that goes round and is up.",
       "The kettle's a friend. It tells you when *now*.\nIt says 'Ready, ready' -- and means it, somehow.",
-      "I love when you wonder. I love when you ask.\nI love that your questions can't fit in a flask."
+      "I love when you wonder. I love when you ask.\nI love that your questions can't fit in a flask.",
+      "It's a *blustery* day, and I think we should walk --\nwith *small things* in pockets, and *quite* a long talk.",
+      "*Sometimes*, the *smallest* of you, in the morning,\nis bigger than most of the *evening's* yawning.",
+      "The rain on the window is *busy*, today.\nBut friendly. It's tidying things, in its way.",
+      "I'd like, when you're older, for you to remember\nhow *very ordinary* this Tuesday in November."
     ]
   },
 
   'peep_daddy_M_30ish': {
-    voice: "Calm, slightly tired, secretly delighted. Hums between words.",
+    voice: "Calm, slightly tired, secretly delighted. Hums between words. A bit of Pooh-mumble — pondering, gentle, frequently mid-thought.",
     catchphrase: "Mm. Yes. I think so.",
     obsession: "Small kindnesses. Keeping the toast the right brown.",
     themes: ['emotions', 'economics', 'culture-history'],
@@ -113,7 +131,11 @@ export const characters = {
       "There's tea on the boil, and a book on the floor,\nand a child in the doorway. (I'd not ask for more.)",
       "The clock ticks at me. I tick back at the clock.\nWe have, at this point, a polite little talk.",
       "If we run out of something, we share what we've got.\nThat's how a *home* works. (It is, mostly. A lot.)",
-      "Mm. I forget what I came in here for.\nBut I'm pleased that I came. So I'll wander some more."
+      "Mm. I forget what I came in here for.\nBut I'm pleased that I came. So I'll wander some more.",
+      "*Hmm. Yes. Quite.* -- I forget what we said.\nI suspect it was *kind*. (And then on we both led.)",
+      "Today, I am thinking of *nothing in particular*.\nIt's *one* of my favourites. (And rather *spectacular*.)",
+      "*Bother*, I've put the wrong jam in the tea.\n-- It's nice, in its way. -- It's quite kind of *me*.",
+      "If you find yourself sad, I shall sit, just nearby.\nYou don't have to *say* anything. I won't ask why."
     ]
   },
 
@@ -138,7 +160,7 @@ export const characters = {
   // -------------------------------------------------------------- //
 
   'peep_Loosa_cactus': {
-    voice: "Slow, deliberate, dry. Long pauses (rendered as ' -- ').",
+    voice: "Slow, deliberate, dry, gently put-upon. A bit Eeyore. Long pauses (rendered as ' -- '). Thanks people for noticing.",
     catchphrase: "-- give me a moment.",
     obsession: "Sunshine. Standing in it.",
     themes: ['emotions', 'philosophy', 'animals'],
@@ -148,7 +170,11 @@ export const characters = {
       "-- The young ones run quickly. -- That's fine. It's a phase.\nI used to. -- I think. -- It was -- one of those days.",
       "I have an opinion. (You can have it, slow.)\nIt's: *some things are fine to not have to know*.",
       "Do you know what is older than *most* of the rocks?\nA cactus. -- Don't tell them. They don't keep clocks.",
-      "If you stand very still, you can hear the sun *click*\nas it warms up a stone. It's a quiet, slow trick."
+      "If you stand very still, you can hear the sun *click*\nas it warms up a stone. It's a quiet, slow trick.",
+      "-- Thanks for noticing. -- Most don't, you know.\nI stand. I am here. (And the standing's my show.)",
+      "It's not, perhaps, raining. -- Well. -- Not raining *much*.\nI suppose. -- It's the *thinking* of rain that's a touch.",
+      "-- Oh. Hello. -- I was busy with *waiting*, just then.\nIt's a thing that I'm good at. -- I'll be at it again.",
+      "A friend once said cheerfulness comes from a *spring*.\nI've not located mine. -- But I have time. -- It's a thing."
     ]
   },
 
@@ -183,7 +209,7 @@ export const characters = {
   },
 
   'peep_Konessa_has-flower': {
-    voice: "Soft. Focused. Each line carries a single image, like a held flower.",
+    voice: "Soft. Focused. Each line carries a single image, like a held flower. A drop of Piglet — small voice, big feeling.",
     catchphrase: "...have you noticed it, too?",
     obsession: "The flower in her hand, and what it is teaching her.",
     themes: ['animals', 'art-history', 'emotions', 'language'],
@@ -193,7 +219,10 @@ export const characters = {
       "Have you noticed the way that the petals *unfold*?\nThe flower is patient. The petals are bold.",
       "My flower is mine, but it's also the world's.\nI carry it lightly, especially when curled.",
       "A bee came to visit. We had a small chat.\nShe asked the flower questions. It answered like *that*.",
-      "The smallest of things, looked at *closely* enough,\ngrows wider than mountains. (Even the rough.)"
+      "The smallest of things, looked at *closely* enough,\ngrows wider than mountains. (Even the rough.)",
+      "I'm *small*, I think. -- Or perhaps *small enough*.\nThe flower is tinier still. (We make do, on the rough.)",
+      "*Oh.* -- Did you see? The petal just *moved*.\nIt's *thinking*, perhaps. (I am happy. -- I'm soothed.)",
+      "I like it when *small things* matter to people.\nIt's the *only* way mountains were carried by *steeple*."
     ]
   },
 
@@ -202,9 +231,9 @@ export const characters = {
   // -------------------------------------------------------------- //
 
   'animal_Conaloo_bear-butterly': {
-    voice: "Soft, considered, half bear and half butterfly. Speaks in pairs of warm couplets.",
+    voice: "Soft, considered, half bear and half butterfly — and half a Bear of Very Little Brain, in the gentlest sense. Hums between thoughts. Speaks in warm couplets.",
     catchphrase: "...mm-hmm. I think so.",
-    obsession: "Wandering. The going is the point.",
+    obsession: "Wandering. The going is the point. (Possibly honey.)",
     themes: ['philosophy', 'emotions', 'language', 'science'],
     lines: [
       "I'm Conaloo. (That's my name, did you know?)\nI'm a bear AND a butterly. (Mostly. Or so.)",
@@ -213,7 +242,13 @@ export const characters = {
       "A bear-butterly thinks of two thoughts at a time:\nthe slow ones, in honey. The fast ones, in rhyme.",
       "Some days I am bigger. Some days I am small.\nToday I'm a Conaloo. (Mostly. That's all.)",
       "Trees that are *very* old know something quiet.\nIf you sit at their roots, they will sometimes try it.",
-      "I've decided that *time* is a friend of mine, slow.\nWe walk along, separately. Mostly we go."
+      "I've decided that *time* is a friend of mine, slow.\nWe walk along, separately. Mostly we go.",
+      "*Bother.* I'm hummy. (A tum-tum kind of way.)\nA hum is a thought that has come out to play.",
+      "I am, I'm afraid, a bear of *very* small brain --\nbut I notice the rain. And I notice again.",
+      "The thing about *honey* (I think, on the whole)\nis that *waiting for honey* is also a *toll*.",
+      "Sometimes the longest way round is the *kindest* --\nand kind is a thing that the slow-going finds.",
+      "*Oh, bother.* I've gone and forgotten my plan.\nNo matter. -- The wander is *most* of the man.",
+      "It isn't *much*, what I know. -- And yet --\nit's enough for a Tuesday. And nothing's a debt."
     ]
   },
 
