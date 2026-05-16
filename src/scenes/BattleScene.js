@@ -25,7 +25,7 @@
 import Phaser from 'phaser';
 import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel, drawDropShadow } from '../systems/UITokens.js';
 import { typeMultiplier, typeEmoji } from '../content/typeChart.js';
-import { expReward, expForNextLevel, getSpecies } from '../content/buddySpecies.js';
+import { expReward, expForNextLevel, getSpecies, computeStats } from '../content/buddySpecies.js';
 
 const Z = {
   veil: 11000,
@@ -1017,33 +1017,48 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** Big "NEW BUDDY!" announcement when a species joins the team
-   *  for the first time. Dim veil, hero-sized sprite mid-screen
-   *  beside enormous celebratory text + sparkle burst. Tap (or
-   *  auto-advance after a beat) to continue. */
+   *  for the first time. v1.19 redesign:
+   *  - No auto-advance — tap anywhere to dismiss.
+   *  - Shows the bio + stats + moves so the kid sees what their
+   *    new friend can do.
+   *  - All sparkle particles tracked + cleaned up so nothing
+   *    leaks into the next scene.
+   *  - Crash fix: every Phaser GameObject created here is pushed
+   *    to `items`, so finish() and _exit don't leave dead tween
+   *    targets behind. */
   _showNewBuddyAnnounce(species, onDone) {
     const { width, height } = this.scale;
-    const items = [];
+    const items = [];          // every display object we make here
+    const ownedTweens = [];    // every tween (so we can cancel cleanly)
 
-    // 1. Heavy veil — this is THE moment, focus everything on it.
-    const veil = this.add.graphics().setDepth(Z.modal);
-    veil.fillStyle(COL.ink, 0.7);
+    const pushItem = (o) => { if (o) items.push(o); return o; };
+    const pushTween = (cfg) => {
+      const t = this.tweens.add(cfg);
+      ownedTweens.push(t);
+      return t;
+    };
+
+    // 1. Heavy veil — this is THE moment.
+    const veil = pushItem(this.add.graphics().setDepth(Z.modal));
+    veil.fillStyle(COL.ink, 0.78);
     veil.fillRect(0, 0, width, height);
-    items.push(veil);
 
-    // 2. Sprite (huge) on the left half.
-    const cx = width / 2;
-    const cy = height / 2;
+    // 2. Large sprite on the LEFT, info panel on the RIGHT.
+    const spriteCx = width * 0.26;
+    const spriteCy = height * 0.50;
     let sprite = null;
     if (this.textures.exists(species.sprite)) {
-      sprite = this.add.image(cx - 200, cy, species.sprite).setOrigin(0.5).setDepth(Z.modal + 1);
+      sprite = pushItem(this.add.image(spriteCx, spriteCy, species.sprite)
+        .setOrigin(0.5).setDepth(Z.modal + 1));
       const tex = this.textures.get(species.sprite).getSourceImage();
-      const scale = Math.min(440 / tex.height, 360 / tex.width);
+      const scale = Math.min(420 / tex.height, 360 / tex.width);
       sprite.setScale(scale);
-      items.push(sprite);
     }
 
-    // 3. "NEW / BUDDY!" headline on the right half, large.
-    const headline = this.add.text(cx + 80, cy - 60, 'NEW\nBUDDY!', {
+    // 3. "NEW / BUDDY!" headline (big yellow, stacked, left-aligned
+    //    on the right half).
+    const rightX = width * 0.46;
+    const headline = pushItem(this.add.text(rightX, height * 0.13, 'NEW\nBUDDY!', {
       fontFamily: TYPE.family,
       fontSize: '110px',
       color: '#ffe066',
@@ -1051,154 +1066,222 @@ export class BattleScene extends Phaser.Scene {
       lineSpacing: -20,
       stroke: COL.inkHex,
       strokeThickness: 8
-    }).setOrigin(0, 0.5).setDepth(Z.modal + 2);
-    items.push(headline);
+    }).setOrigin(0, 0).setDepth(Z.modal + 2));
 
-    // 4. Subtitle: the buddy's name + level.
-    const sub = this.add.text(cx + 80, cy + 130,
-      `${species.displayName} joins your team!`, {
+    // 4. Name + level chip.
+    const nameLine = pushItem(this.add.text(rightX, height * 0.46,
+      `${species.displayName}  ${typeEmoji(species.type)}  Lv 1`, {
       fontFamily: TYPE.family,
-      fontSize: '30px',
+      fontSize: '36px',
       color: '#ffffff',
       stroke: COL.inkHex,
-      strokeThickness: 4
-    }).setOrigin(0, 0.5).setDepth(Z.modal + 2);
-    items.push(sub);
+      strokeThickness: 5
+    }).setOrigin(0, 0).setDepth(Z.modal + 2));
 
-    // 5. Sparkle burst around the sprite.
+    // 5. Bio paragraph.
+    const bio = pushItem(this.add.text(rightX, height * 0.535, species.bio || '', {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: '22px',
+      color: '#fff8e7',
+      wordWrap: { width: width * 0.46 },
+      lineSpacing: 4
+    }).setOrigin(0, 0).setDepth(Z.modal + 2));
+
+    // 6. Stats row.
+    const stats = computeStats(species.id, 1);
+    if (stats) {
+      const statsText = `HP ${stats.maxHP}  ·  ATK ${Math.round(stats.atk)}  ·  DEF ${Math.round(stats.def)}  ·  SPD ${Math.round(stats.spd)}  ·  ⚡ ${stats.maxEnergy}`;
+      const statsLine = pushItem(this.add.text(rightX, height * 0.66, statsText, {
+        fontFamily: TYPE.family,
+        fontSize: '20px',
+        color: '#ffe066',
+        stroke: COL.inkHex,
+        strokeThickness: 3
+      }).setOrigin(0, 0).setDepth(Z.modal + 2));
+    }
+
+    // 7. Moves list.
+    const movesHeader = pushItem(this.add.text(rightX, height * 0.71, 'Moves', {
+      fontFamily: TYPE.family,
+      fontSize: '20px',
+      color: '#ffffff',
+      stroke: COL.inkHex,
+      strokeThickness: 3
+    }).setOrigin(0, 0).setDepth(Z.modal + 2));
+
+    (species.moves || []).forEach((move, i) => {
+      const rowY = height * 0.755 + i * 30;
+      const energyText = move.energyCost === 0 ? 'basic' : `⚡${move.energyCost}`;
+      const effectText = move.effect
+        ? (move.effect.kind === 'heal' ? `heals ${move.effect.amount}` : `+${move.effect.amount} ⚡`)
+        : `power ${move.power}`;
+      const moveLine = pushItem(this.add.text(rightX, rowY,
+        `${typeEmoji(move.type)}  ${move.name}  ·  ${energyText}  ·  ${effectText}`, {
+        fontFamily: TYPE.bodyFamily,
+        fontSize: '18px',
+        color: '#fff8e7'
+      }).setOrigin(0, 0).setDepth(Z.modal + 2));
+    });
+
+    // 8. Sparkle burst around the sprite. Tracked in `items` so
+    //    finish() / scene-stop cleans them up.
     const sparkleColours = [0xffe066, 0xffd1d1, 0xc8e7c8, 0xc8e7ff, COL.gold];
+    const sparkleAnchorX = sprite ? sprite.x : spriteCx;
+    const sparkleAnchorY = sprite ? sprite.y : spriteCy;
     for (let i = 0; i < 24; i++) {
       const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.3;
       const dist = 240 + Math.random() * 140;
       const colour = sparkleColours[i % sparkleColours.length];
-      const star = this.add.circle(
-        sprite ? sprite.x : cx,
-        sprite ? sprite.y : cy,
-        6 + Math.random() * 4,
-        colour, 1
-      ).setDepth(Z.modal + 3);
-      this.tweens.add({
+      const star = pushItem(this.add.circle(
+        sparkleAnchorX, sparkleAnchorY, 6 + Math.random() * 4, colour, 1
+      ).setDepth(Z.modal + 3));
+      pushTween({
         targets: star,
-        x: (sprite ? sprite.x : cx) + Math.cos(angle) * dist,
-        y: (sprite ? sprite.y : cy) + Math.sin(angle) * dist,
+        x: sparkleAnchorX + Math.cos(angle) * dist,
+        y: sparkleAnchorY + Math.sin(angle) * dist,
         alpha: { from: 1, to: 0 },
         scale: { from: 1.4, to: 0.4 },
         duration: 1200 + Math.random() * 400,
-        ease: 'Quad.easeOut',
-        onComplete: () => star.destroy()
+        ease: 'Quad.easeOut'
       });
     }
 
-    // 6. Drop-in animation for the sprite + headline + sub.
-    [sprite, headline, sub].forEach((o) => {
-      if (!o) return;
-      o.alpha = 0;
-      o.setScale(o === sprite ? (o.scale * 0.6) : 0.6);
+    // 9. Drop-in. Items start invisible, fade in.
+    for (const o of items) o.alpha = 0;
+    pushTween({
+      targets: veil,
+      alpha: 0.78,
+      duration: 280,
+      ease: 'Sine.easeOut'
     });
-    veil.alpha = 0;
-    this.tweens.add({ targets: veil, alpha: 0.7, duration: 280, ease: 'Sine.easeOut' });
     if (sprite) {
-      const targetScale = sprite.scale / 0.6; // because we just scaled it down to 0.6 of base
-      this.tweens.add({
+      const baseScale = sprite.scale;
+      sprite.setScale(baseScale * 0.7);
+      pushTween({
         targets: sprite,
         alpha: 1,
-        scale: targetScale,
-        duration: 480,
+        scale: baseScale,
+        duration: 520,
         ease: 'Back.easeOut'
       });
     }
-    this.tweens.add({
-      targets: [headline, sub],
+    // The text block fades in from below with a small upward
+    // motion. Headline first, then everything else.
+    const textBlock = [headline, nameLine, bio, movesHeader].filter(Boolean);
+    for (const t of textBlock) t.y += 16;
+    pushTween({
+      targets: textBlock,
       alpha: 1,
-      scale: 1,
-      duration: 480,
+      y: '-=16',
+      duration: 520,
       ease: 'Back.easeOut',
       delay: 120
     });
+    // Move lines + stats line + sparkles fade in generally.
+    const otherItems = items.filter((o) =>
+      o !== veil && o !== sprite && !textBlock.includes(o));
+    pushTween({
+      targets: otherItems,
+      alpha: 1,
+      duration: 480,
+      ease: 'Sine.easeOut',
+      delay: 240
+    });
 
-    // 7. Gentle bob on the sprite while held.
+    // 10. Sprite bob (gentle, idle, while the screen is up).
     if (sprite) {
-      this.time.delayedCall(500, () => {
+      this.time.delayedCall(550, () => {
         if (!sprite.scene) return;
-        this.tweens.add({
+        const t = this.tweens.add({
           targets: sprite,
-          y: sprite.y - 14,
-          duration: 900,
+          y: sprite.y - 12,
+          duration: 1100,
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut'
         });
+        ownedTweens.push(t);
       });
     }
 
-    // 8. Headline pulse so the eye lands on it.
-    this.time.delayedCall(700, () => {
+    // 11. Headline pulse — eye-catcher.
+    this.time.delayedCall(750, () => {
       if (!headline.scene) return;
-      this.tweens.add({
+      const t = this.tweens.add({
         targets: headline,
-        scale: { from: 1, to: 1.06 },
+        scale: { from: 1, to: 1.05 },
         duration: 700,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut'
       });
+      ownedTweens.push(t);
     });
 
-    // 9. Auto-advance after a beat OR tap-to-continue. The blocker
-    //    covers the whole screen and the kid can tap anywhere to
-    //    say "yes, I saw it!". An auto-advance hint appears
-    //    underneath the subtitle after 1.5s.
-    const hint = this.add.text(cx, cy + 220, 'tap to continue', {
+    // 12. "tap anywhere to continue" hint fades in after 1.5s.
+    const hint = pushItem(this.add.text(width / 2, height - 50,
+      'tap anywhere to continue', {
       fontFamily: TYPE.bodyFamily,
-      fontSize: '20px',
+      fontSize: '22px',
       color: '#ffd860'
-    }).setOrigin(0.5).setDepth(Z.modal + 2).setAlpha(0);
-    items.push(hint);
+    }).setOrigin(0.5).setDepth(Z.modal + 4).setAlpha(0));
     this.time.delayedCall(1500, () => {
       if (!hint.scene) return;
-      this.tweens.add({
+      const t1 = this.tweens.add({
         targets: hint,
         alpha: 0.85,
         duration: 400,
         ease: 'Sine.easeOut'
       });
-      this.tweens.add({
+      ownedTweens.push(t1);
+      const t2 = this.tweens.add({
         targets: hint,
-        alpha: 0.4,
+        alpha: 0.45,
         duration: 700,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
         delay: 400
       });
+      ownedTweens.push(t2);
     });
 
+    // 13. The kid taps anywhere → dismiss. NO auto-advance any
+    //     more; this screen waits for the player. Full-screen
+    //     blocker at the very top depth catches the click.
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
-      // Stop all tweens we created so they don't keep ticking on
-      // destroyed targets.
-      for (const o of items) if (o && o.scene) this.tweens.killTweensOf(o);
-      if (sprite) this.tweens.killTweensOf(sprite);
+
+      // Cancel every tween we own so they don't keep ticking on
+      // soon-to-be-destroyed targets (the v1.17 stop-after-tap
+      // crash root cause: stray tweens hitting destroyed objects
+      // after onDone runs).
+      for (const t of ownedTweens) {
+        try { t?.remove?.(); } catch { /* ignore */ }
+      }
+      for (const o of items) {
+        if (o && o.scene) this.tweens.killTweensOf(o);
+      }
+
+      // Fade everything out together.
       this.tweens.add({
         targets: items,
         alpha: 0,
-        duration: 320,
+        duration: 280,
         ease: 'Sine.easeIn',
         onComplete: () => {
-          items.forEach((o) => o?.destroy?.());
+          for (const o of items) o?.destroy?.();
           onDone();
         }
       });
     };
 
-    const blocker = this.add.zone(0, 0, width, height).setOrigin(0, 0).setDepth(Z.modal + 4);
-    blocker.setInteractive();
+    const blocker = pushItem(this.add.zone(0, 0, width, height)
+      .setOrigin(0, 0).setDepth(Z.modal + 5));
+    blocker.setInteractive({ useHandCursor: true });
     blocker.on('pointerup', finish);
-    items.push(blocker);
-    // Auto-advance after 4.5s in case the kid doesn't tap.
-    this.time.delayedCall(4500, finish);
   }
 
   _exit(result) {
@@ -1214,11 +1297,14 @@ export class BattleScene extends Phaser.Scene {
       .filter((o) => o && o.scene);
     this.tweens.killTweensOf(this._banner);
     if (liveTargets.length === 0) {
-      // Nothing to fade — exit immediately.
+      // Nothing to fade — wake then stop, same order as the
+      // animated path so we never leave the screen blank.
       const cb = this.onComplete;
       const prev = this.previousSceneKey;
-      this.scene.stop();
-      cb(result, prev);
+      try { cb(result, prev); } catch (e) { console.error('[battle] onComplete cb threw', e); }
+      this.time.delayedCall(0, () => {
+        if (this.scene && this.scene.manager) this.scene.stop();
+      });
       return;
     }
     this.tweens.add({
@@ -1229,8 +1315,16 @@ export class BattleScene extends Phaser.Scene {
       onComplete: () => {
         const cb = this.onComplete;
         const prev = this.previousSceneKey;
-        this.scene.stop();
-        cb(result, prev);
+        // Wake the gameplay + HUD scenes FIRST so the screen is
+        // never empty for a frame. Then stop ourselves on the
+        // next tick so there's no overlap window where the
+        // battle scene is mid-tear-down while the wake is
+        // processing (v1.17 "blank screen after NEW BUDDY"
+        // root cause).
+        try { cb(result, prev); } catch (e) { console.error('[battle] onComplete cb threw', e); }
+        this.time.delayedCall(0, () => {
+          if (this.scene && this.scene.manager) this.scene.stop();
+        });
       }
     });
   }

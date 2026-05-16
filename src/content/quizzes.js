@@ -108,6 +108,56 @@ export const quizzes = {
       ],
       onCorrect: "Yes -- *spoons* are not alive. (They never were.)\nPuppies and trees both *grow*. Spoons just stir.",
       onWrong:   "Spoons aren't alive! Puppies grow. Trees grow.\nSpoons just *help us eat*. They are mostly stainless, you know."
+    },
+    {
+      question: "How many *colours* live inside a *rainbow*?",
+      options: [
+        { text: "Three", isCorrect: false },
+        { text: "Seven", isCorrect: true },
+        { text: "Ten",   isCorrect: false }
+      ],
+      onCorrect: "*Seven*! Red, orange, yellow, green --\nblue, indigo, violet. (The neatest you've seen.)",
+      onWrong:   "*Seven*! Red, orange, yellow, green --\nblue, indigo, violet. (A rainbow's neat team.)"
+    },
+    {
+      question: "Which is *biggest* in the sea?",
+      options: [
+        { text: "An octopus", isCorrect: false },
+        { text: "A blue whale", isCorrect: true },
+        { text: "A shark",    isCorrect: false }
+      ],
+      onCorrect: "A *blue whale*! *Bigger than a bus*, my friend --\nand they nibble *tiny* shrimp. (From end to end.)",
+      onWrong:   "*Blue whales* are biggest. Big as a *bus*!\nThey eat tiny shrimp. (Their dinner's no fuss.)"
+    },
+    {
+      question: "Which of these can *fly* on its own?",
+      options: [
+        { text: "A penguin",  isCorrect: false },
+        { text: "A dolphin",  isCorrect: false },
+        { text: "A bumblebee", isCorrect: true }
+      ],
+      onCorrect: "*BEE*! Penguins swim, dolphins splash, bees BUZZ.\nFlying takes wings -- and a little fuzz.",
+      onWrong:   "It's the *bee*! Penguins paddle and dolphins do too --\nthe sky is for wings. (And a small buzz or two.)"
+    },
+    {
+      question: "What do a plant's *roots* do, deep underground?",
+      options: [
+        { text: "Sing",  isCorrect: false },
+        { text: "Drink", isCorrect: true },
+        { text: "Sleep", isCorrect: false }
+      ],
+      onCorrect: "*DRINK*! Roots are the plant's hidden *straws*, down below.\nThey slurp up the water -- and *that's how plants grow*.",
+      onWrong:   "Roots *DRINK*! They're the plant's hidden *straws* in the ground --\nslurping up rainwater that's seeped on around."
+    },
+    {
+      question: "What makes the *BOOM* in a thunderstorm?",
+      options: [
+        { text: "The clouds bumping",   isCorrect: false },
+        { text: "Lightning, shouting",  isCorrect: true },
+        { text: "The wind, snoring",    isCorrect: false }
+      ],
+      onCorrect: "Yes -- *lightning*! It heats up the air with a *crack*,\nand the air shouts BOOM in surprise, going back.",
+      onWrong:   "It's *lightning*. The flash heats the air so it *cracks* --\nthe BOOM is the air shouting back through the gaps."
     }
   ],
 
@@ -182,6 +232,56 @@ export const quizzes = {
       ],
       onCorrect: "*Four*! Cats walk on four. So do dogs, cows, and horses --\nthey're all called *quadrupeds*. (A fancy word, of course-es.)",
       onWrong:   "Cats have *four*. Same as dogs, cows, and horses.\nThey're all called *quadrupeds*. (Four-foot armed forces.)"
+    },
+    {
+      question: "Which one *rhymes* with *cat*?",
+      options: [
+        { text: "Hat", isCorrect: true },
+        { text: "Dog", isCorrect: false },
+        { text: "Sun", isCorrect: false }
+      ],
+      onCorrect: "*HAT*! Cat, hat, bat, mat, pat, sat, fat, vat --\nthe *-at* family sings the same song. Like *that*.",
+      onWrong:   "It's *hat*! Cat, hat, bat, mat -- they all end in *-at*.\nSay them aloud and you'll feel where they're at."
+    },
+    {
+      question: "How many *days* are there in a *week*?",
+      options: [
+        { text: "Five",  isCorrect: false },
+        { text: "Seven", isCorrect: true },
+        { text: "Ten",   isCorrect: false }
+      ],
+      onCorrect: "*Seven*! Monday, Tuesday, Wednesday, Thursday,\nFriday, Saturday, Sunday -- (a tidy little verse-day).",
+      onWrong:   "*Seven*: Mon, Tues, Wed, Thurs, Fri, Sat, Sun.\nA whole week's a *circle* -- when it ends, it's *begun*."
+    },
+    {
+      question: "Which letter is a *vowel*?",
+      options: [
+        { text: "A", isCorrect: true },
+        { text: "B", isCorrect: false },
+        { text: "C", isCorrect: false }
+      ],
+      onCorrect: "*A*! Vowels are *A, E, I, O, U* -- and sometimes Y.\nThey're the *singing* letters. The rest are quite shy.",
+      onWrong:   "It's *A*! Vowels are A, E, I, O, U (and sometimes Y).\nThey're the *sounds* you sing -- without them, words go *shy*."
+    },
+    {
+      question: "Which season comes *after winter*?",
+      options: [
+        { text: "Summer", isCorrect: false },
+        { text: "Spring", isCorrect: true },
+        { text: "Autumn", isCorrect: false }
+      ],
+      onCorrect: "*Spring*! When the snow has packed up and gone,\nthe flowers wake up. (And the *birds* carry on.)",
+      onWrong:   "*Spring*! After winter, the flowers come back --\nthe trees pick their leaves, and the birds *un-quack*."
+    },
+    {
+      question: "Which one means *very*, *very* small?",
+      options: [
+        { text: "Tiny",  isCorrect: true },
+        { text: "Loud",  isCorrect: false },
+        { text: "Bumpy", isCorrect: false }
+      ],
+      onCorrect: "*Tiny*! Like an ant, a crumb, the tip of a pin --\n(small enough to hide in a kindly grin).",
+      onWrong:   "*Tiny*! It means *very small*. Loud means *full of sound*.\nBumpy means *uneven* -- with hills all around."
     }
   ],
 
@@ -250,6 +350,44 @@ export const quizzes = {
       ],
       onCorrect: "Yes! That's the right answer for *you*. Doors\npick *people* -- and pick them based on what they're for.",
       onWrong: ""
+    }
+  ],
+
+  // -------- daddy: warm, slow questions. Mostly preference ------
+  'peep_daddy_M_30ish': [
+    {
+      isPreference: true,
+      question: "Daddy is making a *cup of tea*. What goes best with it?",
+      options: [
+        { text: "A biscuit"      },
+        { text: "A book"         },
+        { text: "A quiet sit"    },
+        { text: "All three"      }
+      ],
+      onCorrect: "*Mm. Yes. I think so.* (Daddy nods, slowly.)\nA very fine choice, gently and wholly.",
+      onWrong: ""
+    },
+    {
+      isPreference: true,
+      question: "If Daddy had a *whole afternoon* free, what would you have him do?",
+      options: [
+        { text: "Build a small kingdom"  },
+        { text: "Read a book by the fire" },
+        { text: "Have a *very* long nap" },
+        { text: "Wander, somewhere quiet" }
+      ],
+      onCorrect: "*Hmm. Yes. That sounds proper.* (And he means it.)\nThat's the kind of afternoon a Tuesday is *meant* to lend.",
+      onWrong: ""
+    },
+    {
+      question: "What word means *kind*, when nobody's asking?",
+      options: [
+        { text: "Quiet-kind", isCorrect: true },
+        { text: "Loud",       isCorrect: false },
+        { text: "Square",     isCorrect: false }
+      ],
+      onCorrect: "*Quiet-kind*. Yes. It's a kind that *waits*\nfor its chance to be helpful. And then -- gently rates.",
+      onWrong:   "*Quiet-kind*, I think it is. Kindness that's *small*\nand *patient* -- the *best* kind, in my book. (And in all.)"
     }
   ],
 

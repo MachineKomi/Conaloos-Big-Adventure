@@ -1,5 +1,102 @@
 # Changelog
 
+## 2026-05-16 — v1.19: NEW BUDDY fix + bio panel, more quizzes, second writing pass
+
+### Critical: NEW BUDDY exit crash / blank screen (fixed)
+
+After the "NEW BUDDY!" celebration screen, the game would either
+crash or leave the kid staring at an empty battle stage. Root
+cause was twofold:
+
+1. **Untracked tweens.** Sparkle particles and delayed pulse /
+   bob tweens were running but not in the `items` array, so
+   `finish()`'s tween-killer couldn't stop them. After the
+   scene tore down, those orphan tweens fired on destroyed
+   targets — Phaser threw, the exit cascade froze.
+2. **Wake-then-stop, not stop-then-wake.** `_exit` was calling
+   `this.scene.stop()` BEFORE the `onComplete` callback that
+   wakes the gameplay scene + HUDs. If the cb threw (or the
+   wake races with the stop), there'd be a frame where every
+   scene is either stopping or sleeping — i.e. nothing
+   rendering. That's the blank screen.
+
+Fixes:
+- Every Phaser GameObject + every tween created in
+  `_showNewBuddyAnnounce` is now tracked in `items` / `ownedTweens`.
+  `finish()` removes all tweens then fades + destroys everything
+  in one batch.
+- `_exit` now calls the `cb` (wake gameplay) FIRST, then defers
+  `scene.stop()` to the next frame via `time.delayedCall(0, ...)`.
+  The cb is also wrapped in try/catch so a thrown error in the
+  wake logic doesn't strand the scene mid-stop.
+
+### NEW BUDDY! screen redesign
+
+- **No auto-advance.** The screen now stays up forever until the
+  kid taps. A pulsing "tap anywhere to continue" hint appears
+  after 1.5s.
+- **Bio + stats + moves shown.** Under the big NEW / BUDDY!
+  headline, the kid now sees their new friend's:
+  - Name + type + level
+  - Bio couplet
+  - Full stats row: `HP · ATK · DEF · SPD · ⚡`
+  - All three moves with type icon, energy cost, and effect
+    (`heals N` / `+N ⚡` / `power N`)
+- Sparkle burst still plays around the sprite; sprite still bobs
+  + headline still pulses while up.
+
+### Twelve more quiz questions
+
+- **Cosenae** (+5): rainbow colours, biggest sea animal, which
+  flies, what roots do, what makes thunder BOOM.
+- **Lulumi** (+5): rhymes with "cat", days in a week, which is
+  a vowel, season after winter, word for "very small".
+- **Daddy** (new pool, 3): preference question about tea
+  pairings, an afternoon-off preference, and a vocabulary
+  question about "quiet kindness".
+
+All written to scan as little couplets — true rhymes, no forced
+nonsense words.
+
+### Second writing pass
+
+Eleven more weak / broken lines fixed across `scenes.js`:
+
+- Hub `sun` Tiny Museum: factual error (glass is **not** a slow-
+  flowing liquid — common myth, but kids would have to unlearn
+  it). Replaced with "*Glass* is made from *sand* — heated very,
+  very hot."
+- Cottage `shelf`: "(And nobody quite reckoned.)" → "(And
+  they're terribly *quick*-ened.)"
+- Cottage `cottage-books`: "come back, embarked" → "you've
+  kept the page parked"
+- Lake `lake` museum: "and then six and a metre" → "all
+  stretching down here"
+- Playground `cake`: "some sweet, some opaque" → "some
+  honey-glazed, some baked-and-flake"
+- Village `glass-house`: "a wonder, a stitch" → "a
+  *wonder-to-which*"
+- Village `village-square`: "not by chase" → "not in space"
+- Bedroom `flashlight`: italicised the deliberate Pooh-y
+  "(Bring it a *sing*.)"
+- School `globe`: "the answer's the *text*" → "whichever's the
+  *guess*"
+- School `tyre`: "the world is full plenty" → "the world has a
+  *plenty*"
+- School `chalkboard`: "A how-do-you-come" → "Step *one*,
+  step *two*, *done*"
+- Waterfall `waterfall` museum: "We don't need to name us"
+  → "with *snow* for a crown-us"
+- Seaside `waves` museum: "No wave ever comes in just twice,
+  in the same" → "No wave ever comes in *quite* the same way"
+
+### Touched
+
+- **Updated:** `src/scenes/BattleScene.js` (NEW BUDDY rewrite +
+  exit fix + import computeStats), `src/content/quizzes.js`
+  (+12 quizzes, new daddy pool), `src/content/scenes.js`
+  (13 line fixes).
+
 ## 2026-05-16 — v1.18: writing pass + UI polish + tutorial refresh
 
 A sweep across every piece of visible text in the game, plus a

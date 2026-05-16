@@ -289,7 +289,7 @@ export const scenes = {
         speaker: 'thing_books',
         collect: 'thing_books',
         responses: [
-          { text: "A book on the table, half-read and half-marked --\nThe story is paused (but it'll come back, embarked).", theme: 'language' }
+          { text: "A book on the table, half-read and half-marked --\nthe story has *paused* (and you've kept the page parked).", theme: 'language' }
         ]
       },
 
@@ -319,7 +319,7 @@ export const scenes = {
           "What's on the *other* side of a window, today?\nA bird? A whole forest? A field full of hay?",
           "Why is it that windows make *outside* more outside,\nand *inside* more inside? (Ah, you decide.)",
           "If a window remembered what passed through its glass --\nwould it tell you the *geese*, or the breath of the grass?",
-          "Glass is a *liquid* that's frozen in place.\nIf you waited a thousand years, it'd droop in its face."
+          "*Glass* is made from *sand* -- heated *very, very* hot.\n(Sand-grains, melted, become a *see-through* lot.)"
         ],
         'philosophy'),
 
@@ -339,7 +339,7 @@ export const scenes = {
           "One book. Then *two* books. Then *three* books. Then *four*.\nThe shelf is a *list* you can hold -- nothing more.",
           "Sorting's just *putting the smalls before bigs*.\nIt works just as well for your toes as for figs.",
           "A *list* is a line of the things in a row --\nthen, if you fancy, *rearrange them*. (Just so.)",
-          "Computers do this trick a *billion* times a second.\nWe call it a *sort*. (And nobody quite reckoned.)"
+          "Computers do this trick a *billion* times a second.\nWe call it a *sort* -- and they're terribly *quick*-ened."
         ],
         'computer-science'),
 
@@ -439,7 +439,7 @@ export const scenes = {
           "Still on the top -- but it's *busy* below,\nwith fishes and snail-folk and weeds in a row.",
           "It mirrors the mountains, the sky, and the trees.\nThe trick of a mirror is just standing at ease.",
           "A lake holds the colours of all that's around --\nthen hands them *right back*, when the wind isn't loud.",
-          "The *deepest* lakes go down for a *kilometre*.\nThat's *one thousand metres* -- and then six and a metre."
+          "The *deepest* lake goes down for a *kilometre* clear --\nthat's *a thousand whole metres*, all stretching down here."
         ],
         'science'),
 
@@ -557,7 +557,7 @@ export const scenes = {
         responses: [
           { text: "A cake is a thing for a *somebody's* day --\nA candle, a wish, and a 'hooray-and-yay.'", sfx: 'sfx_chime', theme: 'culture-history' },
           { text: "Take it along! Carry it gentle and slow --\nThe cake comes with you, wherever you go.", sfx: 'sfx_coin', theme: 'culture-history' },
-          { text: "Different lands have a different cake --\nSome with no candles, some sweet, some opaque.", sfx: 'sfx_chime', theme: 'culture-history' },
+          { text: "Different lands have a different cake --\nsome iced, some honey-glazed, some baked-and-flake.", sfx: 'sfx_chime', theme: 'culture-history' },
           { text: "One candle means one of a year that is new.\nSo: somebody, somewhere, just turned into TWO.", sfx: 'sfx_chime', theme: 'numbers' }
         ]
       },
@@ -688,7 +688,7 @@ export const scenes = {
         [
           "A wave is a story the water decides --\nIt rolls to the shore and then quietly hides.",
           "The moon -- you know -- pulls at the sea every day,\nWhich is why all the waves feel a need to obey.",
-          "No wave ever comes in just twice, in the same.\nEach one is a one-of. (The sea doesn't claim.)"
+          "No wave ever comes in *quite* the same way.\nEach one is a one-of -- a *new* sort of day."
         ],
         'science'),
 
@@ -796,7 +796,7 @@ export const scenes = {
         { x: 0.40, y: 0.20, w: 0.24, h: 0.40 },
         [
           "A house can be brick. A house can be wood.\nA house can be GLASS! (If you handle it good.)",
-          "Long ago, glass was a thing of the rich --\nA window was magic, a wonder, a stitch.",
+          "Long ago, *glass* was the thing of the rich --\na window was *magic*, a *wonder-to-which*.",
           "Each home is a different shape and a sound --\nAnd all of them, all of them, sit on the ground."
         ],
         'culture-history'),
@@ -806,7 +806,7 @@ export const scenes = {
         [
           "What makes a village more than a few of a house?\nIs it a square? Is it a baker? A mouse?",
           "If you could invent a new village to live --\nWhat would you put in? And what would you give?",
-          "What do you call your favourite small place?\nThe kind that you carry inside, not by chase?"
+          "What do you call your *favourite* small place?\nThe kind that you *carry inside*, not in space?"
         ],
         'philosophy'),
 
@@ -1018,7 +1018,7 @@ export const scenes = {
         collect: 'thing_flashlight',
         responses: [
           { text: "A torch is a sun that you carry by hand --\nIt makes a small daytime wherever you stand.", theme: 'science' },
-          { text: "The dark isn't scary, the dark is a thing\nThat sometimes wants company. Bring it a sing.", theme: 'emotions' }
+          { text: "The dark isn't scary, the dark is a thing\nthat sometimes wants company. (Bring it a *sing*.)", theme: 'emotions' }
         ]
       },
 
@@ -1087,7 +1087,7 @@ export const scenes = {
         collect: 'thing_globe',
         responses: [
           { text: "A globe is the world that has shrunk to your hand --\nWith oceans and mountains and tiny-print land.", theme: 'culture-history' },
-          { text: "Spin it, and ask it: where shall we go next?\nA hop and a finger -- the answer's the *text*.", theme: 'culture-history' }
+          { text: "Spin it, and *ask* it: where shall we go next?\nA hop and a finger -- whichever's the *guess*.", theme: 'culture-history' }
         ]
       },
 
@@ -1098,7 +1098,7 @@ export const scenes = {
         collect: 'thing_tyre',
         responses: [
           { text: "A tyre's a circle, of rubber and tread --\nIt rolls, and it bounces, and goes where you've said.", theme: 'science' },
-          { text: "Round things, round things -- the world is full plenty:\nA wheel, a planet, a coin (or twenty).", theme: 'numbers' }
+          { text: "Round things, round things -- the world has a *plenty*:\na wheel, a planet, a coin (or twenty).", theme: 'numbers' }
         ]
       },
 
@@ -1107,7 +1107,7 @@ export const scenes = {
         [
           "On chalkboards in classrooms, the numbers all dance:\n*Two and two is four* — they line up in advance.",
           "An ABC is a list that we sing when we learn:\n*A* is for *Apple*; the rest take a turn.",
-          "If THIS, then do THAT — that's the rule of a sum.\n(A *recipe*, really. A how-do-you-come.)"
+          "If THIS, then do THAT — that's the *rule* of a sum.\n(A *recipe*, really. Step *one*, step *two*, *done*.)"
         ],
         'numbers'),
 
@@ -1236,7 +1236,7 @@ export const scenes = {
         [
           "A waterfall's water deciding to *fall* --\nA river that finally noticed a *call*.",
           "The mist at the bottom is small clouds, you know --\nNot up in the sky. They're just down here, for show.",
-          "Far behind, that white shape is a mountain quite famous,\nQuite tall and quite old. (We don't need to name us.)"
+          "Far behind, that white shape is a mountain quite famous --\nquite tall and quite old, with *snow* for a crown-us."
         ],
         'art-history'),
 
