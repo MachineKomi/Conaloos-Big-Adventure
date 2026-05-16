@@ -447,7 +447,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Render Amelia's active buddy as a small sprite that trails
-   *  behind her. Position is updated each frame in `update()`. */
+   *  behind her. Position is updated each frame in `update()`.
+   *
+   *  Skips rendering when the same species is already a "wild"
+   *  character in the current scene (e.g. Conaloo stands in the
+   *  hub already — showing a second smaller Conaloo as the
+   *  follower confused the kid). The follower will re-appear in
+   *  any scene that doesn't already have that species on stage. */
   _renderBuddyFollower() {
     const buddyTeam = this.services.buddyTeam;
     const ameliaSprite = this.services.protagonist?.sprite;
@@ -456,6 +462,13 @@ export class GameScene extends Phaser.Scene {
     if (!active) return;
     const species = getSpecies(active.speciesId);
     if (!species || !this.textures.exists(species.sprite)) return;
+
+    // Duplicate guard: if the active buddy's species sprite is
+    // already in the scene's `characters` array, skip the follower.
+    const sceneHasSameSprite = (this.def.characters || []).some(
+      (c) => c.sprite === species.sprite
+    );
+    if (sceneHasSameSprite) return;
 
     const sprite = this.add.image(ameliaSprite.x - 80, ameliaSprite.y, species.sprite)
       .setOrigin(0.5, 1)

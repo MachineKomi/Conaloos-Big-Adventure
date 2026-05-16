@@ -13,7 +13,8 @@
 import Phaser from 'phaser';
 import { Accessibility } from './Accessibility.js';
 import { COL, RADIUS, STROKE, TOPBAR, TYPE, ANIM, drawPanel } from './UITokens.js';
-import { getSpecies } from '../content/buddySpecies.js';
+import { getSpecies, computeStats } from '../content/buddySpecies.js';
+import { typeEmoji } from '../content/typeChart.js';
 
 const UI_DEPTH = 9500;
 
@@ -306,10 +307,11 @@ export class GlobalUIScene extends Phaser.Scene {
 
       const zone = this.add.zone(cx, cy, cardW, cardH).setOrigin(0, 0).setDepth(UI_DEPTH + 65);
       zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerup', () => {
-        this.buddyTeam.setActiveIdx(i);
-        closeRoster();
-      });
+      // Tap card -> open the detail view (bio + stats + moves +
+      // "set as my buddy" button). v1.13 used to just set active
+      // on tap, but the kid had no way to see what each buddy was
+      // good at. The detail view fixes that.
+      zone.on('pointerup', () => this._openBuddyDetail(buddy, i));
       items.push(zone);
     });
 
@@ -332,6 +334,201 @@ export class GlobalUIScene extends Phaser.Scene {
 
     const closeRoster = () => {
       this._rosterOpen = false;
+      this._closeRosterFn = null;
+      this.tweens.add({
+        targets: items,
+        alpha: 0,
+        duration: ANIM.panelClose,
+        ease: 'Sine.easeIn',
+        onComplete: () => items.forEach((o) => o.destroy())
+      });
+    };
+    // Expose so the detail view can dismiss BOTH layers when the
+    // kid taps "Set as my buddy".
+    this._closeRosterFn = closeRoster;
+
+    // Slide in.
+    for (const o of items) o.alpha = 0;
+    this.tweens.add({
+      targets: items,
+      alpha: 1,
+      duration: ANIM.panelOpen,
+      ease: 'Sine.easeOut'
+    });
+  }
+
+  /** Drill-down detail view for one buddy. Shows the bio (a small
+   *  couplet from the species data), level + stats, and the three
+   *  moves with their types + costs. Bottom-of-card "Set as my
+   *  buddy" button switches the active buddy and closes both
+   *  modals; a back arrow returns to the roster grid. */
+  _openBuddyDetail(buddyInstance, idx) {
+    const species = getSpecies(buddyInstance.speciesId);
+    if (!species) return;
+    const isActive = idx === this.buddyTeam._activeIdx;
+
+    const { width, height } = this.scale;
+    const items = [];
+
+    // Layer above the roster panel.
+    const veil = this.add.graphics().setDepth(UI_DEPTH + 80);
+    veil.fillStyle(COL.ink, 0.5);
+    veil.fillRect(0, 0, width, height);
+    items.push(veil);
+    const blocker = this.add.zone(0, 0, width, height).setOrigin(0, 0).setDepth(UI_DEPTH + 81);
+    blocker.setInteractive();
+    blocker.on('pointerup', () => closeDetail());
+    items.push(blocker);
+
+    // Detail panel.
+    const cardW = 620;
+    const cardH = 540;
+    const cx = (width - cardW) / 2;
+    const cy = (height - cardH) / 2;
+    const bg = this.add.graphics().setDepth(UI_DEPTH + 90);
+    drawPanel(bg, cx, cy, cardW, cardH, { radius: RADIUS.panel });
+    items.push(bg);
+
+    // Sprite left side.
+    if (this.textures.exists(species.sprite)) {
+      const img = this.add.image(cx + 150, cy + 200, species.sprite).setOrigin(0.5).setDepth(UI_DEPTH + 91);
+      const tex = this.textures.get(species.sprite).getSourceImage();
+      img.setScale(240 / tex.height);
+      items.push(img);
+    }
+
+    // Type chip under the sprite.
+    const typeChip = this.add.text(cx + 150, cy + 340,
+      `${typeEmoji(species.type)}  ${species.type}`, {
+      fontFamily: TYPE.family,
+      fontSize: '20px',
+      color: '#ffffff',
+      backgroundColor: COL.orangeHex,
+      padding: { left: 12, right: 12, top: 4, bottom: 4 }
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 92);
+    items.push(typeChip);
+
+    // Right side: name, level, bio, stats, moves.
+    const rightX = cx + 300;
+    const headline = this.add.text(rightX, cy + 28,
+      `${species.displayName}  Lv${buddyInstance.level}`, {
+      fontFamily: TYPE.family,
+      fontSize: '34px',
+      color: COL.inkHex
+    }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+    items.push(headline);
+
+    const bio = this.add.text(rightX, cy + 76, species.bio || '', {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: '18px',
+      color: COL.inkSoft,
+      wordWrap: { width: cardW - 320 }
+    }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+    items.push(bio);
+
+    // Stats table.
+    const stats = computeStats(buddyInstance.speciesId, buddyInstance.level);
+    if (stats) {
+      const rows = [
+        ['HP',     `${stats.maxHP}`],
+        ['Attack', `${Math.round(stats.atk)}`],
+        ['Defense',`${Math.round(stats.def)}`],
+        ['Speed',  `${Math.round(stats.spd)}`],
+        ['Energy', `${stats.maxEnergy}`]
+      ];
+      const tableY = cy + 168;
+      rows.forEach(([k, v], i) => {
+        const rowY = tableY + i * 26;
+        const keyText = this.add.text(rightX, rowY, k, {
+          fontFamily: TYPE.family,
+          fontSize: '16px',
+          color: COL.inkSoft
+        }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+        const valText = this.add.text(rightX + 110, rowY, v, {
+          fontFamily: TYPE.family,
+          fontSize: '16px',
+          color: COL.inkHex
+        }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+        items.push(keyText, valText);
+      });
+    }
+
+    // Moves list.
+    const movesY = cy + 330;
+    const movesHeader = this.add.text(rightX, movesY, 'Moves', {
+      fontFamily: TYPE.family,
+      fontSize: '20px',
+      color: COL.inkHex
+    }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+    items.push(movesHeader);
+
+    species.moves.forEach((move, i) => {
+      const rowY = movesY + 32 + i * 30;
+      const energyText = move.energyCost === 0 ? 'basic' : `⚡${move.energyCost}`;
+      const effectText = move.effect
+        ? (move.effect.kind === 'heal' ? `heals ${move.effect.amount}` : `+${move.effect.amount} ⚡`)
+        : `power ${move.power}`;
+      const line = `${typeEmoji(move.type)}  ${move.name}  ·  ${energyText}  ·  ${effectText}`;
+      const t = this.add.text(rightX, rowY, line, {
+        fontFamily: TYPE.bodyFamily,
+        fontSize: '16px',
+        color: COL.inkSoft
+      }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
+      items.push(t);
+    });
+
+    // Action button at bottom: "Set as my buddy" (or "✓ already")
+    const btnW = 280;
+    const btnH = 56;
+    const btnX = cx + (cardW - btnW) / 2;
+    const btnY = cy + cardH - btnH - 24;
+    const btnBg = this.add.graphics().setDepth(UI_DEPTH + 92);
+    drawPanel(btnBg, btnX, btnY, btnW, btnH, {
+      radius: RADIUS.card,
+      fill: isActive ? COL.paperWarm : COL.orange,
+      fillAlpha: 1
+    });
+    items.push(btnBg);
+    const btnLabel = this.add.text(btnX + btnW / 2, btnY + btnH / 2,
+      isActive ? '✓ Already your buddy' : 'Set as my buddy', {
+      fontFamily: TYPE.family,
+      fontSize: '22px',
+      color: isActive ? COL.inkHex : '#ffffff',
+      stroke: isActive ? null : COL.inkHex,
+      strokeThickness: isActive ? 0 : 3
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 93);
+    items.push(btnLabel);
+
+    if (!isActive) {
+      const btnZone = this.add.zone(btnX, btnY, btnW, btnH).setOrigin(0, 0).setDepth(UI_DEPTH + 94);
+      btnZone.setInteractive({ useHandCursor: true });
+      btnZone.on('pointerup', () => {
+        this.buddyTeam.setActiveIdx(idx);
+        // Close BOTH layers — the kid picked, we're done.
+        closeDetail();
+        this._closeRosterFn?.();
+      });
+      items.push(btnZone);
+    }
+
+    // Back / close arrow top-left.
+    const backX = cx + 12;
+    const backY = cy + 10;
+    const backBg = this.add.graphics().setDepth(UI_DEPTH + 92);
+    drawPanel(backBg, backX, backY, 36, 30, { radius: RADIUS.pill, fill: COL.paper });
+    items.push(backBg);
+    const backLabel = this.add.text(backX + 18, backY + 15, '←', {
+      fontFamily: TYPE.family,
+      fontSize: '22px',
+      color: COL.inkHex
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 93);
+    items.push(backLabel);
+    const backZone = this.add.zone(backX, backY, 36, 30).setOrigin(0, 0).setDepth(UI_DEPTH + 94);
+    backZone.setInteractive({ useHandCursor: true });
+    backZone.on('pointerup', () => closeDetail());
+    items.push(backZone);
+
+    const closeDetail = () => {
       this.tweens.add({
         targets: items,
         alpha: 0,
@@ -341,7 +538,6 @@ export class GlobalUIScene extends Phaser.Scene {
       });
     };
 
-    // Slide in.
     for (const o of items) o.alpha = 0;
     this.tweens.add({
       targets: items,

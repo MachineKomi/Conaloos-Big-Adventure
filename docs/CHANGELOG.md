@@ -1,5 +1,87 @@
 # Changelog
 
+## 2026-05-16 — v1.14: full buddy collection, bio panel, ice battle, polish
+
+Closing the v1.13 open hooks. All five buddies are now recruitable,
+each one has a detail screen with stats and moves, and the ice
+level has a meaningful battle.
+
+### All five buddies collectable
+
+Two new NPC challenges close the gap:
+
+- **Konessa** (seaside) has **Monaloo** the butterfly (Lv3) —
+  flowers and butterflies belong together.
+- **Wawoo** (ice level) has **Conaloo** the bear-butterly (Lv4)
+  as a "wintered bear" — a *boss*-level battle for the cold
+  place. Since the kid already has a Conaloo as their starter,
+  this is a pure EXP + gem reward fight, not a new recruitment.
+
+NPC roster now:
+- Cosenae → Seesa (Lv1)
+- Loosa → Umi (Lv2)
+- Mommy → Pepsi (Lv3)
+- Konessa → Monaloo (Lv3)
+- Wawoo → Conaloo (Lv4) — boss
+
+### `buddy-collector` quest is now back to 5
+
+Bumped target from 3 → 5. The kid can complete it by beating
+all four NPCs that own a species the kid doesn't start with
+(Seesa, Umi, Pepsi, Monaloo) plus the starter Conaloo.
+
+### Buddy bio detail panel
+
+Tap any buddy card in the roster → drill-down detail view:
+
+- Big sprite + type chip
+- Name, level, species bio (a couplet from the species data)
+- Stats table: HP, Attack, Defense, Speed, Energy (level-scaled)
+- All three moves with type, energy cost, and effect ("heals 10"
+  / "+4 ⚡" / "power 14")
+- Big orange "**Set as my buddy**" button at the bottom (or
+  "✓ Already your buddy" if already active)
+- Back arrow top-left, tap-outside dismisses
+
+Switching the active buddy from the detail view also closes the
+roster modal — so the kid picks, confirms, and is back in the
+game in two taps.
+
+### Buddy follower duplicate fix
+
+When the kid's active buddy is the same species as a "wild"
+character already standing in the scene (e.g. Conaloo in the
+hub), the follower no longer renders — so the kid doesn't see
+two Conaloos at the same time. The follower reappears in any
+scene that doesn't already have the species on stage.
+
+### Battle music switch
+
+When a battle starts, the music cross-fades to *Quick Pick Up*
+(via the `music_quick` alias) — a brisker, more energetic track
+than the gameplay scene's idle music. When the battle ends, the
+gameplay scene's previous music resumes.
+
+### Touched
+
+- **Updated:** `src/content/scenes.js` (Konessa + Wawoo
+  challenges), `src/systems/GlobalUI.js` (buddy bio detail
+  panel + cross-modal close), `src/systems/Quests.js`
+  (buddy-collector target back to 5),
+  `src/scenes/GameScene.js` (follower duplicate guard),
+  `src/scenes/BattleScene.js` (battle music + restore).
+
+### What's left for v1.15
+
+- Recruit-via-quiz alternative (talk + answer right = they join,
+  without a battle)
+- Wild buddy encounters in scenes (random pop-ups)
+- Status effects (poison, sleep, stun)
+- Held items
+- Amelia's inventory item redraws (still waiting on assets)
+- Nicknames for recruited buddies (the schema field is already
+  there, just no UI yet)
+
 ## 2026-05-16 — v1.13: Buddy battles, polished + expanded
 
 A pass over the v1.12 MVP based on playtest feedback, plus the

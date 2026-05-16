@@ -167,7 +167,13 @@ export class BattleScene extends Phaser.Scene {
     // 8. Drop-in.
     this._slideIn();
 
-    // 9. Intro banners.
+    // 9. Switch to battle music. We remember the previous track so
+    //    the gameplay scene's music resumes on battle exit. Quick
+    //    Pick Up is brisk and energetic — fits a duel.
+    this._previousMusicKey = this.services.audio?.currentMusicKey || null;
+    this.services.audio?.playMusic?.('music_quick', this);
+
+    // 10. Intro banners.
     this._showBanner(`${this.opponent.species.displayName} appeared!`, 1500, () => {
       this._showBanner(`Go, ${this.player.species.displayName}!`, 1200, () => {
         this._setMovesEnabled(true);
@@ -839,6 +845,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _exit(result) {
+    // Restore the gameplay scene's music before we stop the battle
+    // scene — so the cross-fade overlaps the visual fade-out.
+    if (this._previousMusicKey && this.services.audio) {
+      this.services.audio.playMusic(this._previousMusicKey, this);
+    }
     this.tweens.add({
       targets: this._allObjs,
       alpha: 0,

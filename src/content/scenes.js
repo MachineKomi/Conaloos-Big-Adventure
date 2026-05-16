@@ -706,6 +706,18 @@ export const scenes = {
       { key: 'gem_5', x: 0.40, y: 0.70 },
       { key: 'gem_6', x: 0.30, y: 0.18 },
       { key: 'gem_8', x: 0.72, y: 0.78 }
+    ],
+    // Konessa's quiet attention is a perfect fit for Monaloo the
+    // butterfly — flowers and butterflies belong together.
+    challenges: [
+      {
+        id: 'konessa-vs-monaloo',
+        npc: 'peep_Konessa_has-flower',
+        buddySpeciesId: 'monaloo',
+        buddyLevel: 3,
+        x: 0.36, y: 0.46,
+        label: "Konessa's butterfly"
+      }
     ]
   },
 
@@ -925,6 +937,21 @@ export const scenes = {
       { key: 'gem_5', x: 0.42, y: 0.40 },
       { key: 'gem_3', x: 0.65, y: 0.18 },
       { key: 'gem_9', x: 0.20, y: 0.78 }
+    ],
+    // Ice-level boss battle: Wawoo, finally in his element, has a
+    // *higher-level* Conaloo with him. The kid already has Conaloo
+    // as their starter, so beating Wawoo doesn't recruit anyone
+    // new — it's a pure EXP + gem reward "tough one" battle for
+    // when they're ready.
+    challenges: [
+      {
+        id: 'wawoo-vs-conaloo',
+        npc: 'peep_Wawoo_robo-snowman',
+        buddySpeciesId: 'conaloo',
+        buddyLevel: 4,
+        x: 0.46, y: 0.50,
+        label: "Wawoo's wintered bear"
+      }
     ]
   },
 
