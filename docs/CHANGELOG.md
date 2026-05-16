@@ -1,5 +1,65 @@
 # Changelog
 
+## 2026-05-16 — v1.16: faster levelling, scene-bg battle stage, bigger buddy sprites
+
+### Levelling actually happens now
+
+The v1.15 EXP curve was too slow — beating the first Lv1 NPC
+only gave 20 XP toward a 30-XP threshold, so the kid did a whole
+battle and saw *nothing change*. Rebalanced:
+
+|  | Old | New |
+|---|---:|---:|
+| L1 → L2 needed | 30 | **20** |
+| L2 → L3 needed | 70 | **50** |
+| L3 → L4 needed | 130 | **95** |
+| L4 → L5 needed | 210 | **155** |
+| EXP per opponent level | 20× | **35×** |
+| Consolation EXP (lose) | 20% of win, min 4 | **35% of win, min 8** |
+
+Now beating Cosenae's Seesa (Lv1) on the very first battle gives
+35 XP — past the 20-XP threshold — so the kid **always gets a
+level-up out of their first win**. Snowballing through the rest
+of the line-up is also much smoother.
+
+`BuddyTeam._hydrate` also gained a `normaliseLevels(buddy)` loop
+that cascades saved-overflow EXP into actual level-ups, so any
+buddy whose v1.15 EXP was above the new threshold auto-levels-up
+on first launch after the update.
+
+### Battle stage uses the scene background
+
+The cream-paper battle stage looked like the game had paused on
+a sheet of paper. Now the rounded battle window shows the
+**scene's actual background image** cropped to the rounded
+shape (via GeometryMask). A soft 22% cream wash sits on top to
+keep the buddies readable against detailed art.
+
+The drop shadow under the panel and the elliptical sprite
+"platforms" both remain — Amelia's pet still stands on a real
+spot of ground.
+
+### Buddy sprites — bigger in the roster + detail panel
+
+The hand-drawn buddies were tiny in the roster cards. Bumped:
+
+- **Roster card:** cardW 200 → **220**, cardH 220 → **280**.
+  Sprite target 120 → **180**.
+- **Detail panel:** cardW 620 → **720**, cardH 540 → **600**.
+  Sprite target 240 → **360**.
+
+Both use `min(targetH / h, targetW / w)` so wide drawings (Pepsi)
+and tall ones (Conaloo) both fit comfortably.
+
+### Touched
+
+- **Updated:** `src/content/buddySpecies.js` (EXP curve + reward
+  rebalance), `src/systems/BuddyTeam.js` (normaliseLevels on
+  hydrate), `src/scenes/BattleScene.js` (consolation EXP bump,
+  scene-bg cropped to rounded stage), `src/scenes/GameScene.js`
+  (pass backgroundKey to battle), `src/systems/GlobalUI.js`
+  (bigger roster + detail sprites).
+
 ## 2026-05-16 — v1.15: Adventure Book + Settings cog + Daddy + EXP visibility + crash fix
 
 A big restructure pass + two critical bug fixes + a special new

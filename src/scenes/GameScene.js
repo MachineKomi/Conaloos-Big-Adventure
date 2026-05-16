@@ -626,6 +626,10 @@ export class GameScene extends Phaser.Scene {
       opponentParticipant: opponent,
       previousSceneKey: prevKey,
       opponentLabel: challenge.label,
+      // v1.16: use the current scene's background art as the battle
+      // stage's backdrop. Makes battles feel like they're happening
+      // *in the world*, not on a paper sheet.
+      backgroundKey: this.def.background,
       services: this.services,
       onComplete: (result) => {
         // Wake the world back up.

@@ -298,13 +298,24 @@ export function computeStats(speciesId, level) {
 }
 
 /** EXP needed to reach the *next* level from `level`.
- *  L1→L2 = 30; L2→L3 = 70; L3→L4 = 130; quadratic-ish. */
+ *  v1.16 rebalance — the v1.15 curve was too slow (the very first
+ *  battle didn't even level you up). New thresholds:
+ *    L1 → L2 = 20    (first battle reward of 35 carries you through)
+ *    L2 → L3 = 50
+ *    L3 → L4 = 95
+ *    L4 → L5 = 155
+ *    L5 → L6 = 230
+ *  Quadratic-ish but starts SHALLOW so a 4-year-old sees progress
+ *  immediately. */
 export function expForNextLevel(level) {
   const lv = Math.max(1, level);
-  return 30 + 40 * (lv - 1) + 10 * (lv - 1) * (lv - 1);
+  return 20 + 22 * (lv - 1) + 8 * (lv - 1) * (lv - 1);
 }
 
-/** EXP a defeated opponent grants. */
+/** EXP a defeated opponent grants. v1.16: bumped 20× → 35× per
+ *  opponent level. Means beating the first Lv1 NPC (Seesa) gives 35,
+ *  which is over the 20-XP L1→L2 threshold — guaranteed first-battle
+ *  level-up, so the kid feels growth from move one. */
 export function expReward(opponentLevel) {
-  return 20 * Math.max(1, opponentLevel);
+  return 35 * Math.max(1, opponentLevel);
 }

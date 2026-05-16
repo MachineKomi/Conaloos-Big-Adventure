@@ -77,6 +77,7 @@ export class BattleScene extends Phaser.Scene {
     this.onComplete = data.onComplete || (() => {});
     this.services = data.services || {};
     this.opponentLabel = data.opponentLabel || `Wild ${this.opponent.species.displayName}`;
+    this.backgroundKey = data.backgroundKey || null;
     this._battleOver = false;
     this._movesEnabled = false;
     this._allObjs = [];   // every display object — used for the exit fade
@@ -102,19 +103,52 @@ export class BattleScene extends Phaser.Scene {
     const stageH = height - STAGE_PAD_TOP - STAGE_PAD_BOTTOM;
     this._stageRect = { x: stageX, y: stageY, w: stageW, h: stageH };
 
+    // Drop shadow + cream fallback fill UNDER the stage, in case
+    // the background image is missing or fails to load. drawPanel
+    // also draws a stroke here, but it's beneath the masked bg
+    // image — we draw a *visible* stroke separately on top later.
     this.stageBg = this.add.graphics().setDepth(Z.stage);
     drawPanel(this.stageBg, stageX, stageY, stageW, stageH, {
       radius: RADIUS.panel,
       fill: COL.paper,
       fillAlpha: 0.98
     });
-
-    // A soft "sky/ground" band so the stage doesn't read as one
-    // flat colour. Top half slightly warmer.
-    const horizonY = stageY + stageH * 0.55;
-    this.stageBg.fillStyle(COL.gold, 0.18);
-    this.stageBg.fillRect(stageX + 4, stageY + 4, stageW - 8, horizonY - stageY - 4);
     this._allObjs.push(this.stageBg);
+
+    // The scene's background image, cropped to the rounded stage
+    // rect via a GeometryMask. Cover-fit so the stage feels like
+    // a *window* into the world, not a sticker.
+    if (this.backgroundKey && this.textures.exists(this.backgroundKey)) {
+      const bgImg = this.add.image(stageX + stageW / 2, stageY + stageH / 2, this.backgroundKey)
+        .setOrigin(0.5)
+        .setDepth(Z.stage + 1);
+      const tex = this.textures.get(this.backgroundKey).getSourceImage();
+      const scale = Math.max(stageW / tex.width, stageH / tex.height);
+      bgImg.setScale(scale);
+      // Slight desaturation effect via dark tint blended at low
+      // alpha — keeps focus on the buddies in the foreground.
+      const maskG = this.make.graphics({ add: false });
+      maskG.fillStyle(0xffffff);
+      maskG.fillRoundedRect(stageX, stageY, stageW, stageH, RADIUS.panel);
+      bgImg.setMask(maskG.createGeometryMask());
+      this._stageMaskGfx = maskG;
+      this._allObjs.push(bgImg);
+
+      // A soft cream wash over the bg image to keep contrast high
+      // enough that the buddies still read clearly against detailed
+      // scene art. Subtle — about 22% paper.
+      const wash = this.add.graphics().setDepth(Z.stage + 2);
+      wash.fillStyle(COL.paper, 0.22);
+      wash.fillRoundedRect(stageX, stageY, stageW, stageH, RADIUS.panel);
+      this._allObjs.push(wash);
+    }
+
+    // Stroke on top so it crisps the edge of the rounded window,
+    // whether or not the bg image rendered.
+    this.stageStroke = this.add.graphics().setDepth(Z.stage + 3);
+    this.stageStroke.lineStyle(STROKE.panel, COL.ink, 1);
+    this.stageStroke.strokeRoundedRect(stageX, stageY, stageW, stageH, RADIUS.panel);
+    this._allObjs.push(this.stageStroke);
 
     // 3. Sprite "platforms" — soft elliptical shadows the buddies
     //    stand on. Gives them weight + a sense of place.
@@ -915,9 +949,11 @@ export class BattleScene extends Phaser.Scene {
         }
       });
     } else {
-      // Consolation. No fail state.
+      // Consolation. No fail state. v1.16: bumped from 20% to 35%
+      // so a kid who's losing still feels progress toward levelling
+      // up after a few attempts.
       gems = 3;
-      expGained = Math.max(4, Math.floor(expReward(this.opponent.level) * 0.2));
+      expGained = Math.max(8, Math.floor(expReward(this.opponent.level) * 0.35));
       if (finisher && this.services.buddyTeam) {
         levelsGained = this.services.buddyTeam.grantExp(finisher, expGained);
         if (levelsGained > 0) {

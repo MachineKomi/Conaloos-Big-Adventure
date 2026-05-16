@@ -19,6 +19,20 @@
 
 import { getSpecies, computeStats, expForNextLevel } from '../content/buddySpecies.js';
 
+/** Normalise any overflow EXP into actual level-ups. Used after
+ *  hydrating from a save written with a different (slower) EXP
+ *  curve — without this, a buddy with exp >= old threshold but >=
+ *  new threshold gets "stuck" at its saved level even though they
+ *  should have grown. */
+function normaliseLevels(buddy) {
+  let needed = expForNextLevel(buddy.level);
+  while (buddy.exp >= needed) {
+    buddy.exp -= needed;
+    buddy.level += 1;
+    needed = expForNextLevel(buddy.level);
+  }
+}
+
 const STARTER_SPECIES_ID = 'conaloo';
 
 export class BuddyTeam {
@@ -48,7 +62,16 @@ export class BuddyTeam {
     if (this._buddies.length === 0) {
       this._buddies = [{ speciesId: STARTER_SPECIES_ID, level: 1, exp: 0 }];
     }
+    // Cascade any saved EXP overflow into level-ups. Handles save
+    // data written under older (slower) EXP curves.
+    let migrated = false;
+    for (const b of this._buddies) {
+      const beforeLv = b.level;
+      normaliseLevels(b);
+      if (b.level !== beforeLv) migrated = true;
+    }
     this._activeIdx = Math.min(Math.max(0, activeIdx), this._buddies.length - 1);
+    if (migrated) this._persist();
   }
 
   /** All buddies on the team, in order. */

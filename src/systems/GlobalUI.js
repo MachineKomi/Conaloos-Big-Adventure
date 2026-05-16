@@ -334,12 +334,14 @@ export class GlobalUIScene extends Phaser.Scene {
     const buddies = this.buddyTeam.list();
     const activeIdx = buddies.indexOf(this.buddyTeam.active());
 
-    // Panel sized to fit all cards in a row.
-    const cardW = 200;
-    const cardH = 220;
-    const cardGap = 18;
+    // Panel sized to fit all cards in a row. v1.16 bumped card
+    // dimensions so Amelia's hand-drawn buddy sprites read at a
+    // comfortable size.
+    const cardW = 220;
+    const cardH = 280;
+    const cardGap = 16;
     const panelPad = 32;
-    const panelW = Math.min(width - 80, panelPad * 2 + buddies.length * cardW + (buddies.length - 1) * cardGap);
+    const panelW = Math.min(width - 60, panelPad * 2 + buddies.length * cardW + (buddies.length - 1) * cardGap);
     const panelH = panelPad * 2 + cardH + 90;
     const panelX = (width - panelW) / 2;
     const panelY = (height - panelH) / 2;
@@ -383,17 +385,22 @@ export class GlobalUIScene extends Phaser.Scene {
       });
       items.push(cardBg);
 
-      // Sprite.
+      // Sprite. Fits the card's sprite area using min(width-fit,
+      // height-fit) so kid-drawings with wildly different aspect
+      // ratios all read at a comfortable size.
       if (this.textures.exists(species.sprite)) {
-        const img = this.add.image(cx + cardW / 2, cy + 100, species.sprite).setOrigin(0.5).setDepth(UI_DEPTH + 63);
+        const img = this.add.image(cx + cardW / 2, cy + 135, species.sprite).setOrigin(0.5).setDepth(UI_DEPTH + 63);
         const tex = this.textures.get(species.sprite).getSourceImage();
-        img.setScale(120 / tex.height);
+        const targetH = 180;
+        const targetW = cardW - 24;
+        const scale = Math.min(targetH / tex.height, targetW / tex.width);
+        img.setScale(scale);
         items.push(img);
       }
 
       const name = this.add.text(cx + cardW / 2, cy + 12, species.displayName, {
         fontFamily: TYPE.family,
-        fontSize: '20px',
+        fontSize: '22px',
         color: COL.inkHex
       }).setOrigin(0.5, 0).setDepth(UI_DEPTH + 63);
       items.push(name);
@@ -507,36 +514,43 @@ export class GlobalUIScene extends Phaser.Scene {
     blocker.on('pointerup', () => closeDetail());
     items.push(blocker);
 
-    // Detail panel.
-    const cardW = 620;
-    const cardH = 540;
+    // Detail panel. v1.16 grew the canvas (and the sprite) so
+    // Amelia's hand-drawn buddies have room to breathe.
+    const cardW = 720;
+    const cardH = 600;
     const cx = (width - cardW) / 2;
     const cy = (height - cardH) / 2;
     const bg = this.add.graphics().setDepth(UI_DEPTH + 90);
     drawPanel(bg, cx, cy, cardW, cardH, { radius: RADIUS.panel });
     items.push(bg);
 
-    // Sprite left side.
+    // Sprite left side — much bigger now, fitted to the available
+    // left-half area with both width + height constraints.
     if (this.textures.exists(species.sprite)) {
-      const img = this.add.image(cx + 150, cy + 200, species.sprite).setOrigin(0.5).setDepth(UI_DEPTH + 91);
+      const spriteCenterX = cx + 180;
+      const spriteCenterY = cy + 240;
+      const img = this.add.image(spriteCenterX, spriteCenterY, species.sprite).setOrigin(0.5).setDepth(UI_DEPTH + 91);
       const tex = this.textures.get(species.sprite).getSourceImage();
-      img.setScale(240 / tex.height);
+      const targetH = 360;
+      const targetW = 300;
+      const scale = Math.min(targetH / tex.height, targetW / tex.width);
+      img.setScale(scale);
       items.push(img);
     }
 
     // Type chip under the sprite.
-    const typeChip = this.add.text(cx + 150, cy + 340,
+    const typeChip = this.add.text(cx + 180, cy + 450,
       `${typeEmoji(species.type)}  ${species.type}`, {
       fontFamily: TYPE.family,
-      fontSize: '20px',
+      fontSize: '22px',
       color: '#ffffff',
       backgroundColor: COL.orangeHex,
-      padding: { left: 12, right: 12, top: 4, bottom: 4 }
+      padding: { left: 14, right: 14, top: 5, bottom: 5 }
     }).setOrigin(0.5).setDepth(UI_DEPTH + 92);
     items.push(typeChip);
 
     // Right side: name, level, bio, stats, moves.
-    const rightX = cx + 300;
+    const rightX = cx + 360;
     const headline = this.add.text(rightX, cy + 28,
       `${species.displayName}  Lv${buddyInstance.level}`, {
       fontFamily: TYPE.family,
@@ -549,7 +563,7 @@ export class GlobalUIScene extends Phaser.Scene {
       fontFamily: TYPE.bodyFamily,
       fontSize: '18px',
       color: COL.inkSoft,
-      wordWrap: { width: cardW - 320 }
+      wordWrap: { width: cardW - rightX + cx - 30 }
     }).setOrigin(0, 0).setDepth(UI_DEPTH + 91);
     items.push(bio);
 
