@@ -1,5 +1,55 @@
 # Changelog
 
+## 2026-05-16 — v1.10: Amelia-drawn portals
+
+All portal art is now Amelia's. The seven non-Amelia portal
+sprites were deleted (`portal_door`, `portal_open-door`,
+`portal_office-door-portal`, `portal_ladder`, `portal_portal_blue`,
+`portal_portal_green`, `portal_slime-portal`) and replaced with
+the five new portals she's drawn:
+
+- `portal_donut_portal`
+- `portal_heart_door`
+- `portal_magic_flower_door`
+- `portal_magic_swirl`
+- `portal_simple_heart_door`
+
+### Mapping
+
+One portal sprite per *destination* (not per *origin*), so the
+same place always has the same portal icon — whether the kid is
+arriving at the cottage from the hub or the bedroom, the door
+they tap looks the same. Helps a 4-year-old recognise places by
+shape.
+
+| Destination                  | Portal sprite                |
+|------------------------------|------------------------------|
+| cottage                      | `portal_heart_door`          |
+| bedroom                      | `portal_simple_heart_door`   |
+| hub-garden / playground      | `portal_magic_flower_door`   |
+| lake / waterfall             | `portal_magic_swirl`         |
+| vista / skyscraper-roof      | `portal_donut_portal`        |
+| village / seaside            | `portal_heart_door`          |
+| school                       | `portal_simple_heart_door`   |
+
+### Touched
+
+- **Assets:** 7 old portal PNGs removed from `/assets/`; 5 new
+  portal PNGs added.
+- **Updated:** `src/content/scenes.js` (24 portal sprite
+  references swapped across 11 scenes).
+- **Auto-regenerated** at build: `src/content/manifest.json`.
+
+### Open hooks for next agent
+
+- Heights weren't re-tuned per new sprite; if Amelia's drawings
+  have a different aspect ratio than the originals (e.g. her
+  heart-door is squatter than the old door), the `heightFrac` in
+  each portal definition may need a small adjustment so doors
+  don't look stretched. Visible in any playtest screenshot.
+- Once Amelia's `thing_*` redraws come in next, the same
+  destination-based mapping idea is worth applying.
+
 ## 2026-05-10 — v1.9.2: the case of the second equation
 
 The user reported: "It correctly shows the gems you've just

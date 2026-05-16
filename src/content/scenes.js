@@ -220,17 +220,17 @@ export const scenes = {
         'science'),
 
       portal('to-cottage', 'cosy-cottage-interior', {
-        sprite: 'portal_door',     x: 0.05, y: 0.62, heightFrac: 0.28,
+        sprite: 'portal_heart_door',     x: 0.05, y: 0.62, heightFrac: 0.28,
         enterEdge: 'right',        label: 'home'
       }),
 
       portal('to-lake', 'mountain-lake-childlike', {
-        sprite: 'portal_portal_blue', x: 0.97, y: 0.62, heightFrac: 0.28,
+        sprite: 'portal_magic_swirl', x: 0.97, y: 0.62, heightFrac: 0.28,
         enterEdge: 'left',         label: 'the lake'
       }),
 
       portal('to-playground', 'fantasy-garden-playground', {
-        sprite: 'portal_ladder',   x: 0.32, y: 0.97, heightFrac: 0.26,
+        sprite: 'portal_magic_flower_door',   x: 0.32, y: 0.97, heightFrac: 0.26,
         enterEdge: 'top',          label: 'the playground'
       })
     ],
@@ -332,12 +332,12 @@ export const scenes = {
         'computer-science'),
 
       portal('to-garden', 'sunny-rocket-garden', {
-        sprite: 'portal_door',     x: 0.05, y: 0.62, heightFrac: 0.32,
+        sprite: 'portal_magic_flower_door',     x: 0.05, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the garden'
       }),
 
       portal('to-bedroom', 'girls-bedroom', {
-        sprite: 'portal_open-door', x: 0.95, y: 0.62, heightFrac: 0.32,
+        sprite: 'portal_simple_heart_door', x: 0.95, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the bedroom'
       })
     ],
@@ -430,17 +430,17 @@ export const scenes = {
         'numbers'),
 
       portal('to-vista', 'mountain-lake-vista', {
-        sprite: 'portal_ladder',   x: 0.95, y: 0.40, heightFrac: 0.30,
+        sprite: 'portal_donut_portal',   x: 0.95, y: 0.40, heightFrac: 0.30,
         enterEdge: 'left',         label: 'up the mountain'
       }),
 
       portal('to-garden', 'sunny-rocket-garden', {
-        sprite: 'portal_portal_green', x: 0.04, y: 0.40, heightFrac: 0.28,
+        sprite: 'portal_magic_flower_door', x: 0.04, y: 0.40, heightFrac: 0.28,
         enterEdge: 'right',        label: 'the garden'
       }),
 
       portal('to-waterfall', 'waterfall-mt-fuji-in-distance', {
-        sprite: 'portal_portal_blue', x: 0.50, y: 0.45, heightFrac: 0.20,
+        sprite: 'portal_magic_swirl', x: 0.50, y: 0.45, heightFrac: 0.20,
         enterEdge: 'left',         label: 'far away'
       })
     ],
@@ -549,17 +549,17 @@ export const scenes = {
         'language'),
 
       portal('to-hub', 'sunny-rocket-garden', {
-        sprite: 'portal_ladder',   x: 0.04, y: 0.55, heightFrac: 0.30,
+        sprite: 'portal_magic_flower_door',   x: 0.04, y: 0.55, heightFrac: 0.30,
         enterEdge: 'bottom',       label: 'the garden'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.55, y: 0.10, heightFrac: 0.22,
+        sprite: 'portal_heart_door',     x: 0.55, y: 0.10, heightFrac: 0.22,
         enterEdge: 'left',         label: 'the village'
       }),
 
       portal('to-school', 'school-courtyard', {
-        sprite: 'portal_office-door-portal', x: 0.95, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_simple_heart_door', x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the school'
       })
     ],
@@ -654,12 +654,12 @@ export const scenes = {
         'language'),
 
       portal('to-waterfall', 'waterfall-mt-fuji-in-distance', {
-        sprite: 'portal_portal_blue', x: 0.05, y: 0.55, heightFrac: 0.28,
+        sprite: 'portal_magic_swirl', x: 0.05, y: 0.55, heightFrac: 0.28,
         enterEdge: 'right',        label: 'far away'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.30,
+        sprite: 'portal_heart_door',     x: 0.95, y: 0.55, heightFrac: 0.30,
         enterEdge: 'left',         label: 'the village'
       })
     ],
@@ -751,17 +751,17 @@ export const scenes = {
         'philosophy'),
 
       portal('to-garden', 'fantasy-garden-playground', {
-        sprite: 'portal_door',     x: 0.04, y: 0.62, heightFrac: 0.32,
+        sprite: 'portal_magic_flower_door',     x: 0.04, y: 0.62, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the playground'
       }),
 
       portal('to-school', 'school-courtyard', {
-        sprite: 'portal_office-door-portal', x: 0.50, y: 0.40, heightFrac: 0.26,
+        sprite: 'portal_simple_heart_door', x: 0.50, y: 0.40, heightFrac: 0.26,
         enterEdge: 'right',        label: 'the school'
       }),
 
       portal('to-seaside', 'seaside-village-sunset', {
-        sprite: 'portal_door',     x: 0.96, y: 0.62, heightFrac: 0.32,
+        sprite: 'portal_heart_door',     x: 0.96, y: 0.62, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the seaside'
       })
     ],
@@ -854,12 +854,12 @@ export const scenes = {
         'computer-science'),
 
       portal('to-childlike', 'mountain-lake-childlike', {
-        sprite: 'portal_ladder',   x: 0.04, y: 0.52, heightFrac: 0.32,
+        sprite: 'portal_magic_swirl',   x: 0.04, y: 0.52, heightFrac: 0.32,
         enterEdge: 'right',        label: 'down to the lake'
       }),
 
       portal('to-roof', 'skyscraper-roof', {
-        sprite: 'portal_portal_green', x: 0.96, y: 0.40, heightFrac: 0.32,
+        sprite: 'portal_donut_portal', x: 0.96, y: 0.40, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the rooftop'
       })
     ],
@@ -937,7 +937,7 @@ export const scenes = {
         'philosophy'),
 
       portal('to-cottage', 'cosy-cottage-interior', {
-        sprite: 'portal_open-door', x: 0.05, y: 0.55, heightFrac: 0.36,
+        sprite: 'portal_heart_door', x: 0.05, y: 0.55, heightFrac: 0.36,
         enterEdge: 'right',        label: 'home'
       })
     ],
@@ -1018,12 +1018,12 @@ export const scenes = {
         'numbers'),
 
       portal('to-playground', 'fantasy-garden-playground', {
-        sprite: 'portal_office-door-portal', x: 0.05, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_magic_flower_door', x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the playground'
       }),
 
       portal('to-village', 'whimsical-villiage', {
-        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_heart_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the village'
       })
     ],
@@ -1079,7 +1079,7 @@ export const scenes = {
         'philosophy'),
 
       portal('to-vista', 'mountain-lake-vista', {
-        sprite: 'portal_ladder',   x: 0.05, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_donut_portal',   x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the mountain'
       })
     ],
@@ -1147,12 +1147,12 @@ export const scenes = {
         'art-history'),
 
       portal('to-lake', 'mountain-lake-childlike', {
-        sprite: 'portal_portal_blue', x: 0.05, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_magic_swirl', x: 0.05, y: 0.55, heightFrac: 0.32,
         enterEdge: 'right',        label: 'the lake'
       }),
 
       portal('to-seaside', 'seaside-village-sunset', {
-        sprite: 'portal_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
+        sprite: 'portal_heart_door',     x: 0.95, y: 0.55, heightFrac: 0.32,
         enterEdge: 'left',         label: 'the seaside'
       })
     ],
