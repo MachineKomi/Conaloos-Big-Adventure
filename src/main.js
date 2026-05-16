@@ -29,6 +29,8 @@ import { Protagonist } from './systems/Protagonist.js';
 import { AudioManager } from './systems/AudioManager.js';
 import { SceneRouter } from './systems/SceneRouter.js';
 import { SaveGame } from './systems/SaveGame.js';
+import { BuddyTeam } from './systems/BuddyTeam.js';
+import { BattleScene } from './scenes/BattleScene.js';
 import { buildSceneCatalog } from './content/sceneCatalog.js';
 
 // Fixed design resolution. Phaser scales the canvas to fit the
@@ -72,6 +74,7 @@ function start() {
   const protagonist = new Protagonist({ saveGame });
   const gemBag = new GemBag({ saveGame });
   const quests = new QuestManager({ saveGame });
+  const buddyTeam = new BuddyTeam({ saveGame });
   setWorldCollectedSave(saveGame);
   // Session-wide set so a quiz isn't asked twice — even after a scene
   // transition. Cleared on page reload (intentionally not persisted —
@@ -133,17 +136,18 @@ function start() {
     window.__gemBag = gemBag;
     window.__quests = quests;
     window.__save = saveGame;
+    window.__buddyTeam = buddyTeam;
   }
 
   // Phaser calls scene.init(data) when it starts a scene, so pass
   // onReady through the start-data hand-off (init() would be clobbered).
   game.scene.add('boot', BootScene, true, {
-    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame)
+    onReady: (loader) => onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame, buddyTeam)
   });
   console.log('[main] game created, boot scene queued');
 }
 
-function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame) {
+function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQuizzes, quests, saveGame, buddyTeam) {
   if (!loader.hasAnyBackground) {
     game.scene.add('scene:waiting', new WaitingScene(), true);
     game.scene.stop('boot');
@@ -160,11 +164,13 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
   // every game scene).
   for (const slug of Object.keys(catalog.scenes)) {
     const def = catalog.scenes[slug];
-    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag, seenQuizzes, quests });
+    const scene = new GameScene(slug, def, { audio, router, loader, protagonist, gemBag, seenQuizzes, quests, buddyTeam });
     game.scene.add(`scene:${slug}`, scene, false);
   }
   game.scene.add('scene:title', new TitleScene(), false);
   game.scene.add('scene:tutorial', new TutorialScene(), false);
+  // BattleScene is launched on-demand from GameScene._startBuddyBattle.
+  game.scene.add('scene:battle', new BattleScene(), false);
 
   // HUDs go on TOP — added last, so they render last.
   const ui = new GlobalUIScene();
@@ -220,6 +226,8 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
       for (const fn of quests._listeners) fn({ updated: true, newlyCompleted: [] });
       resetWorldCollected();
       seenQuizzes.clear();
+      // Reset buddy roster back to a fresh starter Conaloo.
+      buddyTeam.reset();
     }
 
     const showTutorial = mode === 'new' && firstLaunch;

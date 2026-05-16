@@ -240,6 +240,18 @@ export const scenes = {
       { key: 'gem_6', x: 0.55, y: 0.40 },
       { key: 'gem_8', x: 0.82, y: 0.22 },
       { key: 'gem_5', x: 0.94, y: 0.10 }
+    ],
+    // Cosenae has his pink bee Seesa with him. Tapping the chip
+    // starts a buddy battle.
+    challenges: [
+      {
+        id: 'cosenae-vs-seesa',
+        npc: 'peep_Cosenae_M_5',
+        buddySpeciesId: 'seesa',
+        buddyLevel: 2,
+        x: 0.86, y: 0.55,
+        label: "Cosenae's bee"
+      }
     ]
   },
 
@@ -569,6 +581,18 @@ export const scenes = {
       { key: 'gem_7', x: 0.40, y: 0.30 },
       { key: 'gem_5', x: 0.70, y: 0.40 },
       { key: 'gem_2', x: 0.55, y: 0.62 }
+    ],
+    // Loosa stands here patiently with his jellyfish Umi (who, like
+    // him, takes his time). Tap the chip to challenge.
+    challenges: [
+      {
+        id: 'loosa-vs-umi',
+        npc: 'peep_Loosa_cactus',
+        buddySpeciesId: 'umi',
+        buddyLevel: 3,
+        x: 0.13, y: 0.36,
+        label: "Loosa's jellyfish"
+      }
     ]
   },
 

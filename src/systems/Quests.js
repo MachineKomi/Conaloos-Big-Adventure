@@ -449,6 +449,44 @@ export const QUEST_DEFS = [
     desc: "Step out onto the lake one fine morning.",
     target: 1, reward: 4,
     matches: (evt) => (evt.type === 'scene-visited' && evt.slug === 'mountain-lake-childlike' ? 1 : 0)
+  },
+
+  // ─────────────────── buddy battles ───────────────────
+  {
+    id: 'first-battle',
+    title: "Tap a buddy, tap a battle",
+    desc: "Win your very first buddy battle.",
+    target: 1, reward: 6,
+    matches: (evt) => (evt.type === 'buddy-battle-won' ? 1 : 0)
+  },
+  {
+    id: 'battle-fan',
+    title: "Battle-fan, *first class*",
+    desc: "Win five buddy battles in all.",
+    target: 5, reward: 18,
+    matches: (evt) => (evt.type === 'buddy-battle-won' ? 1 : 0)
+  },
+  {
+    id: 'npc-champ',
+    title: "Champion of two friends",
+    desc: "Defeat both Cosenae's bee AND Loosa's jellyfish.",
+    target: 2, reward: 25,
+    matches: function (evt) {
+      if (evt.type !== 'buddy-battle-won') return 0;
+      const seen = ensureSet(this);
+      if (seen.has(evt.opponentSpecies)) return 0;
+      // Only Seesa + Umi count — they're the two NPC opponents.
+      if (evt.opponentSpecies !== 'seesa' && evt.opponentSpecies !== 'umi') return 0;
+      seen.add(evt.opponentSpecies);
+      return 1;
+    }
+  },
+  {
+    id: 'buddy-lv-up',
+    title: "*Stronger!*",
+    desc: "Level your buddy up at least once.",
+    target: 1, reward: 8,
+    matches: (evt) => (evt.type === 'buddy-leveled-up' ? 1 : 0)
   }
 ];
 

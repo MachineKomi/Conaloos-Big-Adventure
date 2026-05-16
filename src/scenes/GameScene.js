@@ -22,6 +22,8 @@ import { HotspotManager } from '../systems/HotspotManager.js';
 import { DialogueBox } from '../systems/DialogueBox.js';
 import { Accessibility } from '../systems/Accessibility.js';
 import { growsOnClick, GROW_FACTOR, GROW_CAP } from '../content/growsOnClick.js';
+import { COL, RADIUS, TYPE, drawPanel } from '../systems/UITokens.js';
+import { getSpecies } from '../content/buddySpecies.js';
 
 const IDLE_BOB_AMPL = 8;
 const IDLE_BOB_MS = 1900;
@@ -97,6 +99,9 @@ export class GameScene extends Phaser.Scene {
     this._portalSprites = [];
     this._portalDefsById = new Map();
     this.spritesByKey = new Map();
+    // Drop any stale follower reference from a previous run of this
+    // scene; the sprite itself was cleaned by Phaser on scene stop.
+    this._buddyFollower = null;
   }
 
   create() {
@@ -115,9 +120,13 @@ export class GameScene extends Phaser.Scene {
     this._renderCharacters(width, height);
     this._renderPortalSprites(width, height);
     this._renderGems(width, height);
+    this._renderBuddyChallenges(width, height);
 
     // Spawn Amelia at the entry edge for this scene (or default centre).
     this.services.protagonist?.attach(this, { fromEdge: this._enterEdge });
+
+    // Render Amelia's active buddy as a small follower beside her.
+    this._renderBuddyFollower();
 
     this.dialogue = new DialogueBox(this);
 
@@ -425,6 +434,183 @@ export class GameScene extends Phaser.Scene {
         this.services.gemBag?.add(key, value);
       }
     });
+  }
+
+  /** Render Amelia's active buddy as a small sprite that trails
+   *  behind her. Position is updated each frame in `update()`. */
+  _renderBuddyFollower() {
+    const buddyTeam = this.services.buddyTeam;
+    const ameliaSprite = this.services.protagonist?.sprite;
+    if (!buddyTeam || !ameliaSprite) return;
+    const active = buddyTeam.active();
+    if (!active) return;
+    const species = getSpecies(active.speciesId);
+    if (!species || !this.textures.exists(species.sprite)) return;
+
+    const sprite = this.add.image(ameliaSprite.x - 80, ameliaSprite.y, species.sprite)
+      .setOrigin(0.5, 1)
+      .setDepth(ameliaSprite.depth - 0.5);
+    // Scale the buddy to ~50% of Amelia's display height — small
+    // enough to be clearly her pet, big enough to read at a glance.
+    const tex = this.textures.get(species.sprite).getSourceImage();
+    const targetH = ameliaSprite.displayHeight * 0.5;
+    sprite.setScale(targetH / tex.height);
+    this._buddyFollower = sprite;
+    // Track Amelia's bottom-y as the "rest" line — update() lerps
+    // toward it. (No yoyo bob here, because the per-frame lerp
+    // would fight a tween on the same property.)
+    this._buddyRestY = ameliaSprite.y;
+
+    // Gentle angle wobble for idle liveliness — doesn't conflict
+    // with x/y lerp.
+    if (!Accessibility.reducedMotion) {
+      this.tweens.add({
+        targets: sprite,
+        angle: { from: -2, to: 2 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+  }
+
+  /** Phaser per-frame update: keep the buddy follower trailing
+   *  Amelia. Walks behind her, on the side she just came from. */
+  update() {
+    if (!this._buddyFollower || !this._buddyFollower.active) return;
+    const ameliaSprite = this.services.protagonist?.sprite;
+    if (!ameliaSprite || !ameliaSprite.active) return;
+
+    // Trail Amelia on the opposite side of her facing.
+    const offset = ameliaSprite.flipX ? 80 : -80;
+    const targetX = ameliaSprite.x + offset;
+    const targetY = ameliaSprite.y;
+    // Lerp gently — buddy lags slightly so it feels like following.
+    this._buddyFollower.x += (targetX - this._buddyFollower.x) * 0.10;
+    // Y is closer to Amelia's y so they stay vertically aligned.
+    this._buddyFollower.y += (targetY - this._buddyFollower.y) * 0.18;
+    // Mirror Amelia's facing.
+    this._buddyFollower.flipX = !ameliaSprite.flipX;
+    // Depth in line with Amelia (behind / in front based on y).
+    this._buddyFollower.setDepth(ameliaSprite.depth - 0.5);
+  }
+
+  /** Render the NPC buddy-challenge chips defined in the scene's
+   *  `challenges: [...]` array. Each chip is a small panel with
+   *  the opponent's species sprite + label; tapping it opens the
+   *  BattleScene. */
+  _renderBuddyChallenges(w, h) {
+    const challenges = this.def.challenges || [];
+    if (challenges.length === 0) return;
+
+    for (const ch of challenges) {
+      const species = getSpecies(ch.buddySpeciesId);
+      if (!species) continue;
+      const cx = (ch.x ?? 0.5) * w;
+      const cy = (ch.y ?? 0.5) * h;
+
+      const chipW = 220;
+      const chipH = 92;
+      const x = cx - chipW / 2;
+      const y = cy - chipH / 2;
+
+      const bg = this.add.graphics().setDepth(9400);
+      drawPanel(bg, x, y, chipW, chipH, {
+        radius: RADIUS.card,
+        fill: COL.gold,
+        fillAlpha: 1.0
+      });
+
+      // Crossed-swords icon (text glyph) for "battle".
+      const swords = this.add.text(x + 18, y + chipH / 2, '⚔', {
+        fontFamily: TYPE.family,
+        fontSize: '32px',
+        color: COL.orangeHex
+      }).setOrigin(0, 0.5).setDepth(9401);
+
+      // Opponent buddy's sprite (small).
+      let oppSprite = null;
+      if (this.textures.exists(species.sprite)) {
+        oppSprite = this.add.image(x + 78, y + chipH / 2, species.sprite).setOrigin(0.5).setDepth(9401);
+        const tex = this.textures.get(species.sprite).getSourceImage();
+        oppSprite.setScale((chipH - 28) / tex.height);
+      }
+
+      const label = this.add.text(x + 110, y + chipH / 2 - 12, ch.label || `Lv${ch.buddyLevel} ${species.displayName}`, {
+        fontFamily: TYPE.family,
+        fontSize: '18px',
+        color: COL.inkHex
+      }).setOrigin(0, 0.5).setDepth(9401);
+
+      const subLabel = this.add.text(x + 110, y + chipH / 2 + 14, `Battle? Lv ${ch.buddyLevel}`, {
+        fontFamily: TYPE.bodyFamily,
+        fontSize: '14px',
+        color: COL.inkSoft
+      }).setOrigin(0, 0.5).setDepth(9401);
+
+      // Gentle pulse so the kid's eye lands on it.
+      if (!Accessibility.reducedMotion) {
+        this.tweens.add({
+          targets: bg,
+          alpha: { from: 0.85, to: 1.0 },
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
+      const zone = this.add.zone(x, y, chipW, chipH).setOrigin(0, 0);
+      zone.setInteractive({ useHandCursor: true });
+      zone.setDepth(9402);
+      zone.on('pointerup', () => {
+        if (this._isTransitioning) return;
+        this._startBuddyBattle(ch);
+      });
+    }
+  }
+
+  /** Launch the BattleScene with the player's active buddy vs the
+   *  challenge's species/level. Sleeps the gameplay + HUD scenes
+   *  while the battle plays; wakes them all on exit. */
+  _startBuddyBattle(challenge) {
+    const buddyTeam = this.services.buddyTeam;
+    if (!buddyTeam) return;
+    const playerBuddy = buddyTeam.active();
+    if (!playerBuddy) return;
+    const player = buddyTeam.makeBattleParticipant(playerBuddy);
+    const opponent = buddyTeam.makeOpponent(challenge.buddySpeciesId, challenge.buddyLevel || 1);
+    if (!player || !opponent) return;
+
+    this.services.audio?.playSfx?.('sfx_powerup');
+
+    const sceneManager = this.scene.manager;
+    const huds = ['global:ui', 'global:inventory', 'global:gemhud', 'global:questhud'];
+    const prevKey = this.scene.key;
+
+    // Launch first, sleep after — order matters for Phaser's input
+    // routing (the battle scene takes top input slot).
+    this.scene.launch('scene:battle', {
+      playerParticipant: player,
+      opponentParticipant: opponent,
+      previousSceneKey: prevKey,
+      opponentLabel: challenge.label,
+      services: this.services,
+      onComplete: () => {
+        // Wake the world back up.
+        for (const k of huds) {
+          if (sceneManager.getScene(k)) sceneManager.wake(k);
+        }
+        sceneManager.wake(prevKey);
+      }
+    });
+
+    // Pause the world so it doesn't update / consume input.
+    for (const k of huds) {
+      if (sceneManager.getScene(k)) this.scene.sleep(k);
+    }
+    this.scene.sleep(prevKey);
   }
 
   _renderPortalSprites(w, h) {

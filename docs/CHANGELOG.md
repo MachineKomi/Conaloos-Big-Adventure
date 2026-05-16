@@ -1,5 +1,94 @@
 # Changelog
 
+## 2026-05-16 — v1.12: Buddy battles (MVP)
+
+The MVP of the Pokémon-style turn-based combat. Amelia has a
+buddy that follows her around; some NPCs do too; tapping their
+buddy starts a battle. See `docs/BUDDY_DESIGN.md` for the full
+spec and what's deferred to v1.13.
+
+### What ships
+
+- **Five buddy species** in `src/content/buddySpecies.js`
+  (Conaloo, Monaloo, Umi, Seesa, Pepsi) with stats, types, and
+  three moves each (cheap basic / heavy hit / utility).
+- **Five-type cycle** in `src/content/typeChart.js`: water →
+  heart → sweet → wind → nature → water. Advantage 2×,
+  disadvantage 0.5×, neutral 1×.
+- **`BuddyTeam` system** (`src/systems/BuddyTeam.js`) manages
+  Amelia's roster + persists via `SaveGame`. Schema is
+  forward-compatible — buddies array supports many even though
+  the MVP UI shows one.
+- **`BattleScene`** (`src/scenes/BattleScene.js`) — overlay
+  Phaser scene with: HP bars, energy meters, three move
+  buttons per buddy, speed-based turn order, animated lunges
+  + flashes + shake + damage numbers, type-advantage banner
+  ("It's really effective!"), faint animation.
+- **Damage formula** in `BattleScene._damageOf`:
+  `ceil((power + level×0.4) × typeMul × defMul × random[0.85,1.15])`.
+- **No fail states.** Losing a battle gives 3 consolation
+  gems + small EXP. The opponent says a kind line and the
+  scene closes — you can re-challenge immediately.
+- **Win rewards:** `5 + opponentLvl × 3` gems + EXP scaled to
+  opponent level. Buddy levels up on threshold crossings;
+  stats scale with level (HP +3/lvl, ATK +0.6/lvl, etc).
+- **Two NPC challengers** in v1.12:
+  - **Cosenae** (hub) has **Seesa** the pink bee (Lv2)
+  - **Loosa** (playground) has **Umi** the jellyfish (Lv3)
+- **Visible challenge chips** float near each NPC with the
+  opponent buddy's sprite + "Battle? Lv N" label. Tapping the
+  chip launches the battle. Chips have a soft idle pulse.
+- **Amelia's buddy follower** — her active buddy (default
+  Conaloo) walks/lerps behind her in every scene, mirroring
+  her facing, with a gentle angle wobble.
+- **Save persistence**: buddy roster + levels + active buddy
+  index, all in `localStorage`. Forward-compatible schema.
+- **Four new quests** in `Quests.js`:
+  - `first-battle` — Win your first buddy battle. +6 gems
+  - `battle-fan` — Win five buddy battles. +18 gems
+  - `npc-champ` — Defeat both Cosenae's bee AND Loosa's
+    jellyfish. +25 gems
+  - `buddy-lv-up` — Level your buddy up at least once. +8 gems
+
+### What's deferred to v1.13
+
+- Recruiting wild buddies (talk-quiz / battle-win to add to
+  team)
+- Multi-buddy teams + roster management UI
+- Wild encounters in scenes
+- Status effects (poison, stun, sleep)
+- Held items
+- Ice-level battle opponent (Wawoo could have Umi)
+
+### Touched
+
+- **New:** `src/content/buddySpecies.js`,
+  `src/content/typeChart.js`, `src/systems/BuddyTeam.js`,
+  `src/scenes/BattleScene.js`, `docs/BUDDY_DESIGN.md`
+- **Updated:** `src/main.js` (wire BuddyTeam + register
+  BattleScene + reset on new game), `src/scenes/GameScene.js`
+  (render challenge chips + buddy follower + battle launcher
+  + update loop), `src/content/scenes.js` (NPC challenges for
+  hub + playground), `src/systems/Quests.js` (4 buddy quests),
+  `src/systems/SaveGame.js` (buddies + activeBuddyIdx fields)
+
+### Open hooks
+
+- Buddy follower depth is set to Amelia's depth − 0.5. If she
+  overlaps a character with a higher y, the follower might
+  render in front of the character. Verify in playtest.
+- The MVP is single-buddy. The data model supports a team, so
+  v1.13 adds a small roster picker (probably a button on the
+  burger menu) without touching the battle scene.
+- Battle scene currently pauses all HUDs by sleeping them.
+  Gem rewards added by the battle accumulate while sleeping
+  and animate when the HUDs wake — clean, but worth eyeballing.
+- The buddy follower shows even when the same species is
+  already a character in the scene (e.g. Conaloo in hub).
+  Visually you'll see two Conaloos — the small follower
+  (Amelia's pet) and the big one (the scene character).
+  Acceptable for MVP; v1.13 can hide the follower in such cases.
+
 ## 2026-05-16 — v1.11: the Ice Level
 
 The `mountain-lake-vista` scene was replaced. Its background

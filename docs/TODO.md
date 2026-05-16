@@ -77,32 +77,38 @@ A new scene set somewhere icy / wintry. Needs:
 - [ ] Maybe a quest tied to the ice level ("Where the cold
       comes from")
 
-### 4. The Buddy System
+### 4. The Buddy System — MVP shipped in v1.12 ✅, more to do
 
-Pokemon-style: you have a buddy who walks with you. You can recruit
-new buddies and battle other characters' buddies in turn-based
-combat. **Big feature** — break into smaller chunks before starting:
+Pokemon-style turn-based combat with buddies that follow Amelia.
+Full design spec in `docs/BUDDY_DESIGN.md`.
 
-- [ ] Brainstorm: who can be a buddy? (Probably the smaller
-      `animal_*` sprites — Monaloo, Seesa, Pepsi, Bobo, etc.)
-- [ ] Decide: does Amelia have ONE buddy at a time, or a small
-      team like Pokemon (max 3 / max 6)?
-- [ ] Decide: how do you *recruit* a new buddy? (Talk to them N
-      times? Give them an inventory item? Win a battle?)
-- [ ] Decide: what's a "battle" for a 4-year-old? (Definitely no
-      losing screens — every battle ends in a happy way. Maybe
-      it's a "show your buddy off" minigame where both buddies
-      do tricks and the kid picks which trick is funniest?)
-- [ ] Buddy sprite walks behind Amelia in gameplay scenes
-- [ ] Buddy switch / picker UI (maybe a pawprint button on the
-      top bar?)
-- [ ] Persistence: which buddies are recruited goes in `SaveGame`
-- [ ] Quests for buddy progression ("recruited your first buddy",
-      "recruited 3 different kinds", etc.)
+**MVP shipped (v1.12):**
+- [x] 5 buddy species (Conaloo, Monaloo, Umi, Seesa, Pepsi)
+      with stats, types, moves
+- [x] Type chart (5-type cycle)
+- [x] BattleScene with HP bars, energy meters, animations
+- [x] No-fail-state losing flow (consolation gems)
+- [x] Buddy walks behind Amelia
+- [x] 2 NPC opponents (Cosenae's Seesa, Loosa's Umi)
+- [x] Save persistence (roster, levels)
+- [x] EXP + level-up
+- [x] 4 buddy battle quests
 
-This one needs its own design session before code starts —
-probably worth doing the brainstorming skill / OpenSpec proposal
-when we get to it.
+**Deferred to next iteration:**
+- [ ] **Recruitment** — find buddies in the wild + recruit via
+      quiz answer or battle win
+- [ ] **Multi-buddy team** — roster up to 3/6, team management
+      UI (probably a button on the burger menu)
+- [ ] **Switch buddy** mid-battle (Pokémon-style)
+- [ ] **Wild encounters** — random spawns in scenes (especially
+      good fit for ice-level — wild Umis drifting around)
+- [ ] **Wawoo's buddy** in the ice level (he'd suit a water type)
+- [ ] **Status effects** (poison, stun, sleep)
+- [ ] **Held items** (maybe inventory items can hold-equip)
+- [ ] **Buddy bio screen** — tap a buddy in your roster to read
+      their bio + stats + moves
+- [ ] Visual: hide Amelia's buddy follower when the same species
+      is already a "wild" character in the scene
 
 ---
 
