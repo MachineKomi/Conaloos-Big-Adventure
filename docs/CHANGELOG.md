@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-05-16 — v1.14.1: battle blank-screen hotfix + dialogue + move info
+
+### Critical: blank battle screen (fixed)
+
+After tapping a buddy challenge in v1.14, you'd see the intro
+banner ("Conaloo, off you trot!") and then nothing — completely
+blank stage. Everything *was* there in memory, but every game
+object on the battle scene was stuck at `alpha = 0`.
+
+Root cause: `_slideIn()` ran a multi-target `alpha 0 → 1` tween
+across the whole battle scene's display list, including the
+intro banner. The very next line, `_showBanner()`, called
+`tweens.killTweensOf(this._banner)` to clear any prior banner
+tweens. In Phaser, killing tweens by *one target* of a
+multi-target tween removes the **whole tween** — so the entire
+fade-in died at progress ~0, leaving everything invisible
+except the banner (which has its own alpha tween in
+`_showBanner`).
+
+Fix: the banner is now intentionally *not* part of `_allObjs`,
+so the slide-in tween doesn't have it as a target, and
+`killTweensOf(banner)` is a clean no-op against the slide-in.
+The banner's alpha is managed entirely inside `_showBanner` (and
+explicitly faded out by `_exit` alongside the rest).
+
+### Less Pokémon dialogue
+
+The intro lines were a bit too on-the-nose. Reworked into the
+game's gentler British-Seuss voice:
+
+| Old (Pokémon-ish) | New |
+|---|---|
+| `Seesa appeared!` | `Here comes Seesa!` |
+| `Go, Conaloo!` | `Conaloo, off you trot!` |
+| `Conaloo used Paw-tap!` | `Conaloo tries a Paw-tap!` |
+| `Conaloo fainted!` | `Conaloo needs a lie-down.` |
+| `It's really effective!` | `That *really* worked!` |
+| `It's only a little effective.` | `Only a *little* worked.` |
+| `miss!` | `oof — missed!` |
+| `You won! +N gems · LEVEL UP!` | `Hooray! +N gems · (conaloo grew → Lv2)` |
+| `Seesa won! But you got +N gems for trying.` | `Seesa won this one. Here's a small gift: +N gems.` |
+| `Seesa wants to join your team!` | `Look — Seesa would like to come along!` |
+| `Go, Conaloo!` (switch in) | `Conaloo, your turn now!` |
+
+### Move buttons — at-a-glance info with symbols
+
+The old buttons showed only the move name + energy cost, so a
+kid couldn't tell what each move actually *did*. Now the bottom
+of each button shows two info chips with kid-readable symbols:
+
+- **Damage moves**:  `⚔  8` (left, orange) · `free` or `⚡  4` (right)
+- **Heal moves**:    `❤  +10` (left, green) · `⚡  2` (right)
+- **Energy moves**:  `⚡  +4` (left, blue) · `⚡  1` (right)
+
+A four-year-old can recognise the shapes:
+- ⚔ = "hit them big"
+- ❤ = "feel better"
+- ⚡ = "needs energy" (when orange) or "gives energy" (when blue/free)
+
+The move name keeps its prominent place at the top of the
+button alongside the type emoji (🌿 🌊 💨 🍯 ❤).
+
+### Touched
+
+- **Updated:** `src/scenes/BattleScene.js` (tween fix, dialogue
+  rewrite, move-info symbols).
+
 ## 2026-05-16 — v1.14: full buddy collection, bio panel, ice battle, polish
 
 Closing the v1.13 open hooks. All five buddies are now recruitable,

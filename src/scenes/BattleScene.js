@@ -152,6 +152,12 @@ export class BattleScene extends Phaser.Scene {
     this._renderMoveButtons(stageY + stageH + 30, width);
 
     // 7. Battle banner (announce moves + type effectiveness).
+    //    NOT added to _allObjs — its alpha is managed exclusively
+    //    by _showBanner (which calls tweens.killTweensOf on it).
+    //    Including it in the slide-in multi-target tween would
+    //    cause the very first _showBanner call to kill the
+    //    slide-in tween entirely, leaving everything else stuck
+    //    at alpha 0 (the v1.14 "blank battle screen" bug).
     this._banner = this.add.text(width / 2, stageY + stageH - 50, '', {
       fontFamily: TYPE.family,
       fontSize: '26px',
@@ -162,7 +168,6 @@ export class BattleScene extends Phaser.Scene {
       stroke: COL.inkHex,
       strokeThickness: 1
     }).setOrigin(0.5).setDepth(Z.banner).setAlpha(0);
-    this._allObjs.push(this._banner);
 
     // 8. Drop-in.
     this._slideIn();
@@ -173,9 +178,10 @@ export class BattleScene extends Phaser.Scene {
     this._previousMusicKey = this.services.audio?.currentMusicKey || null;
     this.services.audio?.playMusic?.('music_quick', this);
 
-    // 10. Intro banners.
-    this._showBanner(`${this.opponent.species.displayName} appeared!`, 1500, () => {
-      this._showBanner(`Go, ${this.player.species.displayName}!`, 1200, () => {
+    // 10. Intro banners — written to *not* sound like Pokémon. We
+    //     want the world's gentle, slightly-British voice here too.
+    this._showBanner(`Here comes ${this.opponent.species.displayName}!`, 1500, () => {
+      this._showBanner(`${this.player.species.displayName}, off you trot!`, 1200, () => {
         this._setMovesEnabled(true);
       });
     });
@@ -330,22 +336,54 @@ export class BattleScene extends Phaser.Scene {
     const stripe = this.add.graphics().setDepth(Z.buttons + 1);
     this._allObjs.push(stripe);
 
-    const name = this.add.text(x + 28, y + 24, move.name, {
+    // Top row: type emoji + move name, big and clear.
+    const titleRow = this.add.text(x + 28, y + 16,
+      `${typeEmoji(move.type)}  ${move.name}`, {
       fontFamily: TYPE.family,
-      fontSize: '24px',
+      fontSize: '22px',
       color: COL.inkHex
     }).setOrigin(0, 0).setDepth(Z.buttons + 2);
-    this._allObjs.push(name);
+    this._allObjs.push(titleRow);
 
-    const energyLabel = move.energyCost === 0
-      ? `${typeEmoji(move.type)} basic`
-      : `${typeEmoji(move.type)}  ⚡${move.energyCost}`;
-    const meta = this.add.text(x + 28, y + h - 30, energyLabel, {
+    // Bottom row: at-a-glance "what does this do" using symbols
+    // a four-year-old can read by *shape*:
+    //   ⚔  N   damage
+    //   ❤  +N  heal
+    //   ⚡  +N  restores energy
+    //   ⚡  N   energy cost (orange)
+    //   ⚡  free  zero-cost / always-available
+    //
+    // Damage moves show: ⚔ N  (then) ⚡ cost or "free"
+    // Heal moves show:   ❤ +N (then) ⚡ cost
+    // Energy moves show: ⚡ +N (then) ⚡ cost
+    let primary = '';
+    let primaryColour = '#a45e08';
+    if (move.effect?.kind === 'heal') {
+      primary = `❤  +${move.effect.amount}`;
+      primaryColour = '#5a8a3a';
+    } else if (move.effect?.kind === 'energy') {
+      primary = `⚡  +${move.effect.amount}`;
+      primaryColour = '#4a8ab3';
+    } else {
+      primary = `⚔  ${move.power}`;
+      primaryColour = '#a45e08';
+    }
+    const costStr = move.energyCost === 0 ? 'free' : `⚡  ${move.energyCost}`;
+    const costColour = move.energyCost === 0 ? '#5a8a3a' : '#a45e08';
+
+    const primaryText = this.add.text(x + 28, y + h - 32, primary, {
       fontFamily: TYPE.family,
-      fontSize: '18px',
-      color: COL.orangeHex
+      fontSize: '20px',
+      color: primaryColour
     }).setOrigin(0, 0).setDepth(Z.buttons + 2);
-    this._allObjs.push(meta);
+    this._allObjs.push(primaryText);
+
+    const costText = this.add.text(x + w - 28, y + h - 32, costStr, {
+      fontFamily: TYPE.family,
+      fontSize: '20px',
+      color: costColour
+    }).setOrigin(1, 0).setDepth(Z.buttons + 2);
+    this._allObjs.push(costText);
 
     const zone = this.add.zone(x, y, w, h).setOrigin(0, 0).setDepth(Z.buttons + 3);
     zone.setInteractive({ useHandCursor: true });
@@ -379,7 +417,7 @@ export class BattleScene extends Phaser.Scene {
       this._takeTurn(move);
     });
 
-    return { bg, stripe, name, meta, zone, x, y, w, h, move, draw };
+    return { bg, stripe, titleRow, primaryText, costText, zone, x, y, w, h, move, draw };
   }
 
   _canAfford(move) {
@@ -479,7 +517,7 @@ export class BattleScene extends Phaser.Scene {
     // Slot the next buddy in.
     this.playerIdx = nextIdx;
     this.player = this.playerTeam[nextIdx];
-    this._showBanner(`Go, ${this.player.species.displayName}!`, 1100, () => {
+    this._showBanner(`${this.player.species.displayName}, your turn now!`, 1100, () => {
       // Re-render the player sprite + stat panel + move buttons.
       this._replacePlayerVisuals();
       this._setMovesEnabled(true);
@@ -500,7 +538,9 @@ export class BattleScene extends Phaser.Scene {
       this._plyPanel.eBar?.label?.destroy();
     }
     for (const b of this._moveButtons) {
-      b.bg.destroy(); b.stripe.destroy(); b.name.destroy(); b.meta.destroy(); b.zone.destroy();
+      b.bg.destroy(); b.stripe.destroy();
+      b.titleRow.destroy(); b.primaryText.destroy(); b.costText.destroy();
+      b.zone.destroy();
     }
     this._moveButtons = [];
 
@@ -550,7 +590,7 @@ export class BattleScene extends Phaser.Scene {
     const attackerPanel  = (who === 'player') ? this._plyPanel : this._oppPanel;
     const defenderPanel  = (who === 'player') ? this._oppPanel : this._plyPanel;
 
-    this._showBanner(`${attacker.species.displayName} used ${move.name}!`, 800);
+    this._showBanner(`${attacker.species.displayName} tries a ${move.name}!`, 800);
     this._refreshBars(attackerPanel);
 
     if (move.effect) {
@@ -569,7 +609,7 @@ export class BattleScene extends Phaser.Scene {
       this._playLungeFx(attackerSprite, who);
       this.time.delayedCall(160, () => {
         if (!hit) {
-          this._floatText(defenderSprite.x, defenderSprite.y - 100, 'miss!', '#5a4a2a', 36);
+          this._floatText(defenderSprite.x, defenderSprite.y - 100, 'oof — missed!', '#5a4a2a', 34);
           this.time.delayedCall(400, () => onDone());
           return;
         }
@@ -582,9 +622,9 @@ export class BattleScene extends Phaser.Scene {
         this._floatText(defenderSprite.x, defenderSprite.y - 100, `−${dmg}`, dmgColour, dmgSize);
 
         if (typeMul > 1) {
-          this._showBanner('It\'s really effective!', 900);
+          this._showBanner('That *really* worked!', 900);
         } else if (typeMul < 1) {
-          this._showBanner('It\'s only a little effective.', 900);
+          this._showBanner('Only a *little* worked.', 900);
         }
 
         // Heavy hit: hit-stop freeze + camera shake.
@@ -759,7 +799,7 @@ export class BattleScene extends Phaser.Scene {
 
   _faint(participant, onDone) {
     const sprite = (participant === this.player) ? this._plySprite : this._oppSprite;
-    this._showBanner(`${participant.species.displayName} fainted!`, 1100);
+    this._showBanner(`${participant.species.displayName} needs a lie-down.`, 1100);
     this.tweens.killTweensOf(sprite);
     this.tweens.add({
       targets: sprite,
@@ -814,11 +854,11 @@ export class BattleScene extends Phaser.Scene {
 
       // Big "you won" banner with reward summary.
       const winLine = levelsGained > 0
-        ? `You won! +${gems} gems · +${expGained} EXP · LEVEL UP! Lv${finisher.level}`
-        : `You won! +${gems} gems · +${expGained} EXP`;
+        ? `Hooray! +${gems} gems · +${expGained} EXP · (${finisher.speciesId} grew → Lv${finisher.level})`
+        : `Hooray! +${gems} gems · +${expGained} EXP`;
       this._showBanner(winLine, 2600, () => {
         if (recruited) {
-          this._showBanner(`${recruited.displayName} wants to join your team! 🎉`, 2400,
+          this._showBanner(`Look — ${recruited.displayName} would like to come along! 🎉`, 2400,
             () => this._exit({ won: true, gems, expGained, levelsGained, recruited: recruited.id }));
         } else {
           this._exit({ won: true, gems, expGained, levelsGained, recruited: null });
@@ -837,7 +877,7 @@ export class BattleScene extends Phaser.Scene {
       this.services.gemBag?.add('gem_5', gems);
       this.services.audio?.playSfx?.('sfx_descend');
       this._showBanner(
-        `${this.opponent.species.displayName} won! But you got +${gems} gems for trying.`,
+        `${this.opponent.species.displayName} won this one. Here's a small gift: +${gems} gems.`,
         2400,
         () => this._exit({ won: false, gems, expGained, levelsGained, recruited: null })
       );
@@ -850,8 +890,11 @@ export class BattleScene extends Phaser.Scene {
     if (this._previousMusicKey && this.services.audio) {
       this.services.audio.playMusic(this._previousMusicKey, this);
     }
+    // Banner is intentionally NOT in _allObjs (see create()), so
+    // fade it separately to keep it from lingering on exit.
+    this.tweens.killTweensOf(this._banner);
     this.tweens.add({
-      targets: this._allObjs,
+      targets: [...this._allObjs, this._banner],
       alpha: 0,
       duration: 320,
       ease: 'Sine.easeIn',
