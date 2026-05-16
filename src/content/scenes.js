@@ -248,7 +248,7 @@ export const scenes = {
         id: 'cosenae-vs-seesa',
         npc: 'peep_Cosenae_M_5',
         buddySpeciesId: 'seesa',
-        buddyLevel: 2,
+        buddyLevel: 1,
         x: 0.86, y: 0.55,
         label: "Cosenae's bee"
       }
@@ -359,6 +359,19 @@ export const scenes = {
       { key: 'gem_2', x: 0.55, y: 0.18 },
       { key: 'gem_7', x: 0.30, y: 0.55 },
       { key: 'gem_8', x: 0.78, y: 0.62 }
+    ],
+    // Mommy's quietly competitive — Pepsi the dog-thing is "her"
+    // buddy in this scene. (Pepsi sleeps in the cottage anyway,
+    // so it fits.)
+    challenges: [
+      {
+        id: 'mommy-vs-pepsi',
+        npc: 'peep_mommy_F_30ish',
+        buddySpeciesId: 'pepsi',
+        buddyLevel: 3,
+        x: 0.18, y: 0.40,
+        label: "Mommy's good dog"
+      }
     ]
   },
 
@@ -589,7 +602,7 @@ export const scenes = {
         id: 'loosa-vs-umi',
         npc: 'peep_Loosa_cactus',
         buddySpeciesId: 'umi',
-        buddyLevel: 3,
+        buddyLevel: 2,
         x: 0.13, y: 0.36,
         label: "Loosa's jellyfish"
       }

@@ -128,6 +128,14 @@ function start() {
     }
   }
 
+  // Replay buddy roster so the "collect all 5 buddies" quest knows
+  // which species the kid already owns. Always runs (even on fresh
+  // launch with just the starter) so the starter counts toward the
+  // collection quest.
+  for (const buddy of buddyTeam.list()) {
+    quests.report({ type: 'buddy-starter', speciesId: buddy.speciesId });
+  }
+
   // Expose for dev-time debugging only.
   if (import.meta.env?.DEV) {
     window.__game = game;
@@ -174,7 +182,7 @@ function onAssetsReady(game, loader, audio, router, protagonist, gemBag, seenQui
 
   // HUDs go on TOP — added last, so they render last.
   const ui = new GlobalUIScene();
-  ui.init({ router });
+  ui.init({ router, buddyTeam });
   game.scene.add('global:ui', ui, true);
 
   const inv = new InventoryScene();

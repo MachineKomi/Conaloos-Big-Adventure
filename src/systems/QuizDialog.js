@@ -95,17 +95,28 @@ export class QuizDialog {
     const optionsTotalH = optionLabels.length * OPTION_HEIGHT + (optionLabels.length - 1) * OPTION_GAP;
     const boxH = PADDING_Y + questionText.height + 14 + optionsTotalH + PADDING_Y;
 
-    // Position above speaker (or top-of-screen banner if none).
+    // Position the quiz panel. The top of the screen is reserved
+    // for the gem HUD (separate scene that renders above this one),
+    // so the quiz must always sit below that band — otherwise the
+    // question gets hidden behind the gem counter (v1.12 bug).
+    const HUD_RESERVED_TOP = 130;
     let cx, cy;
     if (speakerSprite) {
       const speakerCx = speakerSprite.x;
       const speakerTop = speakerSprite.y - speakerSprite.displayHeight;
       cx = clamp(speakerCx, boxW / 2 + 16, width - boxW / 2 - 16);
-      cy = Math.max(boxH / 2 + 16, speakerTop - 24 - boxH / 2);
+      const above = speakerTop - 24 - boxH / 2;
+      const below = speakerSprite.y + 24 + boxH / 2;
+      const placeAbove = above - boxH / 2 > HUD_RESERVED_TOP;
+      cy = placeAbove
+        ? above
+        : Math.min(below, height - boxH / 2 - 24);
     } else {
       cx = width / 2;
-      cy = boxH / 2 + 24;
+      cy = HUD_RESERVED_TOP + boxH / 2 + 12;
     }
+    // Final guard: never let the box top creep into the HUD band.
+    cy = Math.max(cy, HUD_RESERVED_TOP + boxH / 2);
 
     // Bubble background — use drawPanel so it matches every other
     // panel in the world (drop shadow + cream + warm-brown stroke).

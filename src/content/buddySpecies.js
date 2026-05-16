@@ -21,9 +21,15 @@
  *   }
  *
  * Move-balance guidelines:
- *   - cheap basic   ~ power 5-6,  energy 1-2, acc 0.95
- *   - heavy hit     ~ power 13-15, energy 4-5, acc 0.80
- *   - utility       ~ heal 6-9 OR restore 3-4 energy, energy 1-2
+ *   - basic (always available) ~ power 7-9,  energy 0,    acc 0.95
+ *   - heavy hit                 ~ power 14-16, energy 4-5, acc 0.80
+ *   - utility                   ~ heal 8-12 OR restore 3-4 energy, energy 1-2
+ *
+ * The 0-energy basic move is intentional: it means buddies can
+ * ALWAYS swing at each other, even if the kid burns through energy
+ * on heavy hits. No more "we both ran out and now we're stuck"
+ * stalemates. Heavy moves still feel valuable because they hit
+ * roughly twice as hard.
  */
 
 export const buddySpecies = {
@@ -40,8 +46,8 @@ export const buddySpecies = {
         id: 'paw-tap',
         name: 'Paw-tap',
         type: 'nature',
-        power: 6,
-        energyCost: 1,
+        power: 8,
+        energyCost: 0,
         accuracy: 0.95,
         fx: 'basic'
       },
@@ -49,9 +55,9 @@ export const buddySpecies = {
         id: 'honey-hug',
         name: 'Honey-hug',
         type: 'nature',
-        power: 14,
-        energyCost: 5,
-        accuracy: 0.80,
+        power: 15,
+        energyCost: 4,
+        accuracy: 0.85,
         fx: 'heavy'
       },
       {
@@ -61,7 +67,7 @@ export const buddySpecies = {
         power: 0,
         energyCost: 2,
         accuracy: 1.0,
-        effect: { kind: 'heal', amount: 8 },
+        effect: { kind: 'heal', amount: 10 },
         fx: 'heal'
       }
     ]
@@ -80,8 +86,8 @@ export const buddySpecies = {
         id: 'wing-flick',
         name: 'Wing-flick',
         type: 'wind',
-        power: 5,
-        energyCost: 1,
+        power: 7,
+        energyCost: 0,
         accuracy: 0.95,
         fx: 'basic'
       },
@@ -89,9 +95,9 @@ export const buddySpecies = {
         id: 'gust',
         name: 'Gust',
         type: 'wind',
-        power: 14,
-        energyCost: 5,
-        accuracy: 0.80,
+        power: 15,
+        energyCost: 4,
+        accuracy: 0.85,
         fx: 'heavy'
       },
       {
@@ -101,7 +107,7 @@ export const buddySpecies = {
         power: 0,
         energyCost: 1,
         accuracy: 1.0,
-        effect: { kind: 'energy', amount: 3 },
+        effect: { kind: 'energy', amount: 4 },
         fx: 'heal'
       }
     ]
@@ -120,8 +126,8 @@ export const buddySpecies = {
         id: 'sting',
         name: 'Sting',
         type: 'water',
-        power: 6,
-        energyCost: 2,
+        power: 8,
+        energyCost: 0,
         accuracy: 0.95,
         fx: 'basic'
       },
@@ -129,9 +135,9 @@ export const buddySpecies = {
         id: 'rinse',
         name: 'Rinse',
         type: 'water',
-        power: 15,
+        power: 16,
         energyCost: 5,
-        accuracy: 0.80,
+        accuracy: 0.85,
         fx: 'heavy'
       },
       {
@@ -139,9 +145,9 @@ export const buddySpecies = {
         name: 'Drift',
         type: 'water',
         power: 0,
-        energyCost: 1,
+        energyCost: 2,
         accuracy: 1.0,
-        effect: { kind: 'heal', amount: 7 },
+        effect: { kind: 'heal', amount: 9 },
         fx: 'heal'
       }
     ]
@@ -160,8 +166,8 @@ export const buddySpecies = {
         id: 'buzz-jab',
         name: 'Buzz-jab',
         type: 'sweet',
-        power: 6,
-        energyCost: 1,
+        power: 7,
+        energyCost: 0,
         accuracy: 0.95,
         fx: 'basic'
       },
@@ -169,9 +175,9 @@ export const buddySpecies = {
         id: 'pollen-puff',
         name: 'Pollen-puff',
         type: 'sweet',
-        power: 13,
+        power: 14,
         energyCost: 4,
-        accuracy: 0.80,
+        accuracy: 0.85,
         fx: 'heavy'
       },
       {
@@ -181,7 +187,7 @@ export const buddySpecies = {
         power: 0,
         energyCost: 2,
         accuracy: 1.0,
-        effect: { kind: 'heal', amount: 6 },
+        effect: { kind: 'heal', amount: 8 },
         fx: 'heal'
       }
     ]
@@ -200,8 +206,8 @@ export const buddySpecies = {
         id: 'nuzzle',
         name: 'Nuzzle',
         type: 'heart',
-        power: 6,
-        energyCost: 1,
+        power: 8,
+        energyCost: 0,
         accuracy: 0.95,
         fx: 'basic'
       },
@@ -209,9 +215,9 @@ export const buddySpecies = {
         id: 'big-boof',
         name: 'Big-boof',
         type: 'heart',
-        power: 15,
+        power: 16,
         energyCost: 5,
-        accuracy: 0.80,
+        accuracy: 0.85,
         fx: 'heavy'
       },
       {
@@ -221,7 +227,7 @@ export const buddySpecies = {
         power: 0,
         energyCost: 2,
         accuracy: 1.0,
-        effect: { kind: 'heal', amount: 8 },
+        effect: { kind: 'heal', amount: 10 },
         fx: 'heal'
       }
     ]

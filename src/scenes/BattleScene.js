@@ -1,41 +1,55 @@
 /**
- * BattleScene — the Pokémon-style turn-based combat overlay.
+ * BattleScene — Pokémon-style turn-based combat (v1.13 polish).
  *
- * Launched as an overlay scene (sleeps the underlying gameplay
- * scene; on close, wakes it back up). Single buddy per side for
- * the MVP. Player picks a move; both moves resolve in speed order;
- * animations + damage numbers play; HP bars tween; check for faint;
- * repeat until one side has 0 HP. Winner gets EXP + gems; loser
- * gets a small consolation reward (no fail states).
+ * Big changes vs v1.12:
+ *   - Sprites are MUCH bigger and arranged with proper "platforms"
+ *     (soft elliptical shadows) so they read as living things in a
+ *     small stage, not tiny icons floating in space.
+ *   - The basic move is 0-cost so you can never softlock yourself
+ *     by running out of energy.
+ *   - Animations got juicier: camera shake on heavy hits, hit-stop
+ *     freeze frames on impact, bigger particle bursts, scale-pop on
+ *     damage numbers, sprite flashes white on heavy hits.
+ *   - Multi-buddy battles: if you have more than one buddy on your
+ *     team, the next one auto-switches in when the current one
+ *     faints — Pokémon-style. Battle only ends when ALL your
+ *     buddies have fainted (or the opponent has).
+ *   - Recruitment: winning against an NPC adds that buddy's species
+ *     to your team (if you don't already have it).
  *
- * Designed for 4-year-old legibility:
- *   - Three big move buttons, always visible, with energy cost.
- *   - HP and energy bars filled and labelled.
- *   - Big damage numbers, slow-ish animations.
- *   - Every tap rewards (an animation always plays, even on miss).
+ * Pillar: no fail states. Losing still gives consolation gems +
+ * a kind line. The "Game Over" feeling never happens — you can
+ * walk away and try again.
  */
 
 import Phaser from 'phaser';
-import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel } from '../systems/UITokens.js';
+import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel, drawDropShadow } from '../systems/UITokens.js';
 import { typeMultiplier, typeEmoji } from '../content/typeChart.js';
-import { expReward } from '../content/buddySpecies.js';
+import { expReward, getSpecies } from '../content/buddySpecies.js';
 
 const Z = {
   veil: 11000,
-  panel: 11050,
+  stage: 11020,
+  platform: 11040,
   sprite: 11100,
-  bar: 11200,
-  text: 11250,
+  panel: 11200,
+  bar: 11220,
+  text: 11240,
   buttons: 11300,
   fx: 11400,
-  banner: 11500
+  banner: 11500,
+  modal: 11600
 };
 
-const BAR_W = 280;
-const BAR_H = 18;
-const MOVE_BTN_W = 200;
-const MOVE_BTN_H = 86;
-const MOVE_BTN_GAP = 18;
+// Type colours for move buttons & badges — match the chip we already
+// use elsewhere for type icons. (Subtle, not gaudy.)
+const TYPE_COLOUR = {
+  water:  0x6fb3d4,
+  nature: 0xa3c97a,
+  wind:   0xd6e2f0,
+  sweet:  0xf3b8c8,
+  heart:  0xf28c8c
+};
 
 export class BattleScene extends Phaser.Scene {
   constructor() {
@@ -44,180 +58,236 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * @param {object} data
-   * @param {object} data.playerParticipant      — from BuddyTeam.makeBattleParticipant
-   * @param {object} data.opponentParticipant    — from BuddyTeam.makeOpponent
-   * @param {string} data.previousSceneKey       — to wake on close
-   * @param {function} data.onComplete           — ({won, gems, expGained, levelsGained}) => void
-   * @param {object} data.services               — game services bag (audio, gemBag, quests, buddyTeam)
-   * @param {string} [data.opponentLabel]        — e.g. "Cosenae's buddy"
+   * @param {Array<object>} data.playerTeam       — array of BattleParticipants (filled team)
+   * @param {object} data.opponentParticipant     — BattleParticipant
+   * @param {string} data.previousSceneKey
+   * @param {function} data.onComplete            — ({won, gems, expGained, recruited?}) => void
+   * @param {object} data.services                — {audio, gemBag, quests, buddyTeam}
+   * @param {string} [data.opponentLabel]
    */
   init(data) {
-    this.player = data.playerParticipant;
+    // Multi-buddy team support: data.playerTeam is the full roster
+    // (each entry already a battle participant). Falls back to a
+    // single-participant array for backwards compatibility.
+    this.playerTeam = data.playerTeam || (data.playerParticipant ? [data.playerParticipant] : []);
+    this.playerIdx = 0;
+    this.player = this.playerTeam[this.playerIdx];
     this.opponent = data.opponentParticipant;
     this.previousSceneKey = data.previousSceneKey;
     this.onComplete = data.onComplete || (() => {});
     this.services = data.services || {};
     this.opponentLabel = data.opponentLabel || `Wild ${this.opponent.species.displayName}`;
-    this._busy = false;
     this._battleOver = false;
-    // Moves are disabled until the intro banner finishes so a fast
-    // tap can't fire before the kid sees what's going on.
     this._movesEnabled = false;
+    this._allObjs = [];   // every display object — used for the exit fade
   }
 
   create() {
     const { width, height } = this.scale;
 
-    // Translucent veil over the gameplay scene below.
+    // 1. Soft cinematic veil over the gameplay scene below.
     this.veil = this.add.graphics().setDepth(Z.veil);
-    this.veil.fillStyle(0x3a2a14, 0.55);
+    this.veil.fillStyle(0x3a2a14, 0.65);
     this.veil.fillRect(0, 0, width, height);
+    this._allObjs.push(this.veil);
 
-    // Stage panel — the big "battle arena" backdrop.
-    const stageX = 60;
-    const stageY = 60;
-    const stageW = width - 120;
-    const stageH = height - 220;
-    this.stageBg = this.add.graphics().setDepth(Z.panel);
+    // 2. Stage area — bigger now, with a subtle two-tone backdrop
+    //    so the buddies pop against it.
+    const STAGE_PAD_X = 40;
+    const STAGE_PAD_TOP = 40;
+    const STAGE_PAD_BOTTOM = 220; // leaves room for the move buttons
+    const stageX = STAGE_PAD_X;
+    const stageY = STAGE_PAD_TOP;
+    const stageW = width - STAGE_PAD_X * 2;
+    const stageH = height - STAGE_PAD_TOP - STAGE_PAD_BOTTOM;
+    this._stageRect = { x: stageX, y: stageY, w: stageW, h: stageH };
+
+    this.stageBg = this.add.graphics().setDepth(Z.stage);
     drawPanel(this.stageBg, stageX, stageY, stageW, stageH, {
       radius: RADIUS.panel,
       fill: COL.paper,
       fillAlpha: 0.98
     });
 
-    // Layout: opponent top-right, player bottom-left.
-    const oppCenterX = stageX + stageW * 0.70;
-    const oppCenterY = stageY + stageH * 0.36;
-    const plyCenterX = stageX + stageW * 0.30;
-    const plyCenterY = stageY + stageH * 0.72;
+    // A soft "sky/ground" band so the stage doesn't read as one
+    // flat colour. Top half slightly warmer.
+    const horizonY = stageY + stageH * 0.55;
+    this.stageBg.fillStyle(COL.gold, 0.18);
+    this.stageBg.fillRect(stageX + 4, stageY + 4, stageW - 8, horizonY - stageY - 4);
+    this._allObjs.push(this.stageBg);
 
-    // Sprites.
-    this._oppSprite = this._renderBattleSprite(this.opponent.species.sprite, oppCenterX, oppCenterY, stageH * 0.32, true);
-    this._plySprite = this._renderBattleSprite(this.player.species.sprite, plyCenterX, plyCenterY, stageH * 0.42, false);
+    // 3. Sprite "platforms" — soft elliptical shadows the buddies
+    //    stand on. Gives them weight + a sense of place.
+    const oppPlatform = { x: stageX + stageW * 0.72, y: stageY + stageH * 0.50, rx: 180, ry: 30 };
+    const plyPlatform = { x: stageX + stageW * 0.28, y: stageY + stageH * 0.86, rx: 220, ry: 36 };
+    this._drawPlatform(oppPlatform.x, oppPlatform.y, oppPlatform.rx, oppPlatform.ry);
+    this._drawPlatform(plyPlatform.x, plyPlatform.y, plyPlatform.rx, plyPlatform.ry);
 
-    // Stats panels (name + level + HP/energy bars).
-    this._oppPanel = this._renderStatPanel(stageX + 40, stageY + 30, this.opponent, this.opponentLabel);
-    this._plyPanel = this._renderStatPanel(stageX + stageW - BAR_W - 80, stageY + stageH - 100, this.player, 'Your buddy', true);
+    // 4. Sprites — MUCH bigger than v1.12. Opponent in the back
+    //    (slightly smaller for depth feel), player in the front.
+    this._oppSprite = this._renderBattleSprite(
+      this.opponent.species.sprite,
+      oppPlatform.x, oppPlatform.y,
+      stageH * 0.46,
+      true
+    );
+    this._plySprite = this._renderBattleSprite(
+      this.player.species.sprite,
+      plyPlatform.x, plyPlatform.y,
+      stageH * 0.58,
+      false
+    );
 
-    // Move buttons below the stage.
+    // 5. Stats panels — anchored to the opposite corner of each
+    //    sprite so they don't crowd the action.
+    this._oppPanel = this._renderStatPanel(
+      stageX + 24, stageY + 24, this.opponent, this.opponentLabel
+    );
+    this._plyPanel = this._renderStatPanel(
+      stageX + stageW - 380, stageY + stageH - 138, this.player, this._playerLabel()
+    );
+
+    // 6. Move buttons.
     this._moveButtons = [];
-    this._renderMoveButtons(stageY + stageH + 16, width);
+    this._renderMoveButtons(stageY + stageH + 30, width);
 
-    // Battle log banner (centred above the move buttons).
-    this._banner = this.add.text(width / 2, stageY + stageH - 24, '', {
+    // 7. Battle banner (announce moves + type effectiveness).
+    this._banner = this.add.text(width / 2, stageY + stageH - 50, '', {
       fontFamily: TYPE.family,
-      fontSize: '22px',
+      fontSize: '26px',
       color: COL.inkHex,
       align: 'center',
-      backgroundColor: '#ffffff',
-      padding: { left: 12, right: 12, top: 4, bottom: 4 }
+      backgroundColor: '#fff8e7',
+      padding: { left: 22, right: 22, top: 8, bottom: 8 },
+      stroke: COL.inkHex,
+      strokeThickness: 1
     }).setOrigin(0.5).setDepth(Z.banner).setAlpha(0);
+    this._allObjs.push(this._banner);
 
-    // Drop-in entrance.
+    // 8. Drop-in.
     this._slideIn();
 
-    // Intro line + enable moves.
-    this._showBanner(`A wild battle! ${this.opponent.species.displayName} appeared!`, 1800, () => {
+    // 9. Intro banners.
+    this._showBanner(`${this.opponent.species.displayName} appeared!`, 1500, () => {
       this._showBanner(`Go, ${this.player.species.displayName}!`, 1200, () => {
         this._setMovesEnabled(true);
       });
     });
 
-    // Tell the quest tracker.
     this.services.quests?.report?.({ type: 'buddy-battle-started' });
   }
 
-  // ──────────────────────────── render helpers ────────────────────────────
+  // ─────────────────────────────── render helpers ───────────────────────────────
+
+  _drawPlatform(cx, cy, rx, ry) {
+    const g = this.add.graphics().setDepth(Z.platform);
+    // Slight gradient effect with two filled ellipses.
+    g.fillStyle(COL.ink, 0.10);
+    g.fillEllipse(cx, cy, rx * 2, ry * 2);
+    g.fillStyle(COL.ink, 0.16);
+    g.fillEllipse(cx, cy, rx * 1.4, ry * 1.4);
+    this._allObjs.push(g);
+    return g;
+  }
 
   _renderBattleSprite(textureKey, cx, cy, targetH, isOpponent) {
     if (!this.textures.exists(textureKey)) {
-      // Placeholder if sprite is missing.
-      const placeholder = this.add.circle(cx, cy, 40, COL.orange, 1).setDepth(Z.sprite);
+      const placeholder = this.add.circle(cx, cy, 60, COL.orange, 1).setDepth(Z.sprite);
+      this._allObjs.push(placeholder);
       return placeholder;
     }
-    const img = this.add.image(cx, cy, textureKey).setOrigin(0.5).setDepth(Z.sprite);
+    const img = this.add.image(cx, cy, textureKey).setOrigin(0.5, 1).setDepth(Z.sprite);
     const tex = this.textures.get(textureKey).getSourceImage();
     img.setScale(targetH / tex.height);
-    if (isOpponent) img.setFlipX(true); // face each other
+    if (isOpponent) img.setFlipX(true);
+    // Position the sprite so its feet sit on the platform centre.
+    img.y = cy + 8;
+    // Track "rest" position for the lunge animation to return to.
+    img._restX = img.x;
+    img._restY = img.y;
     // Gentle idle bob.
     this.tweens.add({
       targets: img,
-      y: cy - 6,
-      duration: 1400,
+      y: img.y - 10,
+      duration: 1500,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+    this._allObjs.push(img);
     return img;
   }
 
-  _renderStatPanel(x, y, participant, label, isPlayer = false) {
-    const panelW = BAR_W + 24;
-    const panelH = 90;
-    const bg = this.add.graphics().setDepth(Z.panel + 1);
+  _renderStatPanel(x, y, participant, label) {
+    const panelW = 360;
+    const panelH = 114;
+    const bg = this.add.graphics().setDepth(Z.panel);
     drawPanel(bg, x, y, panelW, panelH, { radius: RADIUS.card });
+    this._allObjs.push(bg);
 
     const speciesLabel = `${participant.species.displayName}  ${typeEmoji(participant.species.type)}  Lv${participant.level}`;
-    const nameText = this.add.text(x + 12, y + 8, speciesLabel, {
+    const nameText = this.add.text(x + 16, y + 10, speciesLabel, {
       fontFamily: TYPE.family,
-      fontSize: '20px',
+      fontSize: '24px',
       color: COL.inkHex
     }).setOrigin(0, 0).setDepth(Z.text);
+    this._allObjs.push(nameText);
 
-    const ownerText = this.add.text(x + 12, y + 32, label, {
+    const ownerText = this.add.text(x + 16, y + 38, label, {
       fontFamily: TYPE.bodyFamily,
-      fontSize: '14px',
+      fontSize: '16px',
       color: COL.inkSoft
     }).setOrigin(0, 0).setDepth(Z.text);
+    this._allObjs.push(ownerText);
 
-    // HP bar.
-    const hpBar = this._makeBar(x + 12, y + 50, BAR_W, BAR_H, COL.orange, COL.ink);
-    // Energy bar (skinnier).
-    const eBar  = this._makeBar(x + 12, y + 72, BAR_W * 0.7, 12, 0x4ab3e4, COL.ink);
+    const hpBar = this._makeBar(x + 16, y + 62, panelW - 32, 20, COL.orange, 'HP');
+    const eBar  = this._makeBar(x + 16, y + 88, (panelW - 32) * 0.7, 14, 0x6fb3d4, '⚡');
 
     const panel = { bg, nameText, ownerText, hpBar, eBar, participant };
     this._refreshBars(panel);
     return panel;
   }
 
-  _makeBar(x, y, w, h, fillColour, strokeColour) {
+  _makeBar(x, y, w, h, fillColour, prefix) {
     const track = this.add.graphics().setDepth(Z.bar);
-    track.fillStyle(COL.ink, 0.18);
+    track.fillStyle(COL.ink, 0.16);
     track.fillRoundedRect(x, y, w, h, h / 2);
-    track.lineStyle(2, strokeColour, 0.7);
+    track.lineStyle(2, COL.ink, 0.5);
     track.strokeRoundedRect(x, y, w, h, h / 2);
+    this._allObjs.push(track);
 
     const fill = this.add.graphics().setDepth(Z.bar + 1);
+    this._allObjs.push(fill);
 
-    // Numeric label on top of the bar.
     const label = this.add.text(x + w / 2, y + h / 2, '', {
       fontFamily: TYPE.family,
-      fontSize: '12px',
+      fontSize: `${Math.max(11, Math.floor(h * 0.7))}px`,
       color: '#ffffff',
       stroke: COL.inkHex,
       strokeThickness: 3
     }).setOrigin(0.5).setDepth(Z.bar + 2);
+    this._allObjs.push(label);
 
-    return { x, y, w, h, fillColour, fill, label, currentFrac: 1 };
+    return { x, y, w, h, fillColour, fill, label, prefix, currentFrac: 1 };
   }
 
   _refreshBars(panel) {
-    const { participant, hpBar, eBar } = panel;
-    this._setBar(hpBar, participant.hp, participant.maxHP);
-    this._setBar(eBar, participant.energy, participant.maxEnergy);
+    const p = panel.participant;
+    this._setBar(panel.hpBar, p.hp, p.maxHP, p.hp / p.maxHP < 0.3);
+    this._setBar(panel.eBar, p.energy, p.maxEnergy, false);
   }
 
-  _setBar(bar, value, max) {
+  _setBar(bar, value, max, lowFlash = false) {
     const frac = Math.max(0, Math.min(1, value / max));
-    // Tween the visible fill width.
+    const colour = lowFlash ? 0xd54e4e : bar.fillColour;
     this.tweens.add({
       targets: bar,
       currentFrac: frac,
-      duration: 320,
+      duration: 380,
       ease: 'Sine.easeOut',
       onUpdate: () => {
         bar.fill.clear();
-        bar.fill.fillStyle(bar.fillColour, 1);
+        bar.fill.fillStyle(colour, 1);
         const fw = Math.max(bar.h, bar.w * bar.currentFrac);
         bar.fill.fillRoundedRect(bar.x, bar.y, fw, bar.h, bar.h / 2);
       }
@@ -225,92 +295,115 @@ export class BattleScene extends Phaser.Scene {
     bar.label.setText(`${Math.max(0, Math.ceil(value))} / ${Math.ceil(max)}`);
   }
 
+  _playerLabel() {
+    // If there are more buddies waiting, hint at that on the panel.
+    const remaining = this.playerTeam.filter((p, i) => i > this.playerIdx && p.hp > 0).length;
+    if (remaining > 0) return `Your buddy  (+${remaining} waiting)`;
+    return 'Your buddy';
+  }
+
   _renderMoveButtons(topY, sceneWidth) {
     const moves = this.player.species.moves;
-    const totalW = moves.length * MOVE_BTN_W + (moves.length - 1) * MOVE_BTN_GAP;
+    const btnW = 220;
+    const btnH = 96;
+    const gap = 22;
+    const totalW = moves.length * btnW + (moves.length - 1) * gap;
     const startX = (sceneWidth - totalW) / 2;
-
     for (let i = 0; i < moves.length; i++) {
       const move = moves[i];
-      const x = startX + i * (MOVE_BTN_W + MOVE_BTN_GAP);
-      const y = topY;
-      const btn = this._makeMoveButton(x, y, move);
-      this._moveButtons.push(btn);
+      const x = startX + i * (btnW + gap);
+      this._moveButtons.push(this._makeMoveButton(x, topY, btnW, btnH, move));
     }
   }
 
-  _makeMoveButton(x, y, move) {
+  _makeMoveButton(x, y, w, h, move) {
     const bg = this.add.graphics().setDepth(Z.buttons);
-    const name = this.add.text(x + MOVE_BTN_W / 2, y + 18, move.name, {
-      fontFamily: TYPE.family,
-      fontSize: '22px',
-      color: COL.inkHex
-    }).setOrigin(0.5, 0).setDepth(Z.buttons + 1);
-    const meta = this.add.text(
-      x + MOVE_BTN_W / 2,
-      y + MOVE_BTN_H - 24,
-      `${typeEmoji(move.type)} ⚡${move.energyCost}`,
-      {
-        fontFamily: TYPE.family,
-        fontSize: '18px',
-        color: COL.orangeHex
-      }
-    ).setOrigin(0.5, 0).setDepth(Z.buttons + 1);
+    this._allObjs.push(bg);
 
-    const zone = this.add.zone(x, y, MOVE_BTN_W, MOVE_BTN_H).setOrigin(0, 0).setDepth(Z.buttons + 2);
+    // Type-coloured stripe down the left edge of the button.
+    const stripe = this.add.graphics().setDepth(Z.buttons + 1);
+    this._allObjs.push(stripe);
+
+    const name = this.add.text(x + 28, y + 24, move.name, {
+      fontFamily: TYPE.family,
+      fontSize: '24px',
+      color: COL.inkHex
+    }).setOrigin(0, 0).setDepth(Z.buttons + 2);
+    this._allObjs.push(name);
+
+    const energyLabel = move.energyCost === 0
+      ? `${typeEmoji(move.type)} basic`
+      : `${typeEmoji(move.type)}  ⚡${move.energyCost}`;
+    const meta = this.add.text(x + 28, y + h - 30, energyLabel, {
+      fontFamily: TYPE.family,
+      fontSize: '18px',
+      color: COL.orangeHex
+    }).setOrigin(0, 0).setDepth(Z.buttons + 2);
+    this._allObjs.push(meta);
+
+    const zone = this.add.zone(x, y, w, h).setOrigin(0, 0).setDepth(Z.buttons + 3);
     zone.setInteractive({ useHandCursor: true });
+    this._allObjs.push(zone);
 
     const draw = (state) => {
       bg.clear();
+      stripe.clear();
       const enabled = state !== 'disabled';
       const fill = state === 'hover' ? COL.paperWarm : COL.gold;
-      drawPanel(bg, x, y, MOVE_BTN_W, MOVE_BTN_H, {
+      drawPanel(bg, x, y, w, h, {
         radius: RADIUS.card,
         fill,
-        fillAlpha: enabled ? 1 : 0.5
+        fillAlpha: enabled ? 1 : 0.45
       });
+      const stripeColour = TYPE_COLOUR[move.type] || COL.orange;
+      stripe.fillStyle(stripeColour, enabled ? 1 : 0.4);
+      stripe.fillRoundedRect(x + 6, y + 8, 10, h - 16, 5);
     };
-    // Start disabled — _setMovesEnabled(true) after intro enables it.
     draw('disabled');
 
-    zone.on('pointerover', () => { if (this._movesEnabled) draw('hover'); });
-    zone.on('pointerout',  () => { if (this._movesEnabled) draw('idle'); });
+    zone.on('pointerover', () => { if (this._movesEnabled && this._canAfford(move)) draw('hover'); });
+    zone.on('pointerout',  () => { if (this._movesEnabled && this._canAfford(move)) draw('idle'); });
     zone.on('pointerup',   () => {
       if (!this._movesEnabled) return;
-      if (this.player.energy < move.energyCost) {
-        this._showBanner(`Not enough ⚡ for ${move.name}.`, 1100);
+      if (!this._canAfford(move)) {
+        this._showBanner(`Not enough ⚡ for ${move.name}.`, 900);
         return;
       }
       this._setMovesEnabled(false);
       this._takeTurn(move);
     });
 
-    return { bg, name, meta, zone, x, y, move, draw };
+    return { bg, stripe, name, meta, zone, x, y, w, h, move, draw };
+  }
+
+  _canAfford(move) {
+    return this.player.energy >= move.energyCost;
   }
 
   _setMovesEnabled(enabled) {
     this._movesEnabled = enabled;
     for (const btn of this._moveButtons) {
-      const canAfford = this.player.energy >= btn.move.energyCost;
-      btn.draw(enabled && canAfford ? 'idle' : 'disabled');
+      const ok = enabled && this._canAfford(btn.move);
+      btn.draw(ok ? 'idle' : 'disabled');
     }
   }
 
   _showBanner(text, ms = 1400, onDone) {
     this._banner.setText(text);
     this.tweens.killTweensOf(this._banner);
-    this._banner.setAlpha(0);
+    this._banner.setAlpha(0).setScale(0.92);
     this.tweens.add({
       targets: this._banner,
       alpha: 1,
-      duration: 200,
-      ease: 'Sine.easeOut',
+      scale: 1,
+      duration: 220,
+      ease: 'Back.easeOut',
       onComplete: () => {
         this.time.delayedCall(ms, () => {
           this.tweens.add({
             targets: this._banner,
             alpha: 0,
-            duration: 200,
+            duration: 220,
             onComplete: () => onDone && onDone()
           });
         });
@@ -318,85 +411,130 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ──────────────────────────── turn logic ────────────────────────────
+  // ────────────────────────────── turn / combat ──────────────────────────────
 
-  /** Resolve a full turn: player picks `move`; opponent picks its
-   *  own move via simple AI; faster goes first; check faint. */
   _takeTurn(playerMove) {
     if (this._battleOver) return;
-
     const opponentMove = this._opponentAI();
     const playerGoesFirst = this.player.spd >= this.opponent.spd;
 
-    const playOrder = playerGoesFirst
+    const plays = playerGoesFirst
       ? [{ attacker: this.player, defender: this.opponent, move: playerMove, who: 'player' },
          { attacker: this.opponent, defender: this.player, move: opponentMove, who: 'opponent' }]
       : [{ attacker: this.opponent, defender: this.player, move: opponentMove, who: 'opponent' },
          { attacker: this.player, defender: this.opponent, move: playerMove, who: 'player' }];
 
-    this._runStep(playOrder, 0);
+    this._runStep(plays, 0);
   }
 
   _runStep(plays, i) {
     if (this._battleOver) return;
     if (i >= plays.length) {
-      // End of turn — re-enable moves.
+      // End of turn — refresh meta on buttons (afford state may
+      // have changed) and re-enable input.
+      this._refreshBars(this._oppPanel);
+      this._refreshBars(this._plyPanel);
       this._setMovesEnabled(true);
       return;
     }
     const { attacker, defender, move, who } = plays[i];
     if (attacker.hp <= 0) {
-      // Attacker fainted earlier this turn (e.g. before being able
-      // to swing back). Skip its action.
       this._runStep(plays, i + 1);
       return;
     }
-
     this._performMove(attacker, defender, move, who, () => {
-      // Check defender faint AFTER damage / heal animation settles.
       if (defender.hp <= 0) {
-        this._faint(defender, () => this._concludeBattle(attacker === this.player));
+        this._faint(defender, () => {
+          // Different paths depending on whose buddy fainted.
+          if (defender === this.opponent) {
+            this._concludeBattle(true);
+          } else {
+            // Player's buddy fainted — switch to next on team, or lose.
+            this._switchInOrLose();
+          }
+        });
         return;
       }
-      if (attacker.hp <= 0) {
-        // Self-defeat (very rare; here only via future status).
-        this._faint(attacker, () => this._concludeBattle(attacker === this.opponent));
-        return;
-      }
-      // Continue.
       this.time.delayedCall(280, () => this._runStep(plays, i + 1));
     });
   }
 
-  /** Simple opponent AI: prefer affordable strong moves, but
-   *  occasionally use utility (heal/recover) if HP/energy low. */
+  _switchInOrLose() {
+    // Find the next buddy on the team with HP > 0.
+    let nextIdx = -1;
+    for (let i = this.playerIdx + 1; i < this.playerTeam.length; i++) {
+      if (this.playerTeam[i].hp > 0) { nextIdx = i; break; }
+    }
+    if (nextIdx === -1) {
+      // No more buddies — lose.
+      this._concludeBattle(false);
+      return;
+    }
+    // Slot the next buddy in.
+    this.playerIdx = nextIdx;
+    this.player = this.playerTeam[nextIdx];
+    this._showBanner(`Go, ${this.player.species.displayName}!`, 1100, () => {
+      // Re-render the player sprite + stat panel + move buttons.
+      this._replacePlayerVisuals();
+      this._setMovesEnabled(true);
+    });
+  }
+
+  _replacePlayerVisuals() {
+    // Destroy old sprite + panel + move buttons; rebuild for new
+    // active buddy.
+    this._plySprite?.destroy();
+    if (this._plyPanel) {
+      this._plyPanel.bg?.destroy();
+      this._plyPanel.nameText?.destroy();
+      this._plyPanel.ownerText?.destroy();
+      this._plyPanel.hpBar?.fill?.destroy();
+      this._plyPanel.hpBar?.label?.destroy();
+      this._plyPanel.eBar?.fill?.destroy();
+      this._plyPanel.eBar?.label?.destroy();
+    }
+    for (const b of this._moveButtons) {
+      b.bg.destroy(); b.stripe.destroy(); b.name.destroy(); b.meta.destroy(); b.zone.destroy();
+    }
+    this._moveButtons = [];
+
+    // Re-create at the same anchor coordinates.
+    const { x: sx, y: sy, w: sw, h: sh } = this._stageRect;
+    const plyPlatform = { x: sx + sw * 0.28, y: sy + sh * 0.86 };
+    this._plySprite = this._renderBattleSprite(
+      this.player.species.sprite,
+      plyPlatform.x, plyPlatform.y,
+      sh * 0.58,
+      false
+    );
+    this._plyPanel = this._renderStatPanel(
+      sx + sw - 380, sy + sh - 138, this.player, this._playerLabel()
+    );
+    this._renderMoveButtons(sy + sh + 30, this.scale.width);
+  }
+
   _opponentAI() {
     const moves = this.opponent.species.moves;
     const affordable = moves.filter((m) => this.opponent.energy >= m.energyCost);
-    if (affordable.length === 0) {
-      // Pick the cheapest move regardless (game grants min damage of 1).
-      return moves.reduce((a, b) => (a.energyCost <= b.energyCost ? a : b));
-    }
+    // Should always include the 0-cost basic now.
+    if (affordable.length === 0) return moves[0];
     const lowHP = this.opponent.hp / this.opponent.maxHP < 0.4;
-    const lowEnergy = this.opponent.energy / this.opponent.maxEnergy < 0.3;
-    // Prefer heal if low HP.
     if (lowHP) {
       const heal = affordable.find((m) => m.effect?.kind === 'heal');
-      if (heal && Math.random() < 0.7) return heal;
+      if (heal && Math.random() < 0.65) return heal;
     }
-    if (lowEnergy) {
-      const eMove = affordable.find((m) => m.effect?.kind === 'energy');
-      if (eMove && Math.random() < 0.6) return eMove;
-    }
-    // Else pick a random attack-ish move (any non-utility).
     const attackish = affordable.filter((m) => !m.effect);
     if (attackish.length > 0) {
+      // 60% chance to use the heaviest affordable attack, else random.
+      if (Math.random() < 0.6) {
+        return attackish.reduce((a, b) => (a.power >= b.power ? a : b));
+      }
       return attackish[Math.floor(Math.random() * attackish.length)];
     }
     return affordable[Math.floor(Math.random() * affordable.length)];
   }
 
-  // ──────────────────────────── move animations ────────────────────────────
+  // ────────────────────────────── move animations ──────────────────────────────
 
   _performMove(attacker, defender, move, who, onDone) {
     attacker.energy = Math.max(0, attacker.energy - move.energyCost);
@@ -406,15 +544,11 @@ export class BattleScene extends Phaser.Scene {
     const attackerPanel  = (who === 'player') ? this._plyPanel : this._oppPanel;
     const defenderPanel  = (who === 'player') ? this._oppPanel : this._plyPanel;
 
-    const tellLine = `${attacker.species.displayName} used ${move.name}!`;
-    this._showBanner(tellLine, 900);
-
-    // Refresh attacker's energy bar.
+    this._showBanner(`${attacker.species.displayName} used ${move.name}!`, 800);
     this._refreshBars(attackerPanel);
 
-    // Utility move = heal / energy.
     if (move.effect) {
-      this.time.delayedCall(220, () => {
+      this.time.delayedCall(200, () => {
         this._playHealFx(attackerSprite, attacker, move.effect);
         this.time.delayedCall(700, () => {
           this._refreshBars(attackerPanel);
@@ -424,30 +558,38 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    // Attack move.
     const hit = Math.random() < move.accuracy;
-    this.time.delayedCall(220, () => {
+    this.time.delayedCall(200, () => {
       this._playLungeFx(attackerSprite, who);
-      this.time.delayedCall(180, () => {
+      this.time.delayedCall(160, () => {
         if (!hit) {
-          this._floatText(defenderSprite.x, defenderSprite.y - 60, 'miss!', COL.inkSoft);
-          this.time.delayedCall(500, () => onDone());
+          this._floatText(defenderSprite.x, defenderSprite.y - 100, 'miss!', '#5a4a2a', 36);
+          this.time.delayedCall(400, () => onDone());
           return;
         }
         const dmg = this._damageOf(attacker, defender, move);
+        const typeMul = typeMultiplier(move.type, defender.species.type);
         defender.hp = Math.max(0, defender.hp - dmg);
 
-        const typeMul = typeMultiplier(move.type, defender.species.type);
-        const colour = typeMul > 1 ? '#a45e08' : (typeMul < 1 ? '#5a4a2a' : '#a45e08');
-        this._floatText(defenderSprite.x, defenderSprite.y - 60, `−${dmg}`, colour);
+        const dmgColour = typeMul > 1 ? '#d54e4e' : (typeMul < 1 ? '#7a6a4a' : COL.orangeHex);
+        const dmgSize = move.fx === 'heavy' ? 64 : (typeMul > 1 ? 56 : 48);
+        this._floatText(defenderSprite.x, defenderSprite.y - 100, `−${dmg}`, dmgColour, dmgSize);
+
         if (typeMul > 1) {
           this._showBanner('It\'s really effective!', 900);
         } else if (typeMul < 1) {
           this._showBanner('It\'s only a little effective.', 900);
         }
-        this._playHitFx(defenderSprite, move.fx);
+
+        // Heavy hit: hit-stop freeze + camera shake.
+        if (move.fx === 'heavy') {
+          this.cameras.main.shake(220, 0.012);
+          this._hitStopFlash(defenderSprite);
+        } else {
+          this._playHitFx(defenderSprite, 'basic', typeMul);
+        }
         this._refreshBars(defenderPanel);
-        this.time.delayedCall(700, () => onDone());
+        this.time.delayedCall(750, () => onDone());
       });
     });
   }
@@ -461,37 +603,62 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _playLungeFx(attackerSprite, who) {
-    const dx = (who === 'player') ? 40 : -40;
-    const fromX = attackerSprite.x;
+    const dx = (who === 'player') ? 60 : -60;
+    const fromX = attackerSprite._restX ?? attackerSprite.x;
+    attackerSprite.x = fromX;
     this.tweens.add({
       targets: attackerSprite,
       x: fromX + dx,
-      duration: 110,
+      duration: 130,
       ease: 'Quad.easeOut',
       yoyo: true,
       onComplete: () => { attackerSprite.x = fromX; }
     });
   }
 
-  _playHitFx(defenderSprite, fx) {
-    const fromX = defenderSprite.x;
-    const fromY = defenderSprite.y;
-    // Red tint flash.
-    defenderSprite.setTint?.(0xff7373);
-    this.time.delayedCall(220, () => defenderSprite.clearTint?.());
+  _playHitFx(defenderSprite, fx, typeMul) {
+    const fromX = defenderSprite._restX ?? defenderSprite.x;
+    const fromY = defenderSprite._restY ?? defenderSprite.y;
+    // Red tint flash on the defender.
+    defenderSprite.setTint?.(0xff8484);
+    this.time.delayedCall(240, () => defenderSprite.clearTint?.());
     // Shake.
     this.tweens.add({
       targets: defenderSprite,
-      x: { from: fromX - 6, to: fromX + 6 },
+      x: { from: fromX - 8, to: fromX + 8 },
       duration: 60,
       yoyo: true,
-      repeat: fx === 'heavy' ? 4 : 2,
+      repeat: 3,
       onComplete: () => { defenderSprite.x = fromX; defenderSprite.y = fromY; }
     });
-    // Heavy: small particle burst.
-    if (fx === 'heavy') {
-      this._burstParticles(defenderSprite.x, defenderSprite.y, COL.orange, 10);
+    // If type was super-effective, extra impact sparkle.
+    if (typeMul > 1) {
+      this._burstParticles(defenderSprite.x, defenderSprite.y - 40, COL.orange, 14, 100);
     }
+  }
+
+  /** Hit-stop on heavy: freeze the frame briefly, then flash. */
+  _hitStopFlash(defenderSprite) {
+    const fromX = defenderSprite._restX ?? defenderSprite.x;
+    const fromY = defenderSprite._restY ?? defenderSprite.y;
+    // White-tint impact frame, hold briefly.
+    defenderSprite.setTint?.(0xffffff);
+    this.tweens.killTweensOf(defenderSprite);
+    this.time.delayedCall(120, () => {
+      defenderSprite.setTint?.(0xff7373);
+      this.time.delayedCall(280, () => defenderSprite.clearTint?.());
+      // Bigger shake after the freeze.
+      this.tweens.add({
+        targets: defenderSprite,
+        x: { from: fromX - 14, to: fromX + 14 },
+        duration: 70,
+        yoyo: true,
+        repeat: 4,
+        onComplete: () => { defenderSprite.x = fromX; defenderSprite.y = fromY; }
+      });
+      // Big particle burst.
+      this._burstParticles(defenderSprite.x, defenderSprite.y - 50, COL.orange, 18, 130);
+    });
   }
 
   _playHealFx(targetSprite, target, effect) {
@@ -499,57 +666,85 @@ export class BattleScene extends Phaser.Scene {
       const oldHP = target.hp;
       target.hp = Math.min(target.maxHP, target.hp + effect.amount);
       const gained = target.hp - oldHP;
-      this._floatText(targetSprite.x, targetSprite.y - 60, `+${gained}`, '#5a8a3a');
+      this._floatText(targetSprite.x, targetSprite.y - 100, `+${gained}`, '#5a8a3a', 52);
     } else if (effect.kind === 'energy') {
       const oldE = target.energy;
       target.energy = Math.min(target.maxEnergy, target.energy + effect.amount);
       const gained = target.energy - oldE;
-      this._floatText(targetSprite.x, targetSprite.y - 60, `+${gained}⚡`, '#4a8ab3');
+      this._floatText(targetSprite.x, targetSprite.y - 100, `+${gained}⚡`, '#4a8ab3', 52);
     }
-    // Sparkle ring.
+    // Sparkle ring around the buddy.
     const ring = this.add.graphics().setDepth(Z.fx);
-    ring.lineStyle(4, 0xffe066, 1);
-    ring.strokeCircle(targetSprite.x, targetSprite.y, 30);
+    ring.lineStyle(6, 0xffe066, 1);
+    ring.strokeCircle(targetSprite.x, targetSprite.y - 40, 50);
     this.tweens.add({
       targets: ring,
-      scale: 2.4,
+      scale: 2.8,
       alpha: 0,
-      duration: 700,
+      duration: 800,
       ease: 'Sine.easeOut',
       onComplete: () => ring.destroy()
     });
+    // A few falling sparkles.
+    for (let i = 0; i < 6; i++) {
+      const star = this.add.text(
+        targetSprite.x + (Math.random() - 0.5) * 80,
+        targetSprite.y - 80 - Math.random() * 60,
+        '✦',
+        { fontFamily: TYPE.family, fontSize: '28px', color: '#ffd860' }
+      ).setOrigin(0.5).setDepth(Z.fx);
+      this.tweens.add({
+        targets: star,
+        y: star.y - 40,
+        alpha: 0,
+        duration: 800 + Math.random() * 400,
+        ease: 'Sine.easeOut',
+        onComplete: () => star.destroy()
+      });
+    }
   }
 
-  _floatText(x, y, text, colour) {
+  /** A big scale-pop + rise damage number. */
+  _floatText(x, y, text, colour, size = 48) {
     const t = this.add.text(x, y, text, {
       fontFamily: TYPE.family,
-      fontSize: '42px',
+      fontSize: `${size}px`,
       color: colour,
       stroke: '#ffffff',
-      strokeThickness: 5
+      strokeThickness: 6
     }).setOrigin(0.5).setDepth(Z.fx);
+    t.setScale(0.4);
     this.tweens.add({
       targets: t,
-      y: y - 80,
-      alpha: { from: 1, to: 0 },
-      duration: 900,
-      ease: 'Sine.easeOut',
-      onComplete: () => t.destroy()
+      scale: 1.1,
+      duration: 180,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: t,
+          y: y - 100,
+          alpha: { from: 1, to: 0 },
+          scale: 1.0,
+          duration: 800,
+          ease: 'Sine.easeOut',
+          onComplete: () => t.destroy()
+        });
+      }
     });
   }
 
-  _burstParticles(x, y, colour, count) {
+  _burstParticles(x, y, colour, count, dist) {
     for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      const dist = 80 + Math.random() * 40;
-      const p = this.add.circle(x, y, 5, colour, 1).setDepth(Z.fx);
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+      const d = dist * (0.8 + Math.random() * 0.4);
+      const p = this.add.circle(x, y, 6 + Math.random() * 4, colour, 1).setDepth(Z.fx);
       this.tweens.add({
         targets: p,
-        x: x + Math.cos(angle) * dist,
-        y: y + Math.sin(angle) * dist,
+        x: x + Math.cos(angle) * d,
+        y: y + Math.sin(angle) * d,
         alpha: { from: 1, to: 0 },
-        scale: { from: 1, to: 0.3 },
-        duration: 600,
+        scale: { from: 1.2, to: 0.3 },
+        duration: 700 + Math.random() * 200,
         ease: 'Quad.easeOut',
         onComplete: () => p.destroy()
       });
@@ -565,13 +760,13 @@ export class BattleScene extends Phaser.Scene {
       y: sprite.y + 60,
       angle: -45,
       alpha: 0,
-      duration: 700,
+      duration: 800,
       ease: 'Quad.easeIn',
       onComplete: () => onDone()
     });
   }
 
-  // ──────────────────────────── end of battle ────────────────────────────
+  // ─────────────────────────────── end of battle ───────────────────────────────
 
   _concludeBattle(playerWon) {
     if (this._battleOver) return;
@@ -581,32 +776,54 @@ export class BattleScene extends Phaser.Scene {
     let gems = 0;
     let expGained = 0;
     let levelsGained = 0;
+    let recruited = null;
+
+    // EXP goes to whichever player buddy "finished it" — the
+    // currently active one. (Pokémon does roughly the same; full
+    // EXP-share is a v1.14 thing.)
+    const finisher = this.player.buddyInstance;
 
     if (playerWon) {
       gems = 5 + this.opponent.level * 3;
       expGained = expReward(this.opponent.level);
-      if (this.player.buddyInstance && this.services.buddyTeam) {
-        levelsGained = this.services.buddyTeam.grantExp(this.player.buddyInstance, expGained);
+      if (finisher && this.services.buddyTeam) {
+        levelsGained = this.services.buddyTeam.grantExp(finisher, expGained);
         if (levelsGained > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
       }
+      // Recruitment: if the player doesn't already have this
+      // species on their team, they get it for free at level 1.
+      // (The gem reward + EXP applies regardless.)
+      if (this.services.buddyTeam && !this.services.buddyTeam.has(this.opponent.species.id)) {
+        const newBuddy = this.services.buddyTeam.recruit(this.opponent.species.id, 1);
+        if (newBuddy) {
+          recruited = this.opponent.species;
+          this.services.quests?.report?.({ type: 'buddy-recruited', speciesId: newBuddy.speciesId });
+        }
+      }
       this.services.gemBag?.add('gem_5', gems);
       this.services.audio?.playSfx?.('sfx_jackpot');
-      this._showBanner(
-        levelsGained > 0
-          ? `You won! +${gems} gems · +${expGained} EXP · LEVEL UP! Lv${this.player.buddyInstance.level}`
-          : `You won! +${gems} gems · +${expGained} EXP`,
-        2600,
-        () => this._exit({ won: true, gems, expGained, levelsGained })
-      );
       this.services.quests?.report?.({ type: 'buddy-battle-won', opponentSpecies: this.opponent.species.id, opponentLevel: this.opponent.level });
+
+      // Big "you won" banner with reward summary.
+      const winLine = levelsGained > 0
+        ? `You won! +${gems} gems · +${expGained} EXP · LEVEL UP! Lv${finisher.level}`
+        : `You won! +${gems} gems · +${expGained} EXP`;
+      this._showBanner(winLine, 2600, () => {
+        if (recruited) {
+          this._showBanner(`${recruited.displayName} wants to join your team! 🎉`, 2400,
+            () => this._exit({ won: true, gems, expGained, levelsGained, recruited: recruited.id }));
+        } else {
+          this._exit({ won: true, gems, expGained, levelsGained, recruited: null });
+        }
+      });
     } else {
       // Consolation. No fail state.
       gems = 3;
       expGained = Math.max(4, Math.floor(expReward(this.opponent.level) * 0.2));
-      if (this.player.buddyInstance && this.services.buddyTeam) {
-        levelsGained = this.services.buddyTeam.grantExp(this.player.buddyInstance, expGained);
+      if (finisher && this.services.buddyTeam) {
+        levelsGained = this.services.buddyTeam.grantExp(finisher, expGained);
         if (levelsGained > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
@@ -616,52 +833,32 @@ export class BattleScene extends Phaser.Scene {
       this._showBanner(
         `${this.opponent.species.displayName} won! But you got +${gems} gems for trying.`,
         2400,
-        () => this._exit({ won: false, gems, expGained, levelsGained })
+        () => this._exit({ won: false, gems, expGained, levelsGained, recruited: null })
       );
     }
   }
 
   _exit(result) {
-    // Fade out + return to the previous scene.
-    const targets = [this.veil, this.stageBg, this._oppSprite, this._plySprite, this._banner,
-                     ...this._panelObjs(this._oppPanel),
-                     ...this._panelObjs(this._plyPanel),
-                     ...this._moveButtons.flatMap((b) => [b.bg, b.name, b.meta, b.zone])];
     this.tweens.add({
-      targets,
+      targets: this._allObjs,
       alpha: 0,
       duration: 320,
       ease: 'Sine.easeIn',
       onComplete: () => {
         const cb = this.onComplete;
         const prev = this.previousSceneKey;
-        // Stop this scene; the launcher in GameScene wakes the gameplay scene.
         this.scene.stop();
         cb(result, prev);
       }
     });
   }
 
-  _panelObjs(panel) {
-    if (!panel) return [];
-    return [
-      panel.bg, panel.nameText, panel.ownerText,
-      panel.hpBar.fill, panel.hpBar.label,
-      panel.eBar.fill, panel.eBar.label
-    ];
-  }
-
   _slideIn() {
-    // Just fade in. (Sprites already on-screen; nice subtle entrance.)
-    const targets = [this.veil, this.stageBg, this._oppSprite, this._plySprite,
-                     ...this._panelObjs(this._oppPanel),
-                     ...this._panelObjs(this._plyPanel),
-                     ...this._moveButtons.flatMap((b) => [b.bg, b.name, b.meta])];
-    for (const o of targets) o.alpha = 0;
+    for (const o of this._allObjs) o.alpha = 0;
     this.tweens.add({
-      targets,
+      targets: this._allObjs,
       alpha: 1,
-      duration: 360,
+      duration: 400,
       ease: 'Sine.easeOut'
     });
   }

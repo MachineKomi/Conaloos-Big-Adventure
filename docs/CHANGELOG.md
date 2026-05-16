@@ -1,5 +1,134 @@
 # Changelog
 
+## 2026-05-16 — v1.13: Buddy battles, polished + expanded
+
+A pass over the v1.12 MVP based on playtest feedback, plus the
+mechanics for recruiting and switching buddies.
+
+### Battle bugs fixed
+
+- **Energy softlock.** v1.12's basic moves cost 1-2 energy, so a
+  long battle could drain both sides and leave nobody able to
+  attack. Now **every buddy has a 0-cost basic move** — you can
+  always swing. Heavy hits and utility moves still cost energy
+  (4-5 / 1-2 respectively), so the tactical layer remains: spam
+  basics safely, time the heavy hits.
+- **Easier first battles.** Cosenae's Seesa dropped from Lv2 →
+  Lv1, Loosa's Umi from Lv3 → Lv2. Move power slightly rebalanced
+  so basic attacks feel punchier and battles snowball faster
+  (kids can level up without getting stuck on the first fight).
+
+### Battle UI overhaul
+
+- **Sprites are MUCH bigger** — opponent now 46% of stage height,
+  player 58% — with soft elliptical "platform" shadows so the
+  buddies feel like they're standing somewhere real.
+- **Cleaner layout:** stats panels anchor to opposite corners so
+  they don't crowd the sprites; bigger HP/energy bars; the energy
+  bar is thinner than HP so the hierarchy reads at a glance.
+- **Type-coloured stripe** down the left of every move button so
+  the kid can see at a glance which moves are nature / water /
+  wind / sweet / heart.
+- **Better animations:**
+  - Camera shake on heavy hits.
+  - Hit-stop freeze frame on heavy impact (a moment of pure
+    white tint, then the shake + flash).
+  - Damage numbers scale-pop in instead of just rising; size
+    scales with type advantage / hit type.
+  - Bigger particle bursts on super-effective + heavy hits.
+  - Sparkle ring + falling stars on heals.
+
+### Buddy recruiting (new in v1.13)
+
+When you win a battle against an NPC's buddy, that species joins
+your team at Level 1 (if you don't already have it). A celebration
+banner announces "Seesa wants to join your team!" before the
+scene closes.
+
+### Multi-buddy battles (new in v1.13)
+
+If you have more than one buddy on your team and the current one
+faints, the next one slides in automatically — Pokémon-style.
+The battle only ends when ALL your buddies have fainted, or the
+opponent has. The player panel shows "(+N waiting)" to hint that
+more are queued.
+
+### Buddy roster picker (new in v1.13)
+
+A new "buddies" entry on the burger menu opens a modal showing
+every buddy on your team — sprite, name, level, with the active
+one highlighted. Tap any card to make that buddy your follower;
+the sprite walking behind Amelia refreshes instantly.
+
+### Third NPC challenge
+
+Mommy in the cottage now has Pepsi the dog-thing (Lv3) as her
+buddy. Tap his chip near her to challenge. (Now the
+buddy-collector quest is completable: starter Conaloo +
+Cosenae's Seesa + Loosa's Umi or Mommy's Pepsi = 3 different
+buddies.)
+
+### Quest-complete modal (UI/UX fix)
+
+Quest-complete toasts used to pop up over open dialogues and
+quizzes, causing the kind of UI clutter that confuses a
+four-year-old. Now each toast is **modal**:
+
+- Translucent backdrop covers the screen and absorbs every click
+  elsewhere.
+- A pulsing orange **"Claim!"** button on the toast — the only
+  thing tappable.
+- The gem reward is granted *when the kid taps Claim*, not
+  before — so the gem-math reveal lands at the moment of payoff.
+- Toasts queue, one at a time, never overlapping.
+
+### Quiz dialog layering fix
+
+Quizzes used to occasionally pop up behind the gem-counter HUD
+because they were rendered into the GameScene but the gem HUD
+sits in a separate, top-rendered scene. The quiz panel now
+clamps its position so it never enters the top 130px reserved
+for the HUD — same approach as DialogueBox.
+
+### Spiral portal — proper rotation
+
+The `portal_magic_swirl` sprite (the lake/waterfall portal) now
+spins continuously counter-clockwise around its centre, instead
+of the standard scale-pulse all the other portals do. It reads
+much better as a *portal* now.
+
+### New quests
+
+- `first-recruit` — win a battle to bring a new buddy onto your
+  team (+10 gems)
+- `buddy-collector` — get three different buddies on your team
+  (+22 gems)
+
+### Touched
+
+- **Updated:** `src/content/buddySpecies.js` (rebalance),
+  `src/content/scenes.js` (Mommy/Pepsi challenge + easier first
+  battle), `src/scenes/BattleScene.js` (UI overhaul + multi-buddy
+  + recruitment + animations), `src/scenes/GameScene.js` (pass
+  full team to battle + follower refresh on buddy switch + spiral
+  portal rotation), `src/systems/GlobalUI.js` (buddies entry +
+  roster modal), `src/systems/QuestHUD.js` (modal toast + claim
+  button), `src/systems/QuizDialog.js` (HUD reserved-top clamp),
+  `src/systems/Quests.js` (new quests + collector adjust),
+  `src/main.js` (wire buddyTeam to GlobalUI + replay starter for
+  collector quest).
+
+### Open hooks for v1.14
+
+- Two species (Monaloo, the rest of the line-up) still don't have
+  NPC challenges, so they can't be recruited yet. Adding two more
+  NPC challengers would let the kid collect all five.
+- Inventory item art still needs Amelia's redraws (the original
+  TODO entry — still open).
+- During a quest-toast modal, *gem-math* animations queue up to
+  fire after the toast claims. Visually fine but worth checking
+  in playtest that the math doesn't appear "underneath" the toast.
+
 ## 2026-05-16 — v1.12: Buddy battles (MVP)
 
 The MVP of the Pokémon-style turn-based combat. Amelia has a

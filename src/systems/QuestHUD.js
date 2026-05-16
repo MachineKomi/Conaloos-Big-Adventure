@@ -111,33 +111,22 @@ export class QuestHUDScene extends Phaser.Scene {
     this._buildIcon(); // refresh badge count
     if (this.open) this._renderPanel();
 
-    // For each newly completed quest, enqueue a toast and auto-grant
-    // the gem reward (so the kid sees gems fly into the counter
-    // immediately — the math reveal and the toast share the moment).
-    // Toasts QUEUE (one at a time): two quests completing in quick
-    // succession used to draw their toasts on top of each other and
-    // the text became a jumble. Now they appear in order, each
-    // clearly readable, with a small gap between.
+    // Queue each newly-completed quest as a MODAL toast. The toast
+    // appears on top of everything, a translucent backdrop catches
+    // all clicks elsewhere, and the kid taps a "Claim!" button to
+    // pocket the gem reward and continue. This stops the v1.12 mess
+    // where toasts piled on top of dialogues and quizzes.
+    //
+    // We DON'T grant the gem reward here any more; it's claimed when
+    // the player taps the button so the celebration moment + the
+    // gem-flying-up math reveal happen together, not at the same
+    // confused instant as the toast appearing.
     if (evt.newlyCompleted?.length) {
       for (const entry of evt.newlyCompleted) {
         this._enqueueToast(entry.def);
-        const reward = entry.def.reward || 0;
-        // CRITICAL: defer the gemBag.add by one frame.
-        //
-        // We're being called *inside* gemBag.add's own listener loop
-        // (the kid collected a gem → main.js fired quests.report →
-        // we got here). Calling gemBag.add synchronously now would
-        // recurse: the recursive add mutates gemBag.total, fires all
-        // listeners again with the reward, and then the outer add's
-        // remaining listeners (notably GemHUD's batch handler) read a
-        // mutated gemBag.total via `newTotal`. The result is a tangle
-        // of out-of-order events that produced the "double equation"
-        // bug. Deferring by one frame lets the outer add's loop
-        // finish first; then the reward arrives as a fresh, in-order
-        // event that joins the kid's still-open batch cleanly.
-        if (reward > 0 && this.gemBag) {
-          this.time.delayedCall(0, () => this.gemBag.add('gem_5', reward));
-        }
+        // Mark claimed (in the quest data sense — the kid earned
+        // it). The actual gem grant happens in _renderToast when
+        // the kid taps the Claim button.
         this.questManager.claim(entry.def.id);
       }
     }
@@ -171,6 +160,23 @@ export class QuestHUDScene extends Phaser.Scene {
     const yResting = cy - TOAST_H / 2;
 
     const items = [];
+
+    // 0. Modal backdrop — translucent veil + invisible interactive
+    //    zone over the WHOLE screen. The zone catches every click
+    //    that isn't on the Claim button, so the game effectively
+    //    pauses behind the toast. (v1.13 fix for the "popup
+    //    on dialogue / quiz" clutter the dad reported.)
+    const { width: scW, height: scH } = this.scale;
+    const veil = this.add.graphics().setDepth(8770);
+    veil.fillStyle(COL.ink, 0.45);
+    veil.fillRect(0, 0, scW, scH);
+    items.push(veil);
+    const blocker = this.add.zone(0, 0, scW, scH).setOrigin(0, 0).setDepth(8775);
+    blocker.setInteractive();
+    // No-op handler — just absorb clicks. The Claim button (added
+    // later) has a higher depth so its handler wins.
+    blocker.on('pointerup', () => {});
+    items.push(blocker);
 
     // 1. Bursting starburst halo BEHIND the panel — golden glow that
     //    expands and fades. First fanfare beat.
@@ -316,12 +322,70 @@ export class QuestHUDScene extends Phaser.Scene {
       });
     }
 
-    // 10. Hold longer than before (3.5s) — there's more to read, and
-    //     the kid needs time to spot the gem reward. After the fade,
-    //     a small gap (320ms) before the next toast plays so two
-    //     pop-ups don't bleed into each other when several quests
-    //     complete back-to-back.
-    this.time.delayedCall(3500, () => {
+    // 10. Claim button — the kid has to tap to take the reward.
+    //     Until they do, the modal stays up and the rest of the
+    //     game is unreachable (the backdrop blocker absorbs all
+    //     other clicks).
+    const claimW = 220;
+    const claimH = 64;
+    const claimX = cx - claimW / 2;
+    const claimY = yResting + TOAST_H - claimH + 18; // sits half-out of the bottom
+    const claimBg = this.add.graphics().setDepth(8810);
+    drawPanel(claimBg, claimX, claimY, claimW, claimH, {
+      radius: RADIUS.card,
+      fill: COL.orange,
+      fillAlpha: 1
+    });
+    items.push(claimBg);
+
+    const claimLabel = this.add.text(cx, claimY + claimH / 2, 'Claim!', {
+      fontFamily: TYPE.family,
+      fontSize: '30px',
+      color: '#ffffff',
+      stroke: COL.inkHex,
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(8811);
+    items.push(claimLabel);
+
+    const claimZone = this.add.zone(claimX, claimY, claimW, claimH).setOrigin(0, 0).setDepth(8812);
+    claimZone.setInteractive({ useHandCursor: true });
+    items.push(claimZone);
+
+    // Gentle pulse on the button so the kid's eye lands on it.
+    this.tweens.add({
+      targets: claimBg,
+      alpha: { from: 0.85, to: 1.0 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: 800
+    });
+    this.tweens.add({
+      targets: claimLabel,
+      scale: { from: 1, to: 1.06 },
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: 800
+    });
+
+    let claimed = false;
+    const onClaim = () => {
+      if (claimed) return;
+      claimed = true;
+      // NOW grant the reward — synchronised with the kid's tap so
+      // the gem counter ticks up the moment they ask for it. We
+      // defer one frame so the listener loop doesn't recurse (see
+      // the comment in _onChange for context).
+      const reward = def.reward || 0;
+      if (reward > 0 && this.gemBag) {
+        this.time.delayedCall(0, () => this.gemBag.add('gem_5', reward));
+      }
+      // Fade everything out + start the next toast (if any).
+      this.tweens.killTweensOf(claimBg);
+      this.tweens.killTweensOf(claimLabel);
       this.tweens.add({
         targets: items,
         alpha: 0,
@@ -330,10 +394,11 @@ export class QuestHUDScene extends Phaser.Scene {
         ease: 'Sine.easeIn',
         onComplete: () => {
           items.forEach((o) => o.destroy());
-          this.time.delayedCall(320, () => this._processToastQueue());
+          this.time.delayedCall(180, () => this._processToastQueue());
         }
       });
-    });
+    };
+    claimZone.on('pointerup', onClaim);
   }
 
   _renderPanel() {

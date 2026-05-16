@@ -487,6 +487,26 @@ export const QUEST_DEFS = [
     desc: "Level your buddy up at least once.",
     target: 1, reward: 8,
     matches: (evt) => (evt.type === 'buddy-leveled-up' ? 1 : 0)
+  },
+  {
+    id: 'first-recruit',
+    title: "A new little friend",
+    desc: "Win a battle to bring a new buddy onto your team.",
+    target: 1, reward: 10,
+    matches: (evt) => (evt.type === 'buddy-recruited' ? 1 : 0)
+  },
+  {
+    id: 'buddy-collector',
+    title: "*Three* small friends",
+    desc: "Get three different buddies on your team.",
+    target: 3, reward: 22,
+    matches: function (evt) {
+      if (evt.type !== 'buddy-recruited' && evt.type !== 'buddy-starter') return 0;
+      const seen = ensureSet(this);
+      if (seen.has(evt.speciesId)) return 0;
+      seen.add(evt.speciesId);
+      return 1;
+    }
   }
 ];
 

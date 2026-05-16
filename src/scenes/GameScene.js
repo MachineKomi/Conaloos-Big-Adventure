@@ -128,6 +128,14 @@ export class GameScene extends Phaser.Scene {
     // Render Amelia's active buddy as a small follower beside her.
     this._renderBuddyFollower();
 
+    // If the player swaps the active buddy in the roster (via the
+    // burger menu), refresh the follower sprite.
+    this._buddyUnsub = this.services.buddyTeam?.onChange?.(() => {
+      this._buddyFollower?.destroy();
+      this._buddyFollower = null;
+      this._renderBuddyFollower();
+    });
+
     this.dialogue = new DialogueBox(this);
 
     this.hotspots = new HotspotManager(this, {
@@ -206,6 +214,8 @@ export class GameScene extends Phaser.Scene {
       this._portalDefsById.clear();
       this._idleReactionTimer?.remove(false);
       this._ambientSparkleTimer?.remove(false);
+      this._buddyUnsub?.();
+      this._buddyUnsub = null;
     });
   }
 
@@ -571,17 +581,29 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** Launch the BattleScene with the player's active buddy vs the
+  /** Launch the BattleScene with the player's FULL team vs the
    *  challenge's species/level. Sleeps the gameplay + HUD scenes
-   *  while the battle plays; wakes them all on exit. */
+   *  while the battle plays; wakes them all on exit. The team
+   *  participants are built in the order active-first, then the
+   *  rest in roster order — so Pokémon-style auto-switch starts
+   *  with whoever was following Amelia. */
   _startBuddyBattle(challenge) {
     const buddyTeam = this.services.buddyTeam;
     if (!buddyTeam) return;
     const playerBuddy = buddyTeam.active();
     if (!playerBuddy) return;
-    const player = buddyTeam.makeBattleParticipant(playerBuddy);
+
+    // Build team in active-first order.
+    const all = buddyTeam.list();
+    const active = buddyTeam.active();
+    const ordered = [active, ...all.filter((b) => b !== active)];
+    const playerTeam = ordered
+      .map((b) => buddyTeam.makeBattleParticipant(b))
+      .filter(Boolean);
+    if (playerTeam.length === 0) return;
+
     const opponent = buddyTeam.makeOpponent(challenge.buddySpeciesId, challenge.buddyLevel || 1);
-    if (!player || !opponent) return;
+    if (!opponent) return;
 
     this.services.audio?.playSfx?.('sfx_powerup');
 
@@ -592,17 +614,19 @@ export class GameScene extends Phaser.Scene {
     // Launch first, sleep after — order matters for Phaser's input
     // routing (the battle scene takes top input slot).
     this.scene.launch('scene:battle', {
-      playerParticipant: player,
+      playerTeam,
       opponentParticipant: opponent,
       previousSceneKey: prevKey,
       opponentLabel: challenge.label,
       services: this.services,
-      onComplete: () => {
+      onComplete: (result) => {
         // Wake the world back up.
         for (const k of huds) {
           if (sceneManager.getScene(k)) sceneManager.wake(k);
         }
         sceneManager.wake(prevKey);
+        // If a buddy was recruited, the BuddyTeam already added it;
+        // future enhancement could fire a follower-refresh here.
       }
     });
 
@@ -636,17 +660,38 @@ export class GameScene extends Phaser.Scene {
       this._portalSprites.push(img);
       this._portalDefsById.set(p.id, { def: p, sprite: img });
 
-      // Soft pulse so the eye finds it.
+      // Decide on the portal's idle motion. The magic-swirl portal
+      // is a spiral, so it reads MUCH better with a constant slow
+      // counter-clockwise spin than with the standard scale pulse.
+      // All other portal sprites keep the gentle pulse so they catch
+      // the eye.
       if (!Accessibility.reducedMotion) {
-        const baseScale = img.scale;
-        this.tweens.add({
-          targets: img,
-          scale: baseScale * (1 + PORTAL_PULSE_AMPL),
-          duration: PORTAL_PULSE_MS,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut'
-        });
+        if (p.sprite === 'portal_magic_swirl') {
+          // Re-anchor to the centre so rotation pivots around the
+          // middle of the swirl; nudge img.y up by half-height to
+          // preserve the visible position.
+          img.setOrigin(0.5, 0.5);
+          img.y = y - img.displayHeight / 2;
+          // Continuous CCW spin (negative angle = counter-clockwise
+          // in Phaser's screen-space coords).
+          this.tweens.add({
+            targets: img,
+            angle: '-=360',
+            duration: 9000,
+            repeat: -1,
+            ease: 'Linear'
+          });
+        } else {
+          const baseScale = img.scale;
+          this.tweens.add({
+            targets: img,
+            scale: baseScale * (1 + PORTAL_PULSE_AMPL),
+            duration: PORTAL_PULSE_MS,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        }
       }
 
       // Floating label sits above the portal sprite by default. If
