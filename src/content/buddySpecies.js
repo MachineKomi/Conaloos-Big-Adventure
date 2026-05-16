@@ -194,6 +194,49 @@ export const buddySpecies = {
   },
 
   // ============================================================
+  // Daddy — a special request from the four-year-old in charge.
+  // Tanky, slow, defensive. His "moves" are tea, calm, and the
+  // sort of help a kind dad gives.
+  daddy: {
+    id: 'daddy',
+    sprite: 'peep_daddy_M_30ish',
+    displayName: 'Daddy',
+    type: 'heart',
+    base: { hp: 38, atk: 7, def: 13, spd: 5 },
+    bio: 'Mm. Yes. I think so. Hums between words. Loves the toast brown.',
+    moves: [
+      {
+        id: 'tap-on-shoulder',
+        name: 'Tap-on-shoulder',
+        type: 'heart',
+        power: 7,
+        energyCost: 0,
+        accuracy: 0.95,
+        fx: 'basic'
+      },
+      {
+        id: 'kind-words',
+        name: 'Kind-words',
+        type: 'heart',
+        power: 16,
+        energyCost: 4,
+        accuracy: 0.85,
+        fx: 'heavy'
+      },
+      {
+        id: 'cuppa-and-a-sit',
+        name: 'Cuppa-and-a-sit',
+        type: 'heart',
+        power: 0,
+        energyCost: 2,
+        accuracy: 1.0,
+        effect: { kind: 'heal', amount: 12 },
+        fx: 'heal'
+      }
+    ]
+  },
+
+  // ============================================================
   pepsi: {
     id: 'pepsi',
     sprite: 'animal_Pepsi_dog-thing',

@@ -1,5 +1,117 @@
 # Changelog
 
+## 2026-05-16 — v1.15: Adventure Book + Settings cog + Daddy + EXP visibility + crash fix
+
+A big restructure pass + two critical bug fixes + a special new
+recruit for the four-year-old in charge.
+
+### 🐛 Critical: lose-battle freeze (fixed)
+
+Losing a battle sometimes froze the screen. Cause: when a buddy
+fainted and the next one auto-switched in (multi-buddy battle),
+the old plySprite + stat panel + move buttons were destroyed but
+their references were left in `_allObjs`. On the eventual exit
+fade, Phaser tried to tween destroyed targets → freeze. Fix:
+remove dead refs from `_allObjs` at switch-in time, plus a
+defensive `o && o.scene` filter on every battle tween (slide-in
+and exit) so a stray dead ref can't lock us up.
+
+### 🐛 Critical: buddy follower vanished (fixed)
+
+v1.14's "skip rendering the follower when the same species is
+already on-stage as a wild character" guard was way too
+aggressive — Conaloo (the starter) appears as a wild character
+in most scenes, so the kid never saw their buddy following them.
+Reverted the guard. The smaller follower scale + lerp-behind
+movement reads as "Amelia's pet" just fine, even alongside a
+wild same-species sprite.
+
+### Adventure Book + Settings (top-bar reorg)
+
+The bag, the star, the "buddies" entry in the burger menu, and
+the "warp home" entry — four scattered things — are now ONE icon.
+
+**Top-LEFT: 📖 Adventure Book**
+- Tap to open a 4-chip menu:
+  - 📦 **items** — opens the inventory drawer (modal-style)
+  - ⭐ **quests** — opens the quest list (modal-style)
+  - ✦ **buddies** — opens the buddy roster modal
+  - 🏠 **warp home** — teleports to the hub
+
+**Top-RIGHT: ⚙ Settings cog**
+- Was the burger. Now only sound + text-size toggles.
+- Cog rotates 30° on press.
+
+**Modal panels.** Without the persistent bag/star icons, the
+inventory and quest panels needed a way to close. When opened
+via the Adventure Book, both panels now have:
+- A translucent backdrop that closes the panel on outside-tap.
+- A small "✕" close button in the top-right corner.
+
+The auto-show inventory drawer (which pops up briefly when the
+kid collects an item) does NOT use the modal/backdrop variant —
+it still auto-hides after a few seconds so play isn't
+interrupted.
+
+### Daddy joins the line-up
+
+A special request from the lead designer (the four-year-old in
+charge). Daddy is now a buddy species:
+
+- Type: **heart** (kind, sticks-by-you)
+- Stats: HP 38 · ATK 7 · DEF 13 · SPD 5 — tanky, slow, deeply
+  defensive
+- Bio: *"Mm. Yes. I think so. Hums between words. Loves the
+  toast brown."*
+- Moves:
+  - 🌟 Tap-on-shoulder (basic, free, power 7)
+  - 🌟 Kind-words (heavy, ⚡4, power 16)
+  - ❤  Cuppa-and-a-sit (heal +12, ⚡2)
+
+He's recruitable in the **cottage** — battle Daddy himself (Lv4)
+to add him to your team. Mommy's still there with Pepsi as well,
+so the cottage has two challenges now.
+
+`buddy-collector` quest target bumped to **6** to include him.
+
+### EXP visibility (Pokémon-style)
+
+The kid couldn't see EXP progress before. Now it's everywhere:
+
+- **In battle:** the player's stat panel has a new EXP bar
+  (yellow) below the HP/energy bars. After a battle, the bar
+  visibly fills with a tween. A `+N XP` floats over the panel
+  on win. If the buddy levels up, a big golden **`LV N!`**
+  floats over the sprite.
+- **In the buddy roster card:** mini EXP bar beneath the level
+  number — quick glance at "how close are they to growing?"
+- **In the buddy detail panel:** an explicit XP row in the stats
+  table reads "*current* / *needed* → Lv *next*".
+
+### Touched
+
+- **Updated:** `src/scenes/BattleScene.js` (live-target filter,
+  EXP bar in stat panel, XP gain text, level-up flash),
+  `src/scenes/GameScene.js` (follower guard reverted),
+  `src/content/buddySpecies.js` (+Daddy),
+  `src/content/scenes.js` (+Daddy challenge in cottage),
+  `src/systems/GlobalUI.js` (full reorg — Adventure Book + cog),
+  `src/systems/Inventory.js` (openPanel/closePanel + modal mode
+  + close X), `src/systems/QuestHUD.js` (openPanel/closePanel +
+  modal mode + close X), `src/systems/Quests.js`
+  (buddy-collector to 6).
+
+### Open hooks
+
+- Battle wins still grant gems via `gemBag.add` inside the
+  battle scene; the gem-math equation animates after the battle
+  scene closes, in the gameplay scene. Worth eyeballing that
+  the EXP bar fill timing reads cleanly alongside the gem math.
+- The Adventure Book + Settings dropdowns are slide-down chips.
+  Larger panels (tab-style) could be nicer for the kid but
+  would need a bigger UI overhaul.
+- Inventory item art still waiting on Amelia's drawings.
+
 ## 2026-05-16 — v1.14.1: battle blank-screen hotfix + dialogue + move info
 
 ### Critical: blank battle screen (fixed)

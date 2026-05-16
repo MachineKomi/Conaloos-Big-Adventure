@@ -1,19 +1,25 @@
 /**
  * GlobalUIScene — corner controls.
  *
- * v1.7 polish:
- *   - Burger button matches the bag/star/gem chip (80px, drawPanel).
- *   - Dropdown items use drawPanel + slide-in, with hover highlight,
- *     and a soft icon glyph next to each label so a 4-year-old can
- *     read the panel by shape, not just by word.
- *   - Motion toggle stays REMOVED — disabling motion broke the
- *     protagonist mechanic and confused the kid.
+ * v1.15 reorg:
+ *   - Top-LEFT: 📖 *Adventure Book* — a single icon that, on tap,
+ *     opens a 4-chip menu: Items / Quests / Buddies / 🏠 Home.
+ *     This consolidates what used to be the bag icon, the star
+ *     icon, the burger-menu "buddies" entry, and the burger-menu
+ *     "warp home" entry. One place for "the kid's stuff".
+ *   - Top-RIGHT: ⚙ *Settings* cog — was the burger. Now only
+ *     holds sound + text-size toggles.
+ *   - Auto-show behaviour for the inventory drawer (on item
+ *     collect) and the quest-complete toast still fire from the
+ *     InventoryScene and QuestHUDScene respectively; those scenes
+ *     just no longer draw their own permanent icon (the Adventure
+ *     Book owns those entry points).
  */
 
 import Phaser from 'phaser';
 import { Accessibility } from './Accessibility.js';
 import { COL, RADIUS, STROKE, TOPBAR, TYPE, ANIM, drawPanel } from './UITokens.js';
-import { getSpecies, computeStats } from '../content/buddySpecies.js';
+import { getSpecies, computeStats, expForNextLevel } from '../content/buddySpecies.js';
 import { typeEmoji } from '../content/typeChart.js';
 
 const UI_DEPTH = 9500;
@@ -29,8 +35,10 @@ export class GlobalUIScene extends Phaser.Scene {
   constructor() {
     super({ key: 'global:ui', active: false });
     this.router = null;
-    this.expanded = false;
-    this._items = [];
+    this._bookExpanded = false;
+    this._settingsExpanded = false;
+    this._bookItems = [];
+    this._settingsItems = [];
   }
 
   init({ router, buddyTeam } = {}) {
@@ -39,33 +47,36 @@ export class GlobalUIScene extends Phaser.Scene {
   }
 
   create() {
-    this._buildBurger();
+    this._buildAdventureBookIcon();
+    this._buildSettingsIcon();
     this.scale.on('resize', () => this._reposition());
-    Accessibility.on(() => this._refreshLabels());
+    Accessibility.on(() => this._refreshSettingsLabels());
     this.scene.bringToTop();
   }
 
-  _buildBurger() {
-    if (this._burger) {
-      this._burger.bg?.destroy();
-      this._burger.icon?.destroy();
-      this._burger.zone?.destroy();
+  // ─────────────────── Adventure Book (top-left) ───────────────────
+
+  _buildAdventureBookIcon() {
+    if (this._bookBtn) {
+      this._bookBtn.bg?.destroy();
+      this._bookBtn.icon?.destroy();
+      this._bookBtn.zone?.destroy();
     }
 
-    const x = this.scale.width - TOPBAR.paddingX - BURGER_SIZE;
+    const x = TOPBAR.paddingX;
     const y = TOPBAR.paddingTop;
 
     const bg = this.add.graphics().setDepth(UI_DEPTH);
     drawPanel(bg, x, y, BURGER_SIZE, BURGER_SIZE, { radius: RADIUS.card });
 
-    // Three burger lines, sized to the new bigger button.
-    const icon = this.add.graphics().setDepth(UI_DEPTH + 1);
-    icon.lineStyle(5, COL.ink, 1);
-    const cx = x + BURGER_SIZE / 2;
-    const cy = y + BURGER_SIZE / 2;
-    icon.lineBetween(cx - 16, cy - 12, cx + 16, cy - 12);
-    icon.lineBetween(cx - 16, cy,      cx + 16, cy);
-    icon.lineBetween(cx - 16, cy + 12, cx + 16, cy + 12);
+    // Book glyph — 📖 emoji renders cleanly in modern browsers and
+    // reads as a book at a glance. Fallback to drawn lines if the
+    // emoji font is missing in some environment.
+    const icon = this.add.text(x + BURGER_SIZE / 2, y + BURGER_SIZE / 2, '📖', {
+      fontFamily: TYPE.family,
+      fontSize: '40px',
+      color: COL.inkHex
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 1);
 
     const zone = this.add.zone(x, y, BURGER_SIZE, BURGER_SIZE).setOrigin(0, 0);
     zone.setInteractive({ useHandCursor: true });
@@ -83,47 +94,42 @@ export class GlobalUIScene extends Phaser.Scene {
         duration: ANIM.press,
         ease: 'Back.easeOut'
       });
-      this.expanded = !this.expanded;
-      this._renderItems();
+      // Open the four-chip menu (or close it if already open).
+      this._bookExpanded = !this._bookExpanded;
+      // Close the other menu if open — only one drops down at a
+      // time so the kid doesn't see two stacks.
+      this._settingsExpanded = false;
+      this._renderSettingsItems();
+      this._renderBookItems();
     });
 
-    this._burger = { bg, icon, zone, x, y };
+    this._bookBtn = { bg, icon, zone, x, y };
   }
 
-  _reposition() {
-    this._buildBurger();
-    this._renderItems();
-  }
-
-  _renderItems() {
-    for (const item of this._items) {
+  _renderBookItems() {
+    for (const item of this._bookItems) {
       item.bg?.destroy();
       item.label?.destroy();
       item.icon?.destroy();
       item.zone?.destroy();
     }
-    this._items = [];
+    this._bookItems = [];
+    if (!this._bookExpanded) return;
 
-    if (!this.expanded) return;
-
-    const baseX = this.scale.width - TOPBAR.paddingX - ITEM_W;
+    const baseX = TOPBAR.paddingX;
     let y = TOPBAR.paddingTop + BURGER_SIZE + ITEM_GAP;
 
     const buttons = [
-      // "warp back" = jump back to the hub scene from anywhere. We
-      // call it warp-back rather than 'home' because it doesn't exit
-      // to the title screen — it teleports inside the world.
-      { glyph: '⌂', label: 'warp home',          onClick: () => this.router?.goHome?.() },
-      { glyph: '✦', label: 'buddies',            onClick: () => this._openRoster() },
-      { glyph: '♪', label: this._soundLabel(),   onClick: () => Accessibility.toggleMuted() },
-      { glyph: 'A', label: this._textLabel(),    onClick: () => Accessibility.cycleTextSize() }
+      { glyph: '📦', label: 'items',   onClick: () => this._openItems() },
+      { glyph: '⭐', label: 'quests',  onClick: () => this._openQuests() },
+      { glyph: '✦',  label: 'buddies', onClick: () => this._openRoster() },
+      { glyph: '🏠', label: 'warp home', onClick: () => this.router?.goHome?.() }
     ];
 
-    // Slide-in animation: stage all items offset, then tween in.
     const slidIn = [];
     for (const def of buttons) {
-      const item = this._makeItem(baseX, y, def.glyph, def.label, def.onClick);
-      this._items.push(item);
+      const item = this._makeItem(baseX, y, def.glyph, def.label, def.onClick, /*closeAfter=*/true);
+      this._bookItems.push(item);
       slidIn.push(item);
       y += ITEM_H + ITEM_GAP;
     }
@@ -139,7 +145,106 @@ export class GlobalUIScene extends Phaser.Scene {
     });
   }
 
-  _makeItem(x, y, glyph, labelText, onClick) {
+  _openItems() {
+    const inv = this.scene.manager.getScene('global:inventory');
+    inv?.openPanel?.();
+  }
+  _openQuests() {
+    const quests = this.scene.manager.getScene('global:questhud');
+    quests?.openPanel?.();
+  }
+
+  // ─────────────────── Settings (top-right) ───────────────────
+
+  _buildSettingsIcon() {
+    if (this._cogBtn) {
+      this._cogBtn.bg?.destroy();
+      this._cogBtn.icon?.destroy();
+      this._cogBtn.zone?.destroy();
+    }
+
+    const x = this.scale.width - TOPBAR.paddingX - BURGER_SIZE;
+    const y = TOPBAR.paddingTop;
+
+    const bg = this.add.graphics().setDepth(UI_DEPTH);
+    drawPanel(bg, x, y, BURGER_SIZE, BURGER_SIZE, { radius: RADIUS.card });
+
+    const icon = this.add.text(x + BURGER_SIZE / 2, y + BURGER_SIZE / 2, '⚙', {
+      fontFamily: TYPE.family,
+      fontSize: '44px',
+      color: COL.inkHex
+    }).setOrigin(0.5).setDepth(UI_DEPTH + 1);
+
+    const zone = this.add.zone(x, y, BURGER_SIZE, BURGER_SIZE).setOrigin(0, 0);
+    zone.setInteractive({ useHandCursor: true });
+    zone.setDepth(UI_DEPTH + 2);
+    const redrawAlpha = (alpha) => {
+      bg.clear();
+      drawPanel(bg, x, y, BURGER_SIZE, BURGER_SIZE, { radius: RADIUS.card, fillAlpha: alpha });
+    };
+    zone.on('pointerover', () => redrawAlpha(1.0));
+    zone.on('pointerout',  () => redrawAlpha(0.96));
+    zone.on('pointerup', () => {
+      this.tweens.add({
+        targets: icon,
+        angle: '+=30',
+        duration: ANIM.press,
+        ease: 'Back.easeOut'
+      });
+      this._settingsExpanded = !this._settingsExpanded;
+      this._bookExpanded = false;
+      this._renderBookItems();
+      this._renderSettingsItems();
+    });
+
+    this._cogBtn = { bg, icon, zone, x, y };
+  }
+
+  _renderSettingsItems() {
+    for (const item of this._settingsItems) {
+      item.bg?.destroy();
+      item.label?.destroy();
+      item.icon?.destroy();
+      item.zone?.destroy();
+    }
+    this._settingsItems = [];
+    if (!this._settingsExpanded) return;
+
+    const baseX = this.scale.width - TOPBAR.paddingX - ITEM_W;
+    let y = TOPBAR.paddingTop + BURGER_SIZE + ITEM_GAP;
+
+    const buttons = [
+      { glyph: '♪', label: this._soundLabel(), onClick: () => Accessibility.toggleMuted() },
+      { glyph: 'A', label: this._textLabel(),  onClick: () => Accessibility.cycleTextSize() }
+    ];
+
+    const slidIn = [];
+    for (const def of buttons) {
+      const item = this._makeItem(baseX, y, def.glyph, def.label, def.onClick, /*closeAfter=*/false);
+      this._settingsItems.push(item);
+      slidIn.push(item);
+      y += ITEM_H + ITEM_GAP;
+    }
+
+    const all = slidIn.flatMap((it) => [it.bg, it.icon, it.label, it.zone]);
+    all.forEach((o) => { if (o) { o.y = (o.y ?? 0) - 12; o.alpha = 0; } });
+    this.tweens.add({
+      targets: all,
+      y: '+=12',
+      alpha: 1,
+      duration: ANIM.panelOpen,
+      ease: 'Sine.easeOut'
+    });
+  }
+
+  _reposition() {
+    this._buildAdventureBookIcon();
+    this._buildSettingsIcon();
+    this._renderBookItems();
+    this._renderSettingsItems();
+  }
+
+  _makeItem(x, y, glyph, labelText, onClick, closeAfter) {
     const bg = this.add.graphics().setDepth(UI_DEPTH);
     drawPanel(bg, x, y, ITEM_W, ITEM_H, { radius: RADIUS.card });
 
@@ -166,7 +271,6 @@ export class GlobalUIScene extends Phaser.Scene {
     zone.on('pointerover', () => redrawAlpha(1.0));
     zone.on('pointerout',  () => redrawAlpha(0.96));
     zone.on('pointerup', () => {
-      // Quick squish-and-spring on press — the row feels real.
       this.tweens.add({
         targets: [iconText, label],
         scale: { from: 0.94, to: 1.0 },
@@ -174,8 +278,15 @@ export class GlobalUIScene extends Phaser.Scene {
         ease: 'Back.easeOut'
       });
       onClick();
-      // After action, refresh labels (toggles can change them).
-      this._refreshLabels();
+      this._refreshSettingsLabels();
+      // For Adventure Book actions (closeAfter=true), close the
+      // menu after the kid taps — they're moving on to the panel
+      // we just opened (or warping home). For settings (toggles),
+      // keep the menu open so the kid can flip multiple settings.
+      if (closeAfter) {
+        this._bookExpanded = false;
+        this._renderBookItems();
+      }
     });
 
     return { bg, icon: iconText, label, zone };
@@ -184,12 +295,10 @@ export class GlobalUIScene extends Phaser.Scene {
   _soundLabel() { return Accessibility.muted ? 'sound: off' : 'sound: on'; }
   _textLabel()  { return `text: ${Accessibility.textSize.toLowerCase()}`; }
 
-  _refreshLabels() {
-    if (!this._items.length) return;
-    // items[0] = home (no label change), items[1] = buddies (no label change),
-    // items[2] = sound, items[3] = text
-    this._items[2]?.label?.setText(this._soundLabel());
-    this._items[3]?.label?.setText(this._textLabel());
+  _refreshSettingsLabels() {
+    if (this._settingsItems.length < 2) return;
+    this._settingsItems[0]?.label?.setText(this._soundLabel());
+    this._settingsItems[1]?.label?.setText(this._textLabel());
   }
 
   // ─────────────────────── Buddies roster modal ───────────────────────
@@ -202,10 +311,12 @@ export class GlobalUIScene extends Phaser.Scene {
     if (!this.buddyTeam) return;
     if (this._rosterOpen) return;
     this._rosterOpen = true;
-    // Also collapse the burger panel so it doesn't sit beside the
-    // modal.
-    this.expanded = false;
-    this._renderItems();
+    // Collapse both top-bar dropdowns so the modal doesn't sit
+    // beside a stack of chips.
+    this._bookExpanded = false;
+    this._settingsExpanded = false;
+    this._renderBookItems();
+    this._renderSettingsItems();
 
     const { width, height } = this.scale;
     const items = [];
@@ -287,12 +398,28 @@ export class GlobalUIScene extends Phaser.Scene {
       }).setOrigin(0.5, 0).setDepth(UI_DEPTH + 63);
       items.push(name);
 
-      const lvl = this.add.text(cx + cardW / 2, cy + cardH - 36, `Lv${buddy.level}`, {
+      const lvl = this.add.text(cx + cardW / 2, cy + cardH - 56, `Lv${buddy.level}`, {
         fontFamily: TYPE.family,
         fontSize: '18px',
         color: COL.orangeHex
       }).setOrigin(0.5, 0).setDepth(UI_DEPTH + 63);
       items.push(lvl);
+
+      // Mini EXP bar so the parent + kid can see how close each
+      // buddy is to levelling up at a glance.
+      const expNeeded = expForNextLevel(buddy.level);
+      const expFrac = Math.max(0, Math.min(1, buddy.exp / expNeeded));
+      const barW = cardW - 32;
+      const barH = 8;
+      const barX = cx + 16;
+      const barY = cy + cardH - 28;
+      const expBg = this.add.graphics().setDepth(UI_DEPTH + 63);
+      expBg.fillStyle(COL.ink, 0.18);
+      expBg.fillRoundedRect(barX, barY, barW, barH, barH / 2);
+      const expFill = this.add.graphics().setDepth(UI_DEPTH + 64);
+      expFill.fillStyle(0xffd24a, 1);
+      expFill.fillRoundedRect(barX, barY, Math.max(barH, barW * expFrac), barH, barH / 2);
+      items.push(expBg, expFill);
 
       if (isActive) {
         const tag = this.add.text(cx + cardW / 2, cy + cardH - 14, '✓ active', {
@@ -428,13 +555,15 @@ export class GlobalUIScene extends Phaser.Scene {
 
     // Stats table.
     const stats = computeStats(buddyInstance.speciesId, buddyInstance.level);
+    const expNeeded = expForNextLevel(buddyInstance.level);
     if (stats) {
       const rows = [
         ['HP',     `${stats.maxHP}`],
         ['Attack', `${Math.round(stats.atk)}`],
         ['Defense',`${Math.round(stats.def)}`],
         ['Speed',  `${Math.round(stats.spd)}`],
-        ['Energy', `${stats.maxEnergy}`]
+        ['Energy', `${stats.maxEnergy}`],
+        ['XP',     `${buddyInstance.exp} / ${expNeeded} → Lv${buddyInstance.level + 1}`]
       ];
       const tableY = cy + 168;
       rows.forEach(([k, v], i) => {

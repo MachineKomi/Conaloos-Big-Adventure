@@ -360,9 +360,10 @@ export const scenes = {
       { key: 'gem_7', x: 0.30, y: 0.55 },
       { key: 'gem_8', x: 0.78, y: 0.62 }
     ],
-    // Mommy's quietly competitive — Pepsi the dog-thing is "her"
-    // buddy in this scene. (Pepsi sleeps in the cottage anyway,
-    // so it fits.)
+    // Two buddy battles in the cottage:
+    //   - Mommy with Pepsi (the family dog-thing)
+    //   - Daddy himself — he IS the buddy. Special request from
+    //     Amelia. Tanky and slow but hits like a kind word.
     challenges: [
       {
         id: 'mommy-vs-pepsi',
@@ -371,6 +372,14 @@ export const scenes = {
         buddyLevel: 3,
         x: 0.18, y: 0.40,
         label: "Mommy's good dog"
+      },
+      {
+        id: 'daddy-himself',
+        npc: 'peep_daddy_M_30ish',
+        buddySpeciesId: 'daddy',
+        buddyLevel: 4,
+        x: 0.82, y: 0.40,
+        label: "Daddy (with tea)"
       }
     ]
   },

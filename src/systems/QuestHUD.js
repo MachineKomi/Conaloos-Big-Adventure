@@ -51,9 +51,35 @@ export class QuestHUDScene extends Phaser.Scene {
     this.scene.bringToTop();
   }
 
-  _buildIcon() {
-    [this._iconBg, this._iconLabel, this._iconBadge, this._iconZone].forEach((o) => o?.destroy());
+  /** Public: open the quest panel externally (used by the
+   *  Adventure Book menu). Always opens in modal mode — backdrop
+   *  closes on outside-tap, plus a visible X close button. */
+  openPanel() {
+    if (this.open) return;
+    this.open = true;
+    this._modal = true;
+    this._renderPanel();
+  }
 
+  closePanel() {
+    if (!this.open) return;
+    this.open = false;
+    this._modal = false;
+    this._renderPanel();
+  }
+
+  _buildIcon() {
+    // v1.15: the persistent star icon is gone — the Adventure Book
+    // menu now owns the "open quests" entry point. Toasts on quest
+    // completion still fire from this scene; the icon just isn't
+    // drawn.
+    [this._iconBg, this._iconLabel, this._iconBadge, this._iconZone].forEach((o) => o?.destroy());
+    this._iconBg = null;
+    this._iconLabel = null;
+    this._iconBadge = null;
+    this._iconZone = null;
+    return;
+    /* eslint-disable no-unreachable */
     const x = ICON_X;
     const y = ICON_Y;
 
@@ -105,6 +131,7 @@ export class QuestHUDScene extends Phaser.Scene {
       this._renderPanel();
     });
     this._iconZone = zone;
+    /* eslint-enable no-unreachable */
   }
 
   _onChange(evt) {
@@ -409,7 +436,7 @@ export class QuestHUDScene extends Phaser.Scene {
     if (!this.open) return;
 
     const list = this.questManager.list();
-    const { height } = this.scale;
+    const { width, height } = this.scale;
     const x = ICON_X;
     const y = ICON_Y + ICON_SIZE + 8;
 
@@ -420,7 +447,37 @@ export class QuestHUDScene extends Phaser.Scene {
     const footerPad = 16;
     const visibleH = panelH - headerH - footerPad;
 
+    // Modal backdrop (only when opened from Adventure Book) so the
+    // kid can close by tapping outside.
+    if (this._modal) {
+      const veil = this.add.graphics().setDepth(7590);
+      veil.fillStyle(COL.ink, 0.35);
+      veil.fillRect(0, 0, width, height);
+      this._panelItems.push(veil);
+      const blocker = this.add.zone(0, 0, width, height).setOrigin(0, 0).setDepth(7591);
+      blocker.setInteractive();
+      blocker.on('pointerup', () => this.closePanel());
+      this._panelItems.push(blocker);
+    }
+
     drawPanel(this._panelG, x, y, PANEL_W, panelH, { radius: RADIUS.panel });
+
+    // Close X in the top-right corner (modal mode).
+    if (this._modal) {
+      const closeX = x + PANEL_W - 40;
+      const closeY = y + 10;
+      const closeBg = this.add.graphics().setDepth(7601);
+      drawPanel(closeBg, closeX, closeY, 28, 28, { radius: RADIUS.pill, fill: COL.paper });
+      const closeLabel = this.add.text(closeX + 14, closeY + 14, '✕', {
+        fontFamily: TYPE.family,
+        fontSize: '18px',
+        color: COL.inkHex
+      }).setOrigin(0.5).setDepth(7602);
+      const closeZone = this.add.zone(closeX, closeY, 28, 28).setOrigin(0, 0).setDepth(7603);
+      closeZone.setInteractive({ useHandCursor: true });
+      closeZone.on('pointerup', () => this.closePanel());
+      this._panelItems.push(closeBg, closeLabel, closeZone);
+    }
 
     const title = this.add.text(x + PANEL_W / 2, y + 16, "Quests", {
       fontFamily: TYPE.family,

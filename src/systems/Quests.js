@@ -497,9 +497,9 @@ export const QUEST_DEFS = [
   },
   {
     id: 'buddy-collector',
-    title: "*All five* small friends",
+    title: "*Every* small friend",
     desc: "Have every buddy in the world on your team.",
-    target: 5, reward: 40,
+    target: 6, reward: 50,
     matches: function (evt) {
       if (evt.type !== 'buddy-recruited' && evt.type !== 'buddy-starter') return 0;
       const seen = ensureSet(this);

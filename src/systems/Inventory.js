@@ -52,14 +52,46 @@ export class InventoryScene extends Phaser.Scene {
     this.events.on('shutdown', () => this._unsubscribe?.());
   }
 
+  /** Public: open the inventory drawer externally (used by the
+   *  Adventure Book menu). Equivalent to tapping the old bag icon.
+   *  Always opens in "modal" mode — backdrop blocker that closes
+   *  on outside-tap, since the bag icon is no longer there to
+   *  toggle it off. */
+  openPanel() {
+    if (this.open) return;
+    this._userToggled = true;
+    this.open = true;
+    this._modal = true;
+    this._cancelAutoHide();
+    this._renderPanel();
+  }
+
+  closePanel() {
+    if (!this.open) return;
+    this._userToggled = false;
+    this.open = false;
+    this._modal = false;
+    this._cancelAutoHide();
+    this._renderPanel();
+  }
+
   _buildIcon() {
+    // v1.15: the bag icon is gone — the Adventure Book menu owns
+    // the "open inventory" entry point now. We still build & tear
+    // down the lifecycle but skip the visible icon.
     if (this._iconBg) {
       this._iconBg.destroy();
       this._iconImg?.destroy();
       this._iconLabel?.destroy();
       this._iconZone?.destroy();
+      this._iconBg = null;
+      this._iconImg = null;
+      this._iconLabel = null;
+      this._iconZone = null;
     }
-
+    return;
+    // Legacy bag-icon code retained below for reference / rollback.
+    /* eslint-disable no-unreachable */
     const x = ICON_X;
     const y = ICON_Y;
 
@@ -106,6 +138,7 @@ export class InventoryScene extends Phaser.Scene {
       this._renderPanel();
     });
     this._iconZone = zone;
+    /* eslint-enable no-unreachable */
   }
 
   _onCollectChange() {
@@ -163,6 +196,22 @@ export class InventoryScene extends Phaser.Scene {
     const x = (width - totalW) / 2;
     const yResting = height - totalH - 16;
 
+    // Modal backdrop — only when opened via the Adventure Book.
+    // Tapping anywhere outside the panel closes it. The auto-show
+    // drawer (on item pickup) does NOT have a backdrop so the kid
+    // doesn't have to dismiss it before keeping playing.
+    if (this._modal) {
+      const veil = this.add.graphics().setDepth(6990);
+      veil.fillStyle(COL.ink, 0.35);
+      veil.fillRect(0, 0, width, height);
+      this._slotImages.push(veil);
+
+      const outsideBlocker = this.add.zone(0, 0, width, height).setOrigin(0, 0).setDepth(6991);
+      outsideBlocker.setInteractive();
+      outsideBlocker.on('pointerup', () => this.closePanel());
+      this._slotImages.push(outsideBlocker);
+    }
+
     drawPanel(this._panelG, x, yResting, totalW, totalH, { radius: RADIUS.panel });
 
     const title = this.add.text(x + totalW / 2, yResting + 16, "Amelia's bag", {
@@ -171,6 +220,27 @@ export class InventoryScene extends Phaser.Scene {
       color: COL.inkHex
     }).setOrigin(0.5, 0).setDepth(7001);
     this._slotImages.push(title);
+
+    // Close X (top-right of the panel) — visible in modal mode so
+    // the kid has an explicit "close" target too.
+    if (this._modal) {
+      const closeX = x + totalW - 36;
+      const closeY = yResting + 8;
+      const closeBg = this.add.graphics().setDepth(7001);
+      drawPanel(closeBg, closeX, closeY, 28, 28, { radius: RADIUS.pill, fill: COL.paper });
+      const closeLabel = this.add.text(closeX + 14, closeY + 14, '✕', {
+        fontFamily: TYPE.family,
+        fontSize: '18px',
+        color: COL.inkHex
+      }).setOrigin(0.5).setDepth(7002);
+      const closeZone = this.add.zone(closeX, closeY, 28, 28).setOrigin(0, 0).setDepth(7003);
+      closeZone.setInteractive({ useHandCursor: true });
+      closeZone.on('pointerup', (pointer, lx, ly, evt) => {
+        evt?.stopPropagation?.();
+        this.closePanel();
+      });
+      this._slotImages.push(closeBg, closeLabel, closeZone);
+    }
 
     if (items.length === 0) {
       const empty = this.add.text(x + totalW / 2, yResting + 16 + SLOT_SIZE / 2 + PANEL_PADDING, '(empty so far)', {

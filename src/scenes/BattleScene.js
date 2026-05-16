@@ -25,7 +25,7 @@
 import Phaser from 'phaser';
 import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel, drawDropShadow } from '../systems/UITokens.js';
 import { typeMultiplier, typeEmoji } from '../content/typeChart.js';
-import { expReward, getSpecies } from '../content/buddySpecies.js';
+import { expReward, expForNextLevel, getSpecies } from '../content/buddySpecies.js';
 
 const Z = {
   veil: 11000,
@@ -232,7 +232,10 @@ export class BattleScene extends Phaser.Scene {
 
   _renderStatPanel(x, y, participant, label) {
     const panelW = 360;
-    const panelH = 114;
+    const hasExp = !!participant.buddyInstance;
+    // Player panel gets an extra EXP bar at the bottom; opponent
+    // doesn't (they're wild — no level-up state to show).
+    const panelH = hasExp ? 138 : 114;
     const bg = this.add.graphics().setDepth(Z.panel);
     drawPanel(bg, x, y, panelW, panelH, { radius: RADIUS.card });
     this._allObjs.push(bg);
@@ -255,7 +258,21 @@ export class BattleScene extends Phaser.Scene {
     const hpBar = this._makeBar(x + 16, y + 62, panelW - 32, 20, COL.orange, 'HP');
     const eBar  = this._makeBar(x + 16, y + 88, (panelW - 32) * 0.7, 14, 0x6fb3d4, '⚡');
 
-    const panel = { bg, nameText, ownerText, hpBar, eBar, participant };
+    let expBar = null;
+    let expLabel = null;
+    if (hasExp) {
+      // Skinnier EXP bar so it reads as "progress toward next level"
+      // not "another vital stat".
+      expBar = this._makeBar(x + 16 + 40, y + 112, panelW - 32 - 40, 12, 0xffd24a, 'XP');
+      expLabel = this.add.text(x + 16, y + 112 + 6, 'XP', {
+        fontFamily: TYPE.family,
+        fontSize: '14px',
+        color: COL.inkHex
+      }).setOrigin(0, 0.5).setDepth(Z.bar + 2);
+      this._allObjs.push(expLabel);
+    }
+
+    const panel = { bg, nameText, ownerText, hpBar, eBar, expBar, expLabel, participant };
     this._refreshBars(panel);
     return panel;
   }
@@ -280,13 +297,17 @@ export class BattleScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(Z.bar + 2);
     this._allObjs.push(label);
 
-    return { x, y, w, h, fillColour, fill, label, prefix, currentFrac: 1 };
+    return { x, y, w, h, fillColour, fill, label, prefix, currentFrac: 1, track };
   }
 
   _refreshBars(panel) {
     const p = panel.participant;
     this._setBar(panel.hpBar, p.hp, p.maxHP, p.hp / p.maxHP < 0.3);
     this._setBar(panel.eBar, p.energy, p.maxEnergy, false);
+    if (panel.expBar && p.buddyInstance) {
+      const needed = expForNextLevel(p.buddyInstance.level);
+      this._setBar(panel.expBar, p.buddyInstance.exp, needed, false);
+    }
   }
 
   _setBar(bar, value, max, lowFlash = false) {
@@ -525,24 +546,38 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _replacePlayerVisuals() {
-    // Destroy old sprite + panel + move buttons; rebuild for new
-    // active buddy.
-    this._plySprite?.destroy();
+    // Destroy old sprite + panel + move buttons. CRITICAL: remove
+    // them from _allObjs too — otherwise the dead refs accumulate
+    // and the _exit tween targets destroyed objects, which (under
+    // some conditions) freezes the scene on lose. v1.14.1 hotfix.
+    const toDestroy = [];
+    if (this._plySprite) toDestroy.push(this._plySprite);
     if (this._plyPanel) {
-      this._plyPanel.bg?.destroy();
-      this._plyPanel.nameText?.destroy();
-      this._plyPanel.ownerText?.destroy();
-      this._plyPanel.hpBar?.fill?.destroy();
-      this._plyPanel.hpBar?.label?.destroy();
-      this._plyPanel.eBar?.fill?.destroy();
-      this._plyPanel.eBar?.label?.destroy();
+      toDestroy.push(
+        this._plyPanel.bg,
+        this._plyPanel.nameText,
+        this._plyPanel.ownerText,
+        this._plyPanel.hpBar?.track,
+        this._plyPanel.hpBar?.fill,
+        this._plyPanel.hpBar?.label,
+        this._plyPanel.eBar?.track,
+        this._plyPanel.eBar?.fill,
+        this._plyPanel.eBar?.label,
+        this._plyPanel.expBar?.track,
+        this._plyPanel.expBar?.fill,
+        this._plyPanel.expBar?.label,
+        this._plyPanel.expLabel
+      );
     }
     for (const b of this._moveButtons) {
-      b.bg.destroy(); b.stripe.destroy();
-      b.titleRow.destroy(); b.primaryText.destroy(); b.costText.destroy();
-      b.zone.destroy();
+      toDestroy.push(b.bg, b.stripe, b.titleRow, b.primaryText, b.costText, b.zone);
     }
     this._moveButtons = [];
+
+    // Remove from _allObjs first, then destroy.
+    const dead = new Set(toDestroy.filter(Boolean));
+    this._allObjs = this._allObjs.filter((o) => !dead.has(o));
+    for (const o of dead) o.destroy();
 
     // Re-create at the same anchor coordinates.
     const { x: sx, y: sy, w: sw, h: sh } = this._stageRect;
@@ -837,6 +872,21 @@ export class BattleScene extends Phaser.Scene {
         if (levelsGained > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
+        // Refresh the EXP bar after grant. The _setBar tween animates
+        // the fill from old to new, so the kid sees the progress.
+        // For a level-up, the bar resets and continues from 0 — visible
+        // as a satisfying "max out, snap, keep filling" motion.
+        this._refreshBars(this._plyPanel);
+        // Floating "+N EXP" near the player's panel for clarity.
+        if (this._plyPanel?.bg) {
+          this._floatText(this._plyPanel.bg.x + 180, this._plyPanel.bg.y + 80,
+            `+${expGained} XP`, '#a08020', 36);
+        }
+        if (levelsGained > 0) {
+          // Level-up flash near the player sprite.
+          this._floatText(this._plySprite.x, this._plySprite.y - 220,
+            `LV ${finisher.level}!`, '#ffb020', 64);
+        }
       }
       // Recruitment: if the player doesn't already have this
       // species on their team, they get it for free at level 1.
@@ -873,6 +923,13 @@ export class BattleScene extends Phaser.Scene {
         if (levelsGained > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
+        // Refresh the EXP bar quietly. We guard on .scene because
+        // the panel may have been torn down by _replacePlayerVisuals
+        // earlier in this battle and we don't want to tween a dead
+        // reference (the v1.14.x lose-path freeze cause).
+        if (this._plyPanel?.expBar?.fill?.scene) {
+          this._refreshBars(this._plyPanel);
+        }
       }
       this.services.gemBag?.add('gem_5', gems);
       this.services.audio?.playSfx?.('sfx_descend');
@@ -890,11 +947,22 @@ export class BattleScene extends Phaser.Scene {
     if (this._previousMusicKey && this.services.audio) {
       this.services.audio.playMusic(this._previousMusicKey, this);
     }
-    // Banner is intentionally NOT in _allObjs (see create()), so
-    // fade it separately to keep it from lingering on exit.
+    // Defensive: filter to live objects only. If _replacePlayerVisuals
+    // ever leaves a dead ref in _allObjs, Phaser can freeze when it
+    // tweens a destroyed target. (Lose-path freeze, v1.14.x.)
+    const liveTargets = [...this._allObjs, this._banner]
+      .filter((o) => o && o.scene);
     this.tweens.killTweensOf(this._banner);
+    if (liveTargets.length === 0) {
+      // Nothing to fade — exit immediately.
+      const cb = this.onComplete;
+      const prev = this.previousSceneKey;
+      this.scene.stop();
+      cb(result, prev);
+      return;
+    }
     this.tweens.add({
-      targets: [...this._allObjs, this._banner],
+      targets: liveTargets,
       alpha: 0,
       duration: 320,
       ease: 'Sine.easeIn',
@@ -908,9 +976,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   _slideIn() {
-    for (const o of this._allObjs) o.alpha = 0;
+    const live = this._allObjs.filter((o) => o && o.scene);
+    for (const o of live) o.alpha = 0;
     this.tweens.add({
-      targets: this._allObjs,
+      targets: live,
       alpha: 1,
       duration: 400,
       ease: 'Sine.easeOut'
