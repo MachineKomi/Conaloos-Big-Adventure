@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-05-16 — v1.17: README screenshots + EXP share + big NEW BUDDY moment
+
+### README — three screenshots now
+
+`docs/screenshots/hero.png` (title), `hero_2.png` (gameplay), and
+`hero_3.png` (a buddy battle) — all three are referenced from
+the README so the GitHub repo page reads as "this is what it
+looks like" at a glance.
+
+### EXP share (Pokémon-style)
+
+A win now gives EXP to **every buddy on the team**, not just
+the one who landed the final blow:
+
+- **Participants** (the active buddy + anyone who got swapped in
+  during the battle): the full EXP reward.
+- **Bench buddies** (never came out): a **40%** share of the EXP.
+
+So a kid with a six-buddy team running their first battle hands
+the team 35 EXP (full, to the active) + 14 EXP (×5, to the
+bench). Everyone grows, but the ones who fought grow faster.
+The win banner adds a "(+N XP to team)" line whenever the team
+size is greater than 1 so it's obvious what just happened.
+
+Implementation: a `_participated` Set tracks which team indices
+saw battle action. The active starter is always in it; each
+auto-switch on faint adds the new index. Both win and consolation
+paths share through the same code.
+
+### NEW BUDDY! moment
+
+The first-time-recruitment used to be a small text banner —
+"Look — Seesa would like to come along!" Easy to miss. Now it's
+a proper hero moment:
+
+- Heavy translucent veil — focus on the moment.
+- HUGE version of the recruit's sprite, centred-left.
+- Enormous yellow **`NEW`** / **`BUDDY!`** headline beside them
+  (110px, with black stroke).
+- "*<name> joins your team!*" subtitle underneath.
+- 24-piece sparkle burst around the sprite.
+- Soft bob on the sprite + gentle pulse on the headline.
+- "tap to continue" hint fades in after 1.5s.
+- Tap anywhere to dismiss, or auto-advance after 4.5s.
+
+### Touched
+
+- **Updated:** `README.md` (two more screenshots),
+  `src/scenes/BattleScene.js` (EXP share across team +
+  `_showNewBuddyAnnounce`).
+
 ## 2026-05-16 — v1.16: faster levelling, scene-bg battle stage, bigger buddy sprites
 
 ### Levelling actually happens now

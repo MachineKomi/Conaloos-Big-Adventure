@@ -81,6 +81,11 @@ export class BattleScene extends Phaser.Scene {
     this._battleOver = false;
     this._movesEnabled = false;
     this._allObjs = [];   // every display object — used for the exit fade
+    // v1.17: track which team members actually saw battle action.
+    // The active buddy always counts; if someone else gets swapped
+    // in (because the active one fainted), they're added too.
+    // Used at the end to share full vs. reduced EXP.
+    this._participated = new Set([0]);
   }
 
   create() {
@@ -569,9 +574,11 @@ export class BattleScene extends Phaser.Scene {
       this._concludeBattle(false);
       return;
     }
-    // Slot the next buddy in.
+    // Slot the next buddy in. They've now joined the fight, so
+    // they earn full EXP share on conclusion.
     this.playerIdx = nextIdx;
     this.player = this.playerTeam[nextIdx];
+    this._participated.add(nextIdx);
     this._showBanner(`${this.player.species.displayName}, your turn now!`, 1100, () => {
       // Re-render the player sprite + stat panel + move buttons.
       this._replacePlayerVisuals();
@@ -901,22 +908,41 @@ export class BattleScene extends Phaser.Scene {
     if (playerWon) {
       gems = 5 + this.opponent.level * 3;
       expGained = expReward(this.opponent.level);
-      if (finisher && this.services.buddyTeam) {
-        levelsGained = this.services.buddyTeam.grantExp(finisher, expGained);
-        if (levelsGained > 0) {
+      if (this.services.buddyTeam) {
+        // v1.17: share EXP across the WHOLE team. Buddies that took
+        // turns (the active one + any that got swapped in) get the
+        // full amount; bench-warmers get a smaller share so they
+        // still grow but slower than the ones who fought.
+        const SHARE_FACTOR = 0.4;
+        const sharedExp = Math.max(1, Math.floor(expGained * SHARE_FACTOR));
+        let finisherLevels = 0;
+        let teamLevels = 0;
+        for (let i = 0; i < this.playerTeam.length; i++) {
+          const tm = this.playerTeam[i];
+          if (!tm.buddyInstance) continue;
+          const isParticipant = this._participated.has(i);
+          const xp = isParticipant ? expGained : sharedExp;
+          const gained = this.services.buddyTeam.grantExp(tm.buddyInstance, xp);
+          teamLevels += gained;
+          if (i === this.playerIdx) finisherLevels = gained;
+        }
+        levelsGained = finisherLevels;
+        if (teamLevels > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
-        // Refresh the EXP bar after grant. The _setBar tween animates
-        // the fill from old to new, so the kid sees the progress.
-        // For a level-up, the bar resets and continues from 0 — visible
-        // as a satisfying "max out, snap, keep filling" motion.
+        // Refresh the EXP bar (finisher only — only their panel is
+        // on screen). The _setBar tween animates the fill.
         this._refreshBars(this._plyPanel);
-        // Floating "+N EXP" near the player's panel for clarity.
+        // Floating "+N XP" near the player's panel. If the team
+        // got shared XP, mention it on a second line.
         if (this._plyPanel?.bg) {
+          const xpLine = this.playerTeam.length > 1
+            ? `+${expGained} XP\n(+${sharedExp} XP to team)`
+            : `+${expGained} XP`;
           this._floatText(this._plyPanel.bg.x + 180, this._plyPanel.bg.y + 80,
-            `+${expGained} XP`, '#a08020', 36);
+            xpLine, '#a08020', 30);
         }
-        if (levelsGained > 0) {
+        if (finisherLevels > 0) {
           // Level-up flash near the player sprite.
           this._floatText(this._plySprite.x, this._plySprite.y - 220,
             `LV ${finisher.level}!`, '#ffb020', 64);
@@ -942,8 +968,11 @@ export class BattleScene extends Phaser.Scene {
         : `Hooray! +${gems} gems · +${expGained} EXP`;
       this._showBanner(winLine, 2600, () => {
         if (recruited) {
-          this._showBanner(`Look — ${recruited.displayName} would like to come along! 🎉`, 2400,
-            () => this._exit({ won: true, gems, expGained, levelsGained, recruited: recruited.id }));
+          // Big "NEW BUDDY!" moment — a hero-style overlay so this
+          // first-time recruitment really lands.
+          this._showNewBuddyAnnounce(recruited, () => {
+            this._exit({ won: true, gems, expGained, levelsGained, recruited: recruited.id });
+          });
         } else {
           this._exit({ won: true, gems, expGained, levelsGained, recruited: null });
         }
@@ -951,18 +980,28 @@ export class BattleScene extends Phaser.Scene {
     } else {
       // Consolation. No fail state. v1.16: bumped from 20% to 35%
       // so a kid who's losing still feels progress toward levelling
-      // up after a few attempts.
+      // up after a few attempts. v1.17: also share across the team.
       gems = 3;
       expGained = Math.max(8, Math.floor(expReward(this.opponent.level) * 0.35));
-      if (finisher && this.services.buddyTeam) {
-        levelsGained = this.services.buddyTeam.grantExp(finisher, expGained);
-        if (levelsGained > 0) {
+      if (this.services.buddyTeam) {
+        const SHARE_FACTOR = 0.4;
+        const sharedExp = Math.max(1, Math.floor(expGained * SHARE_FACTOR));
+        let teamLevels = 0;
+        for (let i = 0; i < this.playerTeam.length; i++) {
+          const tm = this.playerTeam[i];
+          if (!tm.buddyInstance) continue;
+          const isParticipant = this._participated.has(i);
+          const xp = isParticipant ? expGained : sharedExp;
+          const gained = this.services.buddyTeam.grantExp(tm.buddyInstance, xp);
+          teamLevels += gained;
+          if (i === this.playerIdx) levelsGained = gained;
+        }
+        if (teamLevels > 0) {
           this.services.quests?.report?.({ type: 'buddy-leveled-up', speciesId: this.player.species.id });
         }
-        // Refresh the EXP bar quietly. We guard on .scene because
-        // the panel may have been torn down by _replacePlayerVisuals
-        // earlier in this battle and we don't want to tween a dead
-        // reference (the v1.14.x lose-path freeze cause).
+        // Refresh the EXP bar quietly. Defensive: panel may have
+        // been torn down by _replacePlayerVisuals earlier; tween
+        // on a dead ref was the v1.14.x lose-path freeze.
         if (this._plyPanel?.expBar?.fill?.scene) {
           this._refreshBars(this._plyPanel);
         }
@@ -975,6 +1014,191 @@ export class BattleScene extends Phaser.Scene {
         () => this._exit({ won: false, gems, expGained, levelsGained, recruited: null })
       );
     }
+  }
+
+  /** Big "NEW BUDDY!" announcement when a species joins the team
+   *  for the first time. Dim veil, hero-sized sprite mid-screen
+   *  beside enormous celebratory text + sparkle burst. Tap (or
+   *  auto-advance after a beat) to continue. */
+  _showNewBuddyAnnounce(species, onDone) {
+    const { width, height } = this.scale;
+    const items = [];
+
+    // 1. Heavy veil — this is THE moment, focus everything on it.
+    const veil = this.add.graphics().setDepth(Z.modal);
+    veil.fillStyle(COL.ink, 0.7);
+    veil.fillRect(0, 0, width, height);
+    items.push(veil);
+
+    // 2. Sprite (huge) on the left half.
+    const cx = width / 2;
+    const cy = height / 2;
+    let sprite = null;
+    if (this.textures.exists(species.sprite)) {
+      sprite = this.add.image(cx - 200, cy, species.sprite).setOrigin(0.5).setDepth(Z.modal + 1);
+      const tex = this.textures.get(species.sprite).getSourceImage();
+      const scale = Math.min(440 / tex.height, 360 / tex.width);
+      sprite.setScale(scale);
+      items.push(sprite);
+    }
+
+    // 3. "NEW / BUDDY!" headline on the right half, large.
+    const headline = this.add.text(cx + 80, cy - 60, 'NEW\nBUDDY!', {
+      fontFamily: TYPE.family,
+      fontSize: '110px',
+      color: '#ffe066',
+      align: 'left',
+      lineSpacing: -20,
+      stroke: COL.inkHex,
+      strokeThickness: 8
+    }).setOrigin(0, 0.5).setDepth(Z.modal + 2);
+    items.push(headline);
+
+    // 4. Subtitle: the buddy's name + level.
+    const sub = this.add.text(cx + 80, cy + 130,
+      `${species.displayName} joins your team!`, {
+      fontFamily: TYPE.family,
+      fontSize: '30px',
+      color: '#ffffff',
+      stroke: COL.inkHex,
+      strokeThickness: 4
+    }).setOrigin(0, 0.5).setDepth(Z.modal + 2);
+    items.push(sub);
+
+    // 5. Sparkle burst around the sprite.
+    const sparkleColours = [0xffe066, 0xffd1d1, 0xc8e7c8, 0xc8e7ff, COL.gold];
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = 240 + Math.random() * 140;
+      const colour = sparkleColours[i % sparkleColours.length];
+      const star = this.add.circle(
+        sprite ? sprite.x : cx,
+        sprite ? sprite.y : cy,
+        6 + Math.random() * 4,
+        colour, 1
+      ).setDepth(Z.modal + 3);
+      this.tweens.add({
+        targets: star,
+        x: (sprite ? sprite.x : cx) + Math.cos(angle) * dist,
+        y: (sprite ? sprite.y : cy) + Math.sin(angle) * dist,
+        alpha: { from: 1, to: 0 },
+        scale: { from: 1.4, to: 0.4 },
+        duration: 1200 + Math.random() * 400,
+        ease: 'Quad.easeOut',
+        onComplete: () => star.destroy()
+      });
+    }
+
+    // 6. Drop-in animation for the sprite + headline + sub.
+    [sprite, headline, sub].forEach((o) => {
+      if (!o) return;
+      o.alpha = 0;
+      o.setScale(o === sprite ? (o.scale * 0.6) : 0.6);
+    });
+    veil.alpha = 0;
+    this.tweens.add({ targets: veil, alpha: 0.7, duration: 280, ease: 'Sine.easeOut' });
+    if (sprite) {
+      const targetScale = sprite.scale / 0.6; // because we just scaled it down to 0.6 of base
+      this.tweens.add({
+        targets: sprite,
+        alpha: 1,
+        scale: targetScale,
+        duration: 480,
+        ease: 'Back.easeOut'
+      });
+    }
+    this.tweens.add({
+      targets: [headline, sub],
+      alpha: 1,
+      scale: 1,
+      duration: 480,
+      ease: 'Back.easeOut',
+      delay: 120
+    });
+
+    // 7. Gentle bob on the sprite while held.
+    if (sprite) {
+      this.time.delayedCall(500, () => {
+        if (!sprite.scene) return;
+        this.tweens.add({
+          targets: sprite,
+          y: sprite.y - 14,
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      });
+    }
+
+    // 8. Headline pulse so the eye lands on it.
+    this.time.delayedCall(700, () => {
+      if (!headline.scene) return;
+      this.tweens.add({
+        targets: headline,
+        scale: { from: 1, to: 1.06 },
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    });
+
+    // 9. Auto-advance after a beat OR tap-to-continue. The blocker
+    //    covers the whole screen and the kid can tap anywhere to
+    //    say "yes, I saw it!". An auto-advance hint appears
+    //    underneath the subtitle after 1.5s.
+    const hint = this.add.text(cx, cy + 220, 'tap to continue', {
+      fontFamily: TYPE.bodyFamily,
+      fontSize: '20px',
+      color: '#ffd860'
+    }).setOrigin(0.5).setDepth(Z.modal + 2).setAlpha(0);
+    items.push(hint);
+    this.time.delayedCall(1500, () => {
+      if (!hint.scene) return;
+      this.tweens.add({
+        targets: hint,
+        alpha: 0.85,
+        duration: 400,
+        ease: 'Sine.easeOut'
+      });
+      this.tweens.add({
+        targets: hint,
+        alpha: 0.4,
+        duration: 700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        delay: 400
+      });
+    });
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      // Stop all tweens we created so they don't keep ticking on
+      // destroyed targets.
+      for (const o of items) if (o && o.scene) this.tweens.killTweensOf(o);
+      if (sprite) this.tweens.killTweensOf(sprite);
+      this.tweens.add({
+        targets: items,
+        alpha: 0,
+        duration: 320,
+        ease: 'Sine.easeIn',
+        onComplete: () => {
+          items.forEach((o) => o?.destroy?.());
+          onDone();
+        }
+      });
+    };
+
+    const blocker = this.add.zone(0, 0, width, height).setOrigin(0, 0).setDepth(Z.modal + 4);
+    blocker.setInteractive();
+    blocker.on('pointerup', finish);
+    items.push(blocker);
+    // Auto-advance after 4.5s in case the kid doesn't tap.
+    this.time.delayedCall(4500, finish);
   }
 
   _exit(result) {

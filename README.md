@@ -11,6 +11,10 @@ four-year-old who designed it)*
 
 ![Take the Long Way — title screen](docs/screenshots/hero.png)
 
+![Take the Long Way — gameplay](docs/screenshots/hero_2.png)
+
+![Take the Long Way — buddy battle](docs/screenshots/hero_3.png)
+
 ---
 
 ## What it is
