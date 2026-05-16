@@ -35,7 +35,7 @@ export const characters = {
       "Here's something I know that I learned in my brain:\nThe word for a question is *also* a name.",
       "Today I am four, and that's plenty of years.\nI've sorted my toys. I've consulted my fears.",
       "If a thing has no name, it gets sad in the night.\nSo I name them at bedtime, by the small lamp's light.",
-      "Some words are just *sounds*. Some sounds are just *songs*.\nThe difference, I think, is who they belong-s.",
+      "Some words are just *sounds*. Some sounds are just *songs*.\nA song is a sound that has someone-it-belongs.",
       "I made up a word: it is *florp*. It means *kind*.\nIt's the *florpiest* word that I'll ever find."
     ]
   },
@@ -49,7 +49,7 @@ export const characters = {
       "Did you know that a *bee* can lift up a *tree*?\nIt's true. I have seen it. (Or possibly three.)",
       "The wind has a *heart*. I've not seen it, exactly --\nbut grown-ups have hinted, perhaps indirectly.",
       "A *minute* is sixty of *seconds* on top.\nAn *hour* is sixty of those, then you stop.",
-      "My sister's a four. I'm a five. So I'm bigger.\nAnd also more learnèd, and somewhat more rigour.",
+      "My sister's a four. I'm a five. So I'm bigger.\nAnd also more learnèd, with somewhat more vigour.",
       "Octopuses have *three* hearts. (Or *eight* legs. Or both.)\nI'm pretty sure -- well, I am ALMOST under oath.",
       "I told the school spider his web was a *masterpiece*.\nHe blinked all his eyes at me. (Spiders do, at least.)",
       "You think you know counting? Well, listen, friend:\nthere is *no biggest number*. The numbers don't end.",
@@ -68,7 +68,7 @@ export const characters = {
     lines: [
       "I'm Poona. And me and Amelia are *friends*.\nThe kind of the friends with no proper of ends.",
       "And THEN we will swing! And then we will run!\nAnd then we will sing to the moon and the sun!",
-      "My favourite of plans is the *plan for a plan*.\nIt's bigger than dinner, and also than dan.",
+      "My favourite of plans is the *plan for a plan*.\nIt's bigger than dinner, AND bigger than ran.",
       "If you want to invent a brand new sort of game,\nyou first have to give it a *brand new* of name.",
       "I made up a song. It is mostly the word *YES*.\nI sing it on Tuesdays. (Sometimes Wednesdays. I guess.)",
       "Friend! Quick! Important! I've thought of a thing!\n...I forgot what it was. But it had wings."
@@ -83,13 +83,13 @@ export const characters = {
     lines: [
       "I'm Lulumi. I'm fourteen. That isn't *old* --\nbut I'm old enough now that my notebook gets full.",
       "I keep a small list of the things I've now seen:\na bee with a hat, and a snail in a sheen.",
-      "Wonder, I find, is a habit you build.\nThe more that you practise, the more you've fulfilled.",
+      "Wonder, I find, is a thing that you grow --\nthe more that you practise, the more that you'll know.",
       "The dew has a memory. The moon has a view.\nThe kettle has *opinions*. I've copied a few.",
       "When I was your size, I could fit in a coat.\nNow I am bigger. (My pockets still float.)",
       "A list is a quiet kind of love, I think --\nyou choose what gets written, and what skips a blink.",
       "Not all of the questions deserve a quick answer.\nSome are best left where they sat. Like a dancer.",
       "I think -- and I might be quite wrong -- that the rain\nis the sky's quiet way of starting again.",
-      "*You're* braver than you believe, and *stronger* than seem,\nand *wiser* than thought. (I read that, mid-dream.)",
+      "*You're* braver than you believe, and *stronger* than you'd seem,\nand *wiser* than you think. (I read that mid-dream.)",
       "*Nothing*, I think, is the *best* sort of doing --\nas long as it's done with a friend, gently chewing.",
       "I'll write you in, if I may, in my list.\nUnder *people-I-met-and-was-glad-they-existed*."
     ]
@@ -107,7 +107,7 @@ export const characters = {
     lines: [
       "Oh -- look at the light, how it lands on the floor.\nIt has painted a path to the back of the door.",
       "The leaves of this tree are a hundred small hands,\neach waving hello to the wind where it stands.",
-      "A song in your head is a song that is *yours*.\nIt arrived in this morning with nothing to do.",
+      "A song in your head is a song that is *yours* --\nit arrived overnight, like the warm of indoors.",
       "Do you see how the shadow of *you* turns to *eight*\nwhen the lamps are all lit and the hour is late?",
       "Tea makes a sound when it's stirred in a cup --\na *circle* you hear, that goes round and is up.",
       "The kettle's a friend. It tells you when *now*.\nIt says 'Ready, ready' -- and means it, somehow.",
@@ -132,7 +132,7 @@ export const characters = {
       "The clock ticks at me. I tick back at the clock.\nWe have, at this point, a polite little talk.",
       "If we run out of something, we share what we've got.\nThat's how a *home* works. (It is, mostly. A lot.)",
       "Mm. I forget what I came in here for.\nBut I'm pleased that I came. So I'll wander some more.",
-      "*Hmm. Yes. Quite.* -- I forget what we said.\nI suspect it was *kind*. (And then on we both led.)",
+      "*Hmm. Yes. Quite.* -- I forget what we said.\nI suspect it was *kind*. (And we both went to bed.)",
       "Today, I am thinking of *nothing in particular*.\nIt's *one* of my favourites. (And rather *spectacular*.)",
       "*Bother*, I've put the wrong jam in the tea.\n-- It's nice, in its way. -- It's quite kind of *me*.",
       "If you find yourself sad, I shall sit, just nearby.\nYou don't have to *say* anything. I won't ask why."
@@ -150,7 +150,7 @@ export const characters = {
       "There's no music more *old* than the music of waves --\nthe same chorus running, since back in the caves.",
       "A song doesn't ask if it's good or it's right.\nIt just goes, and it carries, and stays through the night.",
       "You're humming! Don't stop! That's a song, that one there.\nThe trick is to follow it, just up the air.",
-      "A drum is a heartbeat that wandered outside.\nIt left of its body. It went for a ride.",
+      "A drum is a heartbeat that wandered outside.\nIt left its small body. It went for a ride.",
       "Every quiet you've heard has a *shape* to its hush.\nSome are wide as a field. Some thin as a brush."
     ]
   },
@@ -220,9 +220,9 @@ export const characters = {
       "My flower is mine, but it's also the world's.\nI carry it lightly, especially when curled.",
       "A bee came to visit. We had a small chat.\nShe asked the flower questions. It answered like *that*.",
       "The smallest of things, looked at *closely* enough,\ngrows wider than mountains. (Even the rough.)",
-      "I'm *small*, I think. -- Or perhaps *small enough*.\nThe flower is tinier still. (We make do, on the rough.)",
+      "I'm *small*, I think. -- Or perhaps *small enough*.\nThe flower is tinier still. (We're a pair, sure enough.)",
       "*Oh.* -- Did you see? The petal just *moved*.\nIt's *thinking*, perhaps. (I am happy. -- I'm soothed.)",
-      "I like it when *small things* matter to people.\nIt's the *only* way mountains were carried by *steeple*."
+      "I like it when *small things* matter to people.\nThat's how mountains get loved -- one small look, one small ripple."
     ]
   },
 
@@ -305,7 +305,7 @@ export const characters = {
     lines: [
       "Pepsi, the dog-thing, has come to the door.\nHe'd like to come in. He's a thing to adore. -- (boof.)",
       "What does he want? Well, the answer is *true*:\na stick. Just a stick. He'd quite like one or two. -- (snorf.)",
-      "He sleeps like a comma, all curled and content,\nin a sun-shaped of patch where the carpet is bent. -- (sigh.)",
+      "He sleeps like a comma, all curled and content,\nin a sun-shaped warm patch where the carpet is bent. -- (sigh.)",
       "He cannot quite *tell* you. But he understands\nthe size of your sadness. The warm of your hands. -- (woof.)",
       "He's not really a dog -- he's a *thing* that's quite near.\nThe 'thing' is the part that we love best, dear. -- (boof.)",
       "Pepsi's idea of a perfect Tuesday:\na stick that is bigger than seven of *he*. -- (snorf.)",
@@ -323,7 +323,7 @@ export const characters = {
       "The daisies are SPECTACULAR! All of them! Each!\n-- well, except for the wilted -- but THOSE are a *teach*!",
       "I buzz, and I buzz, and I land, and I sip,\nand I tell every flower that flowers are HIP.",
       "A bee is a hum that has stuck to a wing,\nand the wing is a thing that decided to *sing*.",
-      "I saw the queens twice today, hopping a-by.\nThey nodded. I nodded. (My nod is a fly.)",
+      "I saw the queens twice today, hopping straight by!\nThey nodded. I nodded. (My nod is a fly.)",
       "Did you know there's a flower that smells like a *bun*?\nI've kissed it. Six times. (Maybe more. Maybe one.)",
       "POLLEN! I LOVE IT! It's *cake* for a bee!\nA dust that's a snack and a snack that's a tree!"
     ]

@@ -11,22 +11,22 @@ import { COL, RADIUS, STROKE, TYPE, ANIM, drawPanel } from '../systems/UITokens.
 
 const VERSE = [
   "Hello! I'm Amelia. The world is below.",
-  "Click *anywhere* on it -- I walk where I go.",
+  "Tap *anywhere* on it -- that's where I will go.",
   "",
-  "Click *peeps*, click *animals*, click *things* on the ground --",
-  "they'll all have a rhyme, or a fact, or a sound.",
+  "Tap *peeps*, tap *animals*, tap *things* on the green --",
+  "they'll each have a rhyme, or a sound, or a scene.",
   "",
-  "Pick up the small *gems* -- they fly to the top.",
-  "They add up like *sums*. (The math doesn't stop.)",
+  "The bright little *gems* fly to top on their own.",
+  "Small *things* slip themselves into bags-of-your-own.",
   "",
-  "Pick up *small things* -- they slide into my bag.",
-  "Tap the *backpack* to peek. (It's a fine little brag.)",
+  "That *book* in the corner is yours, dear, and mine:",
+  "your *things*, your *quests*, your *buddies* -- and fine.",
   "",
-  "If a *door* or a *ladder* is what you have spied,",
-  "just click it -- and I'll happily go for a ride.",
+  "If a *door* or a *swirl* glints up brightly nearby --",
+  "just tap it, and *off we go!* (No need to be shy.)",
   "",
-  "And the *star* up there? Quests! For when you've done deeds --",
-  "you'll find them inside it, with gems for your needs."
+  "And the *buddies* about? You can challenge each one.",
+  "If you *win*, they will join you. (The battling's *fun*.)"
 ];
 
 const CONTINUE_LABEL = "Off we go!";

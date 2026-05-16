@@ -13,16 +13,16 @@
 export const genericLines = {
   // Used over peep_/animal_ sprites.
   character: [
-    "A friend in the field, with a wave and a wink,\nIs softer to find than a feather can sink.",
-    "They look at the world like a window of words,\nAnd hum like the hummingest hum of the birds.",
-    "Some friends are tall and some friends are small,\nBut friendship, it turns out, has no size at all.",
-    "They blink and they breathe and they wonder, like you,\nWhat is on the other side of the blue?"
+    "A friend in the field, with a wave-and-a-wink,\nis just what the *right kind of Tuesday* needs, I think.",
+    "They look at the world like a window of words,\nand hum like the *hummingest* hum of the birds.",
+    "Some friends are tall and some friends are small,\nbut friendship, it turns out, has no size at all.",
+    "They blink and they breathe and they wonder, like you,\nwhat *is* on the other side of the blue?"
   ],
   // Used over thing_ sprites.
   thing: [
-    "A thing is a thing, and a thing has a name,\nAnd no two things, ever, are quite the same.",
-    "It rests where it rests and it sits where it sits,\nAnd holds all the world that it holds, bit by bit.",
-    "Each thing has a story it whispers in still --\nIt only takes listening, soft as a hill.",
+    "A thing is a thing, and a thing has a name,\nand no two things, ever, are *quite* the same.",
+    "It rests where it rests and it sits where it sits,\nand holds all the world that it holds, bit by bit.",
+    "Each thing has a story it whispers, *quite* low --\njust listen, and slowly, the story will show.",
     "Look carefully now: does it wobble? Does it lean?\nThe quietest things are the loudest, I mean."
   ],
   // Used in upper-region (sky/canopy/horizon) hotspots.
@@ -57,7 +57,7 @@ export const themedLines = {
   ],
   numbers: [
     "A number's a name that we give to a count --\nA way to say HOW MUCH, a way to say AMOUNT.\nOne pebble, two pebbles, three pebbles, four --\nAnd after that's done, you can ask for some more.",
-    "Zero's a number, and zero is real --\nThe size of a hole, or the speed of a peel.",
+    "Zero's a *number*, and zero is real --\nthe size of a hole, or a *nothing-to-feel*.",
     "A half is a thing that is split into two,\nLike sharing a pancake, the same as you do."
   ],
   'computer-science': [
@@ -84,19 +84,19 @@ export const themedLines = {
   ],
   economics: [
     "To trade is to swap what you have for what's there --\nA pebble, a peach, or a chair for a chair.",
-    "Enough is a wonderful number to know --\nMore than too little, less than too-too-too-so.",
+    "*Enough* is a wonderful number to know --\nit isn't too little, but doesn't *overflow*.",
     "To share is to make a small thing become two,\nWithout any cutting, in the kindest of glue."
   ],
   language: [
     "A rhyme is a kind of a magic, you see --\nTwo words that agree at the end, secretly.",
     "BEAR is a word that means TWO different things:\nThe shaggy old fellow, OR what your arm brings.",
-    "In other lands, water is l'eau, agua, mizu --\nThe puddle's the same; the names crowd it like zoo.",
-    "*Hello* is a word in *every* of country.\nIt sounds a bit different. (But *means* the same *plenty*.)",
+    "In other lands, water is l'eau, agua, mizu --\nthe puddle's the same; the names crowd it like a zoo.",
+    "*Hello* is a word in every sort of country.\nIt sounds a bit different. (But *means* the same plenty.)",
     "Some words, when you say them, are *small fluffy hums*.\nThey go *gently* in ears, like a *patter of thumbs*."
   ],
   science: [
     "The sun is a star, and it's terribly far,\nAnd we are a planet that spins where we are.",
-    "Rain is a sea that has gone for a fly,\nThen tripped on a cloud and fell back from the sky.",
+    "Rain is a sea that has gone for the sky --\nthen tripped on a cloud and came tumbling by.",
     "Why does it fall? There's a pull in the ground.\nThe earth, you see, likes when its things are around."
   ],
   emotions: [

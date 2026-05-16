@@ -24,7 +24,9 @@ const SUBTITLE_LINES = [
   "a bear-butterly, and the smallest of math."
 ];
 
-const CONTINUE_LABEL = "Continue adventure";
+// Kept short so each fits the 320px button width at the
+// label font size.
+const CONTINUE_LABEL = "Continue";
 const PLAY_LABEL = "Let's go!";
 const HOW_TO_LABEL = "How to play";
 

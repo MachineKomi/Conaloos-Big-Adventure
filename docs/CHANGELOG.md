@@ -1,5 +1,99 @@
 # Changelog
 
+## 2026-05-16 — v1.18: writing pass + UI polish + tutorial refresh
+
+A sweep across every piece of visible text in the game, plus a
+visual-niggles pass.
+
+### Title screen
+
+- **"Continue adventure" → "Continue"** — the longer label was
+  overflowing the 320px button at the label's 36px font size.
+
+### Tutorial verse — refreshed for the v1.15 UI
+
+The old verse referenced the bag icon ("Tap the *backpack* to
+peek"), the star icon ("And the *star* up there? Quests!"), and
+ladder portals — all of which have changed. New verse points at
+the Adventure Book and the new portal styles, plus introduces
+buddy battles. 6 couplets, scans clean.
+
+### Character lines (`characters.js`)
+
+Ten lines rewritten because they didn't actually mean anything
+(forced rhyme reaches):
+
+- Amelia: "they belong-s" → "has someone-it-belongs"
+- Cosenae: "somewhat more rigour" → "with somewhat more vigour"
+- Poona: "and also than dan" → "AND bigger than ran"
+- Lulumi: "the more you've fulfilled" → "the more that you'll know"
+- Lulumi: "stronger than seem" → "stronger than you'd seem"
+- mommy: "It arrived in this morning" → "arrived overnight, like
+  the warm of indoors"
+- daddy: "(And then on we both led.)" → "(And we both went to
+  bed.)"
+- Keefa: "It left of its body." → "It left its small body."
+- Konessa: "(We make do, on the rough.)" → "(We're a pair, sure
+  enough.)"
+- Konessa: "carried by *steeple*" → "one small look, one small
+  ripple"
+- Pepsi: "sun-shaped of patch" → "sun-shaped warm patch"
+- Seesa: "hopping a-by" → "hopping straight by!"
+
+### Fallback rhyme pool (`lines.js`)
+
+- `character` pool: opening couplet was image-confused ("softer
+  to find than a feather can sink"). Rewrote.
+- `thing` pool: "whispers in still" → "whispers, *quite* low"
+- `numbers` pool: "speed of a peel" → "a *nothing-to-feel*"
+- `economics` pool: "too-too-too-so" → "doesn't *overflow*"
+- `language` pool: "every of country" → "every sort of country";
+  "names crowd it like zoo" → "like a zoo"
+- `science` pool: "gone for a fly" → "gone for the sky"
+
+### Quizzes (`quizzes.js`)
+
+Eight quiz reactions cleaned up — "of courses", "alone-going",
+"wings of will", "in the kind", "un-thunder-ed", "no taints",
+"kind of *prime*", "*the third*" all replaced with lines that
+actually make sense and still rhyme.
+
+### Inventory couplets
+
+Six of the ten item couplets were broken. New cleaner versions:
+- books: "in a thicket, a parker" → "a hushed leafy scene"
+- teddy: "His salary's *whisker*" → "an *occasional whisper*"
+- microscope: "a galaxy, in show" → "a galaxy below"
+- globe: "where somebody's grinnin'" → "where somebody's standing"
+- banana: "wrapper its grew … bone-known" → "wrapper it *grew*
+  on its own … the fruit's nicely shown"
+
+### Scenes (`scenes.js`)
+
+- Hub `sun` Tiny Museum: "the *sun-from-eight-minutes-ago*-ed."
+  → "the sun-from-eight-minutes."
+- Playground `tree-A`: "are quite *neat-en*" → "are *quite
+  neat*-en" (kept the rhyme intent, fixed the formatting)
+- Cottage `tea`: "It is not a *too-found*" → "it is not too-much-
+  found"; "(And so are *thim*.)" → "(Like a quiet small hymn.)"
+- Cottage `bucket`: "cool, cold *nice-es*" → "cool-water-prices"
+
+### Playground Loosa-vs-Umi chip moved
+
+Was at `x: 0.13, y: 0.36` — overlapped with the to-hub portal
+sitting at the left edge. Bumped to `x: 0.18, y: 0.28` so the
+chip clears the portal sprite.
+
+### Touched
+
+- **Updated:** `src/scenes/TitleScene.js` (button label),
+  `src/scenes/TutorialScene.js` (verse rewrite),
+  `src/content/characters.js` (12 line fixes),
+  `src/content/lines.js` (fallback pool fixes),
+  `src/content/quizzes.js` (8 reaction fixes),
+  `src/content/scenes.js` (4 line fixes + chip position),
+  `src/systems/Inventory.js` (5 couplet fixes).
+
 ## 2026-05-16 — v1.17: README screenshots + EXP share + big NEW BUDDY moment
 
 ### README — three screenshots now

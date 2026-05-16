@@ -46,8 +46,8 @@ export const quizzes = {
         { text: "Six",   isCorrect: false },
         { text: "Eight", isCorrect: true }
       ],
-      onCorrect: "EIGHT! Yes! Spiders have eight little legs --\n*two more than insects*. (Which only have eggs.)",
-      onWrong:   "Spiders have *eight*! Insects only have *six*.\nSpiders aren't insects -- they're *arachnids*. Tricks!"
+      onCorrect: "EIGHT! Yes! Spiders have eight little legs --\n*two more than insects* (who get by on six pegs).",
+      onWrong:   "Spiders have *eight*! Insects only have *six*.\nSpiders aren't insects -- they're *arachnids*. (Tricks!)"
     },
     {
       question: "What's two plus two?",
@@ -76,7 +76,7 @@ export const quizzes = {
         { text: "A chicken", isCorrect: true },
         { text: "A horse",   isCorrect: false }
       ],
-      onCorrect: "A *chicken*! Yes! Birds lay eggs all the time.\nFish, frogs, and lizards do too -- it's a kind of *prime*.",
+      onCorrect: "A *chicken*! Yes! Birds lay eggs all the time.\nFish, frogs, and lizards do too -- which is fine.",
       onWrong:   "It's chickens! Birds lay eggs. So do fish and frogs.\nCats and horses? Their babies grow inside, snug as logs."
     },
     {
@@ -96,8 +96,8 @@ export const quizzes = {
         { text: "A puppy", isCorrect: false },
         { text: "A car",   isCorrect: false }
       ],
-      onCorrect: "An *ant*! Tiny but *mighty* -- they can carry things\nway bigger than themselves. (They've great little wings of will.)",
-      onWrong:   "Ants are smallest. So *small* you can fit a hundred\non one of your hands -- and they'll all stay un-thunder-ed."
+      onCorrect: "An *ant*! Tiny but *mighty* -- they carry things\nfar bigger than themselves. (Strong as small things.)",
+      onWrong:   "*Ants* are smallest. So tiny that a hundred\ncan stand on your hand and not weigh you down-ed."
     },
     {
       question: "Which one of these is *not* alive?",
@@ -141,7 +141,7 @@ export const quizzes = {
         { text: "Purple", isCorrect: false }
       ],
       onCorrect: "*Green*! Yellow and blue mix into green --\nlike grass, like leaves, like the freshest you've seen.",
-      onWrong:   "Yellow + blue = *green*. Try it with paints!\n(Yellow + red = orange. Red + blue = purple, no taints.)"
+      onWrong:   "Yellow + blue = *green*. Try it with paints!\n(Yellow + red = orange. Red + blue = purple. No complaints.)"
     },
     {
       question: "How many sides does a *triangle* have?",
@@ -171,7 +171,7 @@ export const quizzes = {
         { text: "Yellow", isCorrect: false }
       ],
       onCorrect: "*Circle*! Round -- like a coin, or a wheel, or the moon.\nTuesday's a day, yellow's a colour. Different soon.",
-      onWrong:   "*Circle* is the shape! Round, like a coin.\nTuesday is a day. Yellow is a colour. Each one, alone-going."
+      onWrong:   "*Circle* is the shape! Round, like a coin.\nTuesday's a *day*. Yellow's a *colour*. They don't join."
     },
     {
       question: "How many legs does a *cat* have?",
@@ -180,8 +180,8 @@ export const quizzes = {
         { text: "Four",  isCorrect: true },
         { text: "Eight", isCorrect: false }
       ],
-      onCorrect: "*Four*! Cats walk on four. So do dogs, cows, and horses --\nthey're all called *quadrupeds*. (Fancy! Of courses.)",
-      onWrong:   "Cats have *four*. Same as dogs and horses.\nThey're 'quadrupeds' -- four-foot, in four-legged forces."
+      onCorrect: "*Four*! Cats walk on four. So do dogs, cows, and horses --\nthey're all called *quadrupeds*. (A fancy word, of course-es.)",
+      onWrong:   "Cats have *four*. Same as dogs, cows, and horses.\nThey're all called *quadrupeds*. (Four-foot armed forces.)"
     }
   ],
 
@@ -220,7 +220,7 @@ export const quizzes = {
         { text: "Afternoon (slow)"    },
         { text: "Bedtime (with lamps)"}
       ],
-      onCorrect: "Mm. Yes. That hour, especially -- has a *colour*.\nIt's the colour of you, choosing your own dollar.",
+      onCorrect: "Mm. Yes. That hour, especially -- has a *colour*.\nIt's the colour of *you*, when the day's at its fuller.",
       onWrong: ""
     }
   ],
@@ -283,8 +283,8 @@ export const quizzes = {
         { text: "Anything", isCorrect: true },
         { text: "Nothing",  isCorrect: false }
       ],
-      onCorrect: "*Anything* -- yes! If light hits a thing,\nthe other side darkens. (A shadow's a *swing*.)",
-      onWrong:   "*Anything* in the light makes a shadow behind.\nThe shadow's the *back* of the thing, in the kind."
+      onCorrect: "*Anything* -- yes! If light hits a thing,\nthe other side darkens. (A shadow's a *cling*.)",
+      onWrong:   "*Anything* in the light makes a shadow behind.\nThe shadow's the *back* of the thing, dark-lined."
     }
   ],
 
@@ -335,8 +335,8 @@ export const quizzes = {
         { text: "Square",   isCorrect: false },
         { text: "Wet",      isCorrect: false }
       ],
-      onCorrect: "FRIENDLY! YES! That's the WORD!\nSquare is a *shape*. Wet is *the third*.",
-      onWrong:   "It's *friendly*! That's when you're warm to a friend.\nSquare's a *shape*. Wet is what *rain* will lend."
+      onCorrect: "FRIENDLY! YES! That's the right word!\nSquare is a *shape*. Wet is what *rain* affords.",
+      onWrong:   "It's *friendly*! That's when you're warm to a friend.\nSquare is a *shape*. Wet is what *rain* will lend."
     }
   ]
 };

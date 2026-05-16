@@ -215,7 +215,7 @@ export const scenes = {
         [
           "The sun is a *star*. (Did you know? It's quite true.)\nA terribly-far-away friend, looking at you.",
           "Hold up your hand -- you can *blot out* the sun.\nWhich means hands are *bigger*. (Well, sort of. Sort-of-one.)",
-          "The sunlight that lands here took *eight whole minutes* --\nso the sun you see *now* is the *sun-from-eight-minutes-ago*-ed."
+          "The sunlight that lands here took *eight whole minutes* --\nso the sun you see *now* is the sun-from-eight-minutes."
         ],
         'science'),
 
@@ -328,8 +328,8 @@ export const scenes = {
         [
           "A cup of warm tea, when it's *split* into two,\nis not halved at all -- it's *doubled*, with you.",
           "The recipe's simple: a leaf, and some heat,\na cup, and a moment, and someone to meet.",
-          "*Enough* is a feeling -- it's quiet, and round.\nIt is not a *too-little*. It is not a *too-found*.",
-          "Tea is a leaf that has gone for a swim.\nIt's worth waiting for. (And so are *thim*.)"
+          "*Enough* is a feeling -- it's quiet, and round.\nIt is not a *too-little*; it is not too-much-found.",
+          "Tea is a leaf that has gone for a swim.\nIt's worth waiting for. (Like a quiet small hymn.)"
         ],
         'economics'),
 
@@ -568,7 +568,7 @@ export const scenes = {
           "A tree, all in colours, is *mostly* a green --\nbut every leaf carries a *different* sheen.",
           "*Two* greens make a tree-green: a yellow and blue.\nThe trees know this trick. (Now you know it too.)",
           "Each leaf is a hand that the wind likes to shake.\nThe tree doesn't mind. The tree's *wide* awake.",
-          "A leaf is a *factory*: in the back, sun is *eaten*\nand turned into food. (Plants, my friend, are quite *neat-en*.)"
+          "A leaf is a *factory*: in the back, sun is *eaten*\nand turned into food. (Plants, my friend, are *quite neat*-en.)"
         ],
         'art-history'),
 
@@ -604,15 +604,17 @@ export const scenes = {
       { key: 'gem_5', x: 0.70, y: 0.40 },
       { key: 'gem_2', x: 0.55, y: 0.62 }
     ],
-    // Loosa stands here patiently with his jellyfish Umi (who, like
-    // him, takes his time). Tap the chip to challenge.
+    // Loosa stands here patiently with his jellyfish Umi (who,
+    // like him, takes his time). Tap the chip to challenge.
+    // Chip pushed slightly higher + right so it clears the
+    // to-hub portal that sits at x=0.04 on the left edge.
     challenges: [
       {
         id: 'loosa-vs-umi',
         npc: 'peep_Loosa_cactus',
         buddySpeciesId: 'umi',
         buddyLevel: 2,
-        x: 0.13, y: 0.36,
+        x: 0.18, y: 0.28,
         label: "Loosa's jellyfish"
       }
     ]
@@ -1213,7 +1215,7 @@ export const scenes = {
         speaker: 'thing_bucket',
         collect: 'thing_bucket',
         responses: [
-          { text: "A bucket can carry a river, in slices --\nIn handfuls and helpings of cool, cold *nice-es*.", theme: 'science' },
+          { text: "A bucket can carry a river, in slices --\nin *handfuls* and *helpings* of cool-water-prices.", theme: 'science' },
           { text: "Half full or half empty? That's not the right ask.\nIt's *carrying water*. (That's quite a brave task.)", theme: 'philosophy' }
         ]
       },
