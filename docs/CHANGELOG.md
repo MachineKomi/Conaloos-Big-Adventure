@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-05-16 — v1.11: the Ice Level
+
+The `mountain-lake-vista` scene was replaced. Its background
+wasn't drawn by Amelia, so the whole location got reskinned
+around her new `bg_ice-level` drawing. Same map position
+(connected to `mountain-lake-childlike` and `skyscraper-roof`),
+new theme.
+
+### Slug renamed
+
+`mountain-lake-vista` → `ice-level`. The two scenes that
+previously had portals labelled "up the mountain" / "the
+mountain" now have portals labelled "up to the snow" / "off to
+the snow", both pointing at `ice-level`.
+
+### New cast on this scene
+
+- **Wawoo** (the robo-snowman who's been worrying about being
+  too warm) is now where he wants to be.
+- **Conaloo** the bear-butterly is here too — bears like the
+  cold. (The butterfly half is less convinced.)
+
+### New collectables on this scene
+
+- `thing_flashlight` — useful in a place this white.
+- `thing_microscope` — a quiet science lesson about six-sided
+  snowflakes.
+
+### New hotspots
+
+- **snowflakes** Tiny Museum (4 facts — six arms, no two alike,
+  raindrop-gone-still, jewel-under-a-microscope)
+- **ice** Tiny Museum (4 facts — water-paused, gives-cold,
+  less-heavy-than-water, frozen-as-a-thought)
+- **cold** Question Stone (4 wondering questions — where cold
+  goes, why thinking slows, catching cold in a jar, snow as a
+  laid-down quiet)
+- **cold-words** Tiny Museum (cold/snow words across languages
+  including two Inuit words: *qanik* and *aput*)
+
+Themes covered: science (heavy), philosophy, language, emotions.
+
+### Music
+
+Switched to `music_skyward` (*Skyward Bound Sprint*) — brisk
+going-somewhere feel that fits a high cold place.
+
+### Touched
+
+- **Assets:** `bg_mountain-lake-vista.png` removed,
+  `bg_ice-level.png` added.
+- **Updated:** `src/content/scenes.js` (rewrote the scene + two
+  inbound portal references).
+- **Docs:** `docs/scenes/mountain-lake-vista.md` removed,
+  `docs/scenes/ice-level.md` added.
+- **Auto-regenerated:** `src/content/manifest.json`.
+
+### Open hooks for next agent
+
+- Wawoo's bio lines (in `characters.js`) are global to him —
+  they don't know which scene he's standing in. A nice future
+  pass: add a small pool of *ice-specific* lines that only fire
+  when his speaker is in this scene.
+- `THEME_COVERAGE.md` should be regenerated; the old vista was
+  the only place 'art-history' was double-covered.
+- Existing saves with `mountain-lake-vista` in their visited
+  scene set will still work (the slug is just gone — no harm
+  done) but won't get credit for visiting `ice-level` retroactively.
+
 ## 2026-05-16 — v1.10: Amelia-drawn portals
 
 All portal art is now Amelia's. The seven non-Amelia portal

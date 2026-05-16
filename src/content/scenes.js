@@ -429,9 +429,9 @@ export const scenes = {
         ],
         'numbers'),
 
-      portal('to-vista', 'mountain-lake-vista', {
+      portal('to-ice', 'ice-level', {
         sprite: 'portal_donut_portal',   x: 0.95, y: 0.40, heightFrac: 0.30,
-        enterEdge: 'left',         label: 'up the mountain'
+        enterEdge: 'left',         label: 'up to the snow'
       }),
 
       portal('to-garden', 'sunny-rocket-garden', {
@@ -775,83 +775,102 @@ export const scenes = {
   },
 
   // -------- LAKE (VISTA) --------
-  'mountain-lake-vista': {
-    background: 'bg_mountain-lake-vista',
-    music: 'music_journey',
+  // --------------------------------------------------------------
+  //                            ICE LEVEL
+  // --------------------------------------------------------------
+  // Used to be `mountain-lake-vista` until v1.11; the background
+  // was replaced with Amelia's hand-drawn ice scene, so the whole
+  // location turned into a cold place. Wawoo (the robo-snowman who
+  // worries about being warm) is finally in his element here.
+  // The two portals (to-childlike, to-roof) stayed: this scene is
+  // still the "up high" point in the map, just frozen now.
+  'ice-level': {
+    background: 'bg_ice-level',
+    music: 'music_skyward',
     ambient_sfx: [],
-    themes: ['science', 'art-history', 'philosophy', 'language'],
+    themes: ['science', 'philosophy', 'language', 'emotions'],
     characters: [
-      { sprite: 'animal_Conaloo_bear-butterly', x: 0.20, y: 0.94, heightFrac: 0.30, idle: 'sway' },
-      { sprite: 'peep_Lulumi_F_14',             x: 0.78, y: 0.95, heightFrac: 0.55, idle: 'sway' }
+      // Wawoo's perfect spot — at last, the cold he was looking for.
+      { sprite: 'peep_Wawoo_robo-snowman',      x: 0.30, y: 0.95, heightFrac: 0.55, idle: 'sway' },
+      // Conaloo's a bear; bears like the cold. (Mostly. He's also
+      // a butterfly. The butterfly half is *less* sure.)
+      { sprite: 'animal_Conaloo_bear-butterly', x: 0.75, y: 0.95, heightFrac: 0.32, idle: 'sway' }
     ],
     things: [
-      { sprite: 'thing_books',     x: 0.55, y: 0.94, heightFrac: 0.14 },
-      { sprite: 'thing_hourglass', x: 0.40, y: 0.94, heightFrac: 0.16 }
+      // A flashlight — useful in a place this white.
+      { sprite: 'thing_flashlight', x: 0.50, y: 0.94, heightFrac: 0.14 },
+      // A microscope — ice crystals are six-sided, every time. The
+      // microscope IS the lesson, slowly delivered through the kid
+      // picking it up and asking what it does.
+      { sprite: 'thing_microscope', x: 0.60, y: 0.94, heightFrac: 0.14 }
     ],
     hotspots: [
+      characterHotspot('wawoo', 'peep_Wawoo_robo-snowman',
+        { x: 0.22, y: 0.45, w: 0.20, h: 0.50 },
+        { theme: 'emotions' }),
+
       characterHotspot('conaloo', 'animal_Conaloo_bear-butterly',
-        { x: 0.12, y: 0.68, w: 0.18, h: 0.30 },
+        { x: 0.68, y: 0.68, w: 0.18, h: 0.30 },
         { theme: 'philosophy' }),
 
-      characterHotspot('lulumi', 'peep_Lulumi_F_14',
-        { x: 0.70, y: 0.45, w: 0.20, h: 0.50 },
-        { theme: 'language' }),
-
       {
-        id: 'vista-books', type: 'reactor', cursor: 'sparkle',
-        bounds: { x: 0.50, y: 0.84, w: 0.10, h: 0.14 },
-        speaker: 'thing_books',
-        collect: 'thing_books',
+        id: 'ice-flashlight', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.46, y: 0.84, w: 0.10, h: 0.14 },
+        speaker: 'thing_flashlight',
+        collect: 'thing_flashlight',
         responses: [
-          { text: "Lulumi's left a book in the long mountain grass --\nIt's marked with a leaf at a paragraph's pass.", theme: 'language' }
+          { text: "A torch on the snow makes a *yellow*-shaped patch --\nA small sun-on-pause, with a click for the catch.", theme: 'science' }
         ]
       },
 
       {
-        id: 'vista-hourglass', type: 'reactor', cursor: 'sparkle',
-        bounds: { x: 0.36, y: 0.82, w: 0.12, h: 0.16 },
-        speaker: 'thing_hourglass',
-        collect: 'thing_hourglass',
+        id: 'ice-microscope', type: 'reactor', cursor: 'sparkle',
+        bounds: { x: 0.56, y: 0.84, w: 0.10, h: 0.14 },
+        speaker: 'thing_microscope',
+        collect: 'thing_microscope',
         responses: [
-          { text: "An hourglass set on a stone, gently tilted --\nThe sand's nearly through, but it never quite wilted.", theme: 'science' }
+          { text: "A brass eye for *tiny*, half-buried in white --\nthe snowflakes are waiting, all six-sided, *bright*.", theme: 'science' }
         ]
       },
 
-      tinyMuseum('peak',
-        { x: 0.30, y: 0.05, w: 0.40, h: 0.30 },
+      tinyMuseum('snowflakes',
+        { x: 0.10, y: 0.10, w: 0.30, h: 0.25 },
         [
-          "A peak is the top of a mountain's slow climb,\nIt's been on its way there for *plenty* of time.",
-          "The wind at the top is a whole different sort --\nIt's thinner, and colder, and rude in retort.",
-          "Some peaks are so old, they have lost all their snow,\nAnd some are so new, they're not finished, you know."
+          "A *snowflake* has *six* little arms, every one --\nlike a *star* who's quite small, and is freshly begun.",
+          "*No two snowflakes* are the same, it is said.\n(*Most* aren't, anyway. -- The rest haven't been read.)",
+          "A snowflake's a *raindrop* who's gone *very still* --\nand decided, mid-fall, to *shape up* with a will.",
+          "Under a microscope, each one's a *jewel*.\n*Sixfold*, and *bright*, and the maths is the *rule*."
         ],
         'science'),
 
-      tinyMuseum('lake',
-        { x: 0.30, y: 0.55, w: 0.40, h: 0.25 },
+      tinyMuseum('ice',
+        { x: 0.40, y: 0.20, w: 0.30, h: 0.25 },
         [
-          "Look how the lake has decided on blue,\nThe colour the painter who painted you knew.",
-          "Two pictures, two lakes, but they're really one place --\nDrawn twice, two ways, with a different face.",
-          "A blue made of yellows and reds piled deep --\nA painter's a poet who's mixed it for keep."
+          "*Ice* is *water* that's stopped, in a hurry, to rest.\nIt's the *slowest* of waters. (It's also the *best*.)",
+          "If you held a small *cube* in your hand, very still,\nit would *give* you its cold. (And it would, with goodwill.)",
+          "Ice is *less heavy* than water. (Strange, but it's true.)\nWhich is *why* it can *float*. (Some boats wish they knew.)",
+          "*Frozen* means *holding-quite-still*. Like a thought\nthat has stopped to consider. (And quite a lot's caught.)"
         ],
-        'art-history'),
+        'science'),
 
-      questionStone('horizon',
-        { x: 0.10, y: 0.30, w: 0.80, h: 0.10 },
+      questionStone('cold',
+        { x: 0.30, y: 0.04, w: 0.40, h: 0.16 },
         [
-          "The horizon -- the line where the sky meets the ground --\nIs always *just there*, but it's never *just* found.",
-          "If you ran for a year toward where the sky lands,\nYou'd never quite touch it. (You'd touch other lands.)",
-          "Some questions are horizons -- they move when you do.\nThe walking's the answer. The asking is, too."
+          "Where *does* the cold go, when it isn't *here*?\nIs it *waiting* somewhere? In a *cupboard*, my dear?",
+          "Are *some* days too cold to *think* through, or is it\nthat thinking just *slows*, like the water it visits?",
+          "*If* you could *catch* the cold in a *jar* --\nwould the *jar* feel it, then? (How clever you are.)",
+          "*Is the snow* a *quiet* the wind has *laid down*?\n-- Or is it the *clouds*, gone unfastened, on town?"
         ],
         'philosophy'),
 
-      tinyMuseum('notebook',
-        { x: 0.74, y: 0.62, w: 0.14, h: 0.14 },
+      tinyMuseum('cold-words',
+        { x: 0.05, y: 0.65, w: 0.10, h: 0.20 },
         [
-          "Lulumi's small notebook is full of small things.\nA list, in the order they came on the wings.",
-          "If THIS, then do THAT -- that's a recipe rule.\nIt's how you make porridge, and how you teach school.",
-          "A list can be sorted. A sort is a switch --\nUntil all the smalls are quite under the bigs, which..."
+          "*Cold* in some languages: *froid*, *kalt*, *frio*, *samui*.\nThe shape is the same; the *names* warm and chewy.",
+          "*Brrr* is a sound that's a word that's a *shiver*.\nMost languages have one. (Like a small built-in river.)",
+          "The Inuit have *many* words for *snow* --\n*qanik* is *falling*; *aput* is *below*."
         ],
-        'computer-science'),
+        'language'),
 
       portal('to-childlike', 'mountain-lake-childlike', {
         sprite: 'portal_magic_swirl',   x: 0.04, y: 0.52, heightFrac: 0.32,
@@ -868,7 +887,7 @@ export const scenes = {
       { key: 'gem_7', x: 0.94, y: 0.78 },
       { key: 'gem_5', x: 0.42, y: 0.40 },
       { key: 'gem_3', x: 0.65, y: 0.18 },
-      { key: 'gem_9', x: 0.30, y: 0.78 }
+      { key: 'gem_9', x: 0.20, y: 0.78 }
     ]
   },
 
@@ -1078,9 +1097,9 @@ export const scenes = {
         ],
         'philosophy'),
 
-      portal('to-vista', 'mountain-lake-vista', {
+      portal('to-ice', 'ice-level', {
         sprite: 'portal_donut_portal',   x: 0.05, y: 0.55, heightFrac: 0.32,
-        enterEdge: 'right',        label: 'the mountain'
+        enterEdge: 'right',        label: 'off to the snow'
       })
     ],
     gems: [
